@@ -21,7 +21,6 @@ float real_time1 = 0, real_time2 = 0, real_time3 = 0;
 float theo_time1 = 0, theo_time2 = 0, theo_time3 = 0;
 float target_deg_total;
 float delay1, delay2, delay3;
-int32_t real_tick_total;
 
 
 
@@ -93,7 +92,7 @@ void check_ends(){
   if(reached_goal(CHECK_END_END, 0) == false){
     end_tick = stopped_tick;
   }
-  real_tick_total = end_tick - start_tick;
+  
   sim_mercy_start = start_tick + MERCY_TOLERANCE_TICK;
   sim_mercy_end = end_tick - MERCY_TOLERANCE_TICK;
   uint32_t sim_distance = abs(sim_mercy_end - sim_mercy_start);

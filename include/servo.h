@@ -14,12 +14,15 @@ extern const uint32_t DXL_BAUD;
 extern Dynamixel2Arduino dxl;
 using namespace ControlTableItem;
 
-// --------------- VARIABLES
+
+// --------------- SERVO CONSTANTS
 extern const float DEG_PER_TICK;
 extern const float TICK_PER_DEG;
 extern const float RPM_PER_VEL;
 extern const int POLL_TIMER;
 
+
+// --------------- SERVO VARIABLES
 extern int32_t stopped_tick;
 extern float start_current;
 extern float cal_cur0, cal_cur1, cal_cur2, cal_cur3;
@@ -27,6 +30,7 @@ extern float cur_tolerance;
 extern bool cancelled;
 extern int32_t cur_pos;
 extern float cur_cur;
+
 
 // --------------- HELPER FUNCTIONS
 int32_t deg_to_tick(float deg);

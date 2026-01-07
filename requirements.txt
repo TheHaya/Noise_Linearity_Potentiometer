@@ -1,0 +1,6 @@
+Pillow
+sv-ttk
+pyserial
+matplotlib
+numpy
+

@@ -1,6 +1,9 @@
 #include <Arduino.h>
-#include <servo.h>
+#include <noise.h>
 #include <calibrate.h>
+#include <servo.h>
+
+int32_t user_go_to;
 
 // --------------- NOISE MOVEMENT
 void noise_movement(){
@@ -24,6 +27,13 @@ void noise_movement(){
 void go_zero(){
   drive_to(ZERO_TICK, user_rpm);
   reached_goal(ZERO_TICK, 2);
+  
+  Serial.println("READY");
+}
+
+void go_to(){
+  drive_to(user_go_to, user_rpm);
+  reached_goal(user_go_to, 2);
   
   Serial.println("READY");
 }
