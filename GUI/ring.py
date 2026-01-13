@@ -4,13 +4,13 @@ from tkinter import font
 
 
 # --------------- GUI RING VARIABLES
+ring_canvas = None
+ring_box = None
+noise_times = []
 
 
-
-
-
-# --------------- GUI RING FÜR FEHLER
-def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="000000"):
+# --------------- GUI RING FUNCTIONS
+def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#1c1c1c"):
     global ring_canvas, ring_box
     ring_canvas = tk.Canvas(
         frame, width=ring_size+30, height=ring_size+30,
@@ -21,7 +21,7 @@ def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="000000"):
     radius = (ring_size // 2) - 18
     ring_box = (canv_x - radius, canv_y - radius, canv_x + radius, canv_y + radius)
     ring_canvas.create_arc(ring_box, start=0, extent=359.9,
-                           style="arc", width=ring_thickness, outline="#6b6b6b")
+                           style="arc", width=ring_thickness, outline="#1c1c1c")
     
     for deg in range(0, 360, 10):
         long_tick = (deg % 30 == 0)
@@ -33,7 +33,7 @@ def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="000000"):
         y1 = canv_y + (radius + L) * math.sin(rad)
         ring_canvas.create_line(x0, y0, x1, y1, width=4, fill="#ffffff")
 
-def mark_ends(total_ticks, ring_size, ring_thickness):
+def mark_ends(total_ticks, ring_size = 300, ring_thickness = 4):
     fix_direction = -90
     line_span = (total_ticks/4096)*360
     line_side = line_span/2
@@ -58,7 +58,7 @@ def clear_noise_marks():
         ring_canvas.delete(iid)
     noise_times = []
 
-def mark_noise_segments(angle_arr, color="#ff0000"):
+def mark_noise_segments(angle_arr, ring_thickness = 4, color="#ff0000"):
     global noise_times
     fix_direction = -90
 
@@ -78,7 +78,7 @@ def mark_noise_segments(angle_arr, color="#ff0000"):
                                      style="arc", width=ring_thickness+10, outline="#ff0000")
             noise_times.append(iid)
 
-def set_circle_text():
+def set_circle_text(pico_angle):
     x0, y0, x1, y1 = ring_box
     canv_x = (x0 + x1) / 2
     canv_y = (y0 + y1) / 2

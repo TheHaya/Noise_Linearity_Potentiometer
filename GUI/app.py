@@ -6,20 +6,21 @@ import sv_ttk
 import threading, json, time
 
 from serial_client import open_first_available
-import pico_runner
+from pico_runner import config_pico
 from export import save_to_pdf
 from ring import build_ring
-from noise_workflow import noise_measurement
+import noise_workflow
 from linear_workflow import linear_measurement#
 
 
-# --------------- VARIABLES 
-ARDUINO_PORTS = ["COM3", "COM5", "COM9"]
+# --------------- APP VARIABLES 
+# ARDUINO_PORTS = ["COM3", "COM5", "COM9"]
 pico_plot_time = []
 pico_plot_volt = []
 pico_time = []
 pico_volt = []
 pico_pdf_time = []
+pico_angle = []
 
 # --------------- GUI VARIABLES
 noise_win = None
@@ -119,9 +120,14 @@ def open_noise_win():
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel_close)
 
+    global pico_plot_time
+    pico_plot_time.clear()
+    global pico_plot_volt
+    pico_plot_volt.clear()
 
-    threading.Thread(target=noise_measurement, args=(txt_winkel, txt_geschw, 
-                                                   stop_event, close_wait_results), daemon=True).start()
+    noise_workflow.config_noise(root, txt_speed)
+    threading.Thread(target=noise_workflow.noise_measurement, args=(txt_winkel, txt_geschw, 
+                                                   pico_plot_volt, pico_plot_time, stop_event, close_wait_results), daemon=True).start()
 
 def open_linear_win():
     def close_wait_results():
@@ -193,7 +199,7 @@ def open_linear_win():
 
 def go_zero(stop_event, on_finish):
     try:
-        ser_Arduino = open_first_available(ARDUINO_PORTS, baud=115200, timeout=5)
+        ser_Arduino = open_first_available(baud=115200, timeout=5)
         ser_Arduino.reset_input_buffer() 
         ser_Arduino.reset_output_buffer()
         time.sleep(1)
@@ -283,7 +289,7 @@ scr_hei = root.winfo_screenheight()
 root.geometry(f"{scr_wid - scr_wid//5}x{scr_hei - scr_hei//5}+0+0")
 root.title("Rauschprüfung")
 root.resizable(False, False)
-
+root.configure(bg="#1c1c1c")
 
 root.grid_columnconfigure(0, weight=0)
 root.grid_columnconfigure(1, weight=1)
@@ -329,15 +335,20 @@ ttk.Label(right_frame, text="Sollspannung in V:").grid(row=1, column=0, sticky="
 txt_volt = ttk.Entry(right_frame, width=20, validate="key", validatecommand=vcmd)
 txt_volt.grid(row=2, column=0, pady=(0, 0), padx=(0,0))
 txt_volt.insert(0, "5,0")
+txt_volt.configure(state='readonly')
 txt_volt.focus_set()
+
 ttk.Label(right_frame, text="Gesamtwinkel in Grad:").grid(row=3, column=0, sticky="w", pady=(40, 0), padx=(10,0))
 txt_angle = ttk.Entry(right_frame, width=20, validate="key", validatecommand=vcmd)
 txt_angle.grid(row=4, column=0, pady=(0, 0), padx=(0,0))
 txt_angle.insert(0, "330,0")
+txt_angle.configure(state='readonly')
+
 ttk.Label(right_frame, text="Max. Geschwindigkeit in U/min:").grid(row=5, column=0, sticky="w", pady=(40, 0), padx=(10,0))
 txt_speed = ttk.Entry(right_frame, width=20, validate="key", validatecommand=vcmd)
 txt_speed.grid(row=6, column=0, pady=(0, 0), padx=(0,0))
 txt_speed.insert(0, "60,0")
+txt_speed.configure(state='readonly')
 
 
 # txtgo = ttk.Entry(left_frame, width=20, validate="key", validatecommand=vcmd)
