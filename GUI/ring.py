@@ -10,7 +10,7 @@ noise_times = []
 
 
 # --------------- GUI RING FUNCTIONS
-def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#1c1c1c"):
+def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#969696"):
     global ring_canvas, ring_box
     ring_canvas = tk.Canvas(
         frame, width=ring_size+30, height=ring_size+30,
@@ -32,6 +32,25 @@ def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#1c1c1c"):
         x1 = canv_x + (radius + L) * math.cos(rad)
         y1 = canv_y + (radius + L) * math.sin(rad)
         ring_canvas.create_line(x0, y0, x1, y1, width=4, fill="#ffffff")
+
+def mark_deadzone(total_ticks, ring_size = 300, ring_thickness = 4):
+    fix_direction = -90
+    line_span = (total_ticks/4096)*360
+    line_side = line_span/2
+    L = 50
+
+    clear_noise_marks()
+    
+    for deg in range(-1,2,2):
+        canv_x = canv_y = ring_size // 2 + 15
+        radius = (ring_size // 2) - 18
+        rad = math.radians(deg*line_side + fix_direction)
+        x0 = canv_x + (radius + ring_thickness/2- L/2) * math.cos(rad)
+        y0 = canv_y + (radius + ring_thickness/2- L/2) * math.sin(rad)
+        x1 = canv_x + (radius + L+ L/2) * math.cos(rad)
+        y1 = canv_y + (radius + L+ L/2) * math.sin(rad)
+        iid = ring_canvas.create_line(x0, y0, x1, y1, width=8, fill="#00ffff")
+        noise_times.append(iid)
 
 def mark_ends(total_ticks, ring_size = 300, ring_thickness = 4):
     fix_direction = -90

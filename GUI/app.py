@@ -28,7 +28,7 @@ AMLogo = Image.open('AMLogo.jpg')
 scale = 0.8
 w, h = AMLogo.size
 smallLogo = AMLogo.resize((int(w*scale), int(h*scale)))
-
+text_rw_state = 'readonly'
 
 # --------------- PRESETS LADEN
 preset_path = "preset_Teile.json"
@@ -46,12 +46,24 @@ def set_entry(txt_entry, decimal_val):
         val = f"{decimal_val}".replace('.' , ',')
     else:
         val = str(decimal_val)
-    txt_entry.delete(0, tk.END)
+    
+    text_rw_state = 'normal'
+    txt_entry.configure(state=text_rw_state)
+    txt_entry.delete(0, tk.END) 
     txt_entry.insert(0, val)
+    text_rw_state = 'readonly'
+    txt_entry.configure(state=text_rw_state)
     
 def insert_preset(p):
     set_entry(txt_volt, p["sollSpannung"])
     set_entry(txt_angle, p["sollWinkel"])
+    set_entry(txt_speed, p["sollGeschwindigkeit"])
+    set_entry(txt_d11, p["d11"])
+    set_entry(txt_d12, p["d12"])
+    set_entry(txt_d21, p["d21"])
+    set_entry(txt_d22, p["d22"])
+    set_entry(txt_d31, p["d31"])
+    set_entry(txt_d32, p["d32"])
 
 
 # --------------- GUI FUNCTIONS
@@ -195,7 +207,6 @@ def open_linear_win():
     threading.Thread(target=linear_measurement, args=(txt_winkel, txt_geschw, 
                                                    stop_event, close_wait_results), daemon=True).start()
 
-    
 
 def go_zero(stop_event, on_finish):
     try:
@@ -227,6 +238,17 @@ def go_zero(stop_event, on_finish):
 
 def export_pdf():
     save_to_pdf(txt9, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt)
+
+
+def advanced_chk():
+    if autosave_var.get():
+        text_rw_state = 'normal'
+    else:
+        text_rw_state = 'readonly'
+
+    for fields in (txt_volt, txt_angle, txt_speed, txt_d11, txt_d12, txt_d21, txt_d22, txt_d31, txt_d32):
+        fields.configure(state=text_rw_state)
+
 
 # --------------- OPEN ZERO WINDOW
 def open_zero_window():
@@ -301,7 +323,7 @@ right_frame = ttk.Frame(root)
 left_frame.grid(row=1, column=0, sticky="nw", padx=12, pady=12)
 right_frame.grid(row=1, column=1, sticky="nw",  padx=12, pady=12)
 ring_area = ttk.Frame(root)
-ring_area.grid(row=1, column=2, sticky="nw",  padx=120, pady=12)
+ring_area.grid(row=1, column=2, sticky="nw", padx=120, pady=12)
 
 img = ImageTk.PhotoImage(smallLogo)
 panel = tk.Label(root, image=img)
@@ -331,33 +353,82 @@ ttk.Label(left_frame, text="Auftragsnummer:").grid(row=4, column=0, sticky="w", 
 txt9 = ttk.Entry(left_frame, width=20)
 txt9.grid(row=5, column=0, pady=(0, 10), padx=(20,0))
 
-ttk.Label(right_frame, text="Sollspannung in V:").grid(row=1, column=0, sticky="w", pady=(40, 0), padx=(10,0))
-txt_volt = ttk.Entry(right_frame, width=20, validate="key", validatecommand=vcmd)
-txt_volt.grid(row=2, column=0, pady=(0, 0), padx=(0,0))
+autosave_var = tk.BooleanVar(value=True)
+chk_autosave = ttk.Checkbutton(left_frame, text="Automatisches Speichern", variable=autosave_var, command=advanced_chk)
+chk_autosave.grid(row=6, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+
+advanced_mode = tk.BooleanVar(value=False)
+chk_autosave = ttk.Checkbutton(left_frame, text="Erweiteter Modus", variable=advanced_mode, command=advanced_chk)
+chk_autosave.grid(row=7, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+
+ttk.Label(right_frame, text="Sollspannung in V").grid(row=1, column=0, sticky="w", pady=(40, 0), padx=(10,0))
+txt_volt = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_volt.grid(row=2, column=0, pady=(0, 0), padx=(20,0))
 txt_volt.insert(0, "5,0")
-txt_volt.configure(state='readonly')
+txt_volt.configure(state=text_rw_state)
 txt_volt.focus_set()
 
-ttk.Label(right_frame, text="Gesamtwinkel in Grad:").grid(row=3, column=0, sticky="w", pady=(40, 0), padx=(10,0))
-txt_angle = ttk.Entry(right_frame, width=20, validate="key", validatecommand=vcmd)
-txt_angle.grid(row=4, column=0, pady=(0, 0), padx=(0,0))
+ttk.Label(right_frame, text="Gesamtwinkel in °").grid(row=3, column=0, sticky="w", pady=(40, 0), padx=(10,0))
+txt_angle = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_angle.grid(row=4, column=0, pady=(0, 0), padx=(20,0))
 txt_angle.insert(0, "330,0")
-txt_angle.configure(state='readonly')
+txt_angle.configure(state=text_rw_state)
 
-ttk.Label(right_frame, text="Max. Geschwindigkeit in U/min:").grid(row=5, column=0, sticky="w", pady=(40, 0), padx=(10,0))
-txt_speed = ttk.Entry(right_frame, width=20, validate="key", validatecommand=vcmd)
-txt_speed.grid(row=6, column=0, pady=(0, 0), padx=(0,0))
+ttk.Label(right_frame, text="Max. Geschw. in U/min:").grid(row=5, column=0, sticky="w", pady=(40, 0), padx=(10,0))
+txt_speed = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_speed.grid(row=6, column=0, pady=(0, 0), padx=(20,0))
 txt_speed.insert(0, "60,0")
-txt_speed.configure(state='readonly')
+txt_speed.configure(state=text_rw_state)
 
+ttk.Label(right_frame, text="Totzone 1 Links in °").grid(row=1, column=1, sticky="w", pady=(40, 0), padx=(10,0))
+txt_d11 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d11.grid(row=2, column=1, pady=(0, 0), padx=(20,0))
+txt_d11.insert(0, "5,0")
+txt_d11.configure(state=text_rw_state)
+
+ttk.Label(right_frame, text="Totzone 1 Rechts in °").grid(row=1, column=2, sticky="w", pady=(40, 0), padx=(18,0))
+txt_d12 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d12.grid(row=2, column=2, pady=(0, 0), padx=(30,0))
+txt_d12.insert(0, "330,0")
+txt_d12.configure(state=text_rw_state)
+
+ttk.Label(right_frame, text="Totzone 2 Links in °").grid(row=3, column=1, sticky="w", pady=(40, 0), padx=(10,0))
+txt_d21 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d21.grid(row=4, column=1, pady=(0, 0), padx=(20,0))
+txt_d21.insert(0, "60,0")
+txt_d21.configure(state=text_rw_state)
+
+ttk.Label(right_frame, text="Totzone 2 Rechts in °").grid(row=3, column=2, sticky="w", pady=(40, 0), padx=(18,0))
+txt_d22 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d22.grid(row=4, column=2, pady=(0, 0), padx=(30,0))
+txt_d22.insert(0, "5,0")
+txt_d22.configure(state=text_rw_state)
+
+ttk.Label(right_frame, text="Totzone 3 Links in °").grid(row=5, column=1, sticky="w", pady=(40, 0), padx=(10,0))
+txt_d31 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d31.grid(row=6, column=1, pady=(0, 0), padx=(20,0))
+txt_d31.insert(0, "330,0")
+txt_d31.configure(state=text_rw_state)
+
+ttk.Label(right_frame, text="Totzone 3 Rechts in °").grid(row=5, column=2, sticky="w", pady=(40, 0), padx=(18,0))
+txt_d32 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d32.grid(row=6, column=2, pady=(0, 0), padx=(30,0))
+txt_d32.insert(0, "60,0")
+txt_d32.configure(state=text_rw_state)
 
 # txtgo = ttk.Entry(left_frame, width=20, validate="key", validatecommand=vcmd)
 # txtgo.grid(row=3, column=1, pady=(0, 0), padx=(0,0))
 
-ttk.Button(left_frame, text="Abbrechen", command=close_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
-ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
-ttk.Button(right_frame, text="Rauschkurve speichern", command=export_pdf).grid(row=7, column=0, pady=(107, 5), padx=(0,0), ipadx=10)
-ttk.Button(left_frame, text="Position 0", command=open_zero_window).grid(row=8, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
+#ttk.Button(left_frame, text="Abbrechen", command=close_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
+#ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
+ttk.Button(right_frame, text="Liniarität speichern", command=export_pdf,width=18).grid(row=7, column=3, pady=(158, 5), padx=(40,0), ipadx=10)
+ttk.Button(right_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=8, column=3, pady=(20, 5), padx=(40,0), ipadx=10)
+
+ttk.Button(left_frame, text="Mech. Enden", command=open_zero_window,width=12).grid(row=8, column=0, pady=(250, 5), padx=(20,0))
+ttk.Button(right_frame, text="Elektr. Winkel", command=open_zero_window,width=12).grid(row=8, column=0, pady=(20, 5), padx=(20,0))
+ttk.Button(right_frame, text="Rauschen", command=open_zero_window,width=12).grid(row=8, column=1, pady=(20, 5), padx=(20,0))
+ttk.Button(right_frame, text="Linearität", command=open_zero_window,width=12).grid(row=8, column=2, pady=(20, 5), padx=(20,0))
+# ttk.Button(left_frame, text="Position 0", command=open_zero_window).grid(row=8, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Links", command=go_left).grid(row=6, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Rechts", command=go_Right).grid(row=7, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="Conn Serial", command=ser_Connect).grid(row=5, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
