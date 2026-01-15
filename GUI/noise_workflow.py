@@ -119,7 +119,7 @@ def noise_measurement(ges_w, ges_s, pico_plot_volt, pico_plot_time, stop_event, 
         time.sleep(0.2)
         print("speed ist", ges_s)
         print("Sende: GO") #debug
-        ser_Arduino.write(b"GO\n")
+        ser_Arduino.write(b"NOISE_GO\n")
 
         ser_Arduino.timeout = 0.1
         while True:
@@ -136,7 +136,7 @@ def noise_measurement(ges_w, ges_s, pico_plot_volt, pico_plot_time, stop_event, 
                 global total_ticks
                 total_ticks = float(line[5::])
 
-            if line == 'READY':
+            if line == 'NOISE_READY':
                 print("Config Pico")
                 pico_runner.config_pico(
                     txt_s=lambda: txt_speed.get(),      # callable

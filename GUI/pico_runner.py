@@ -40,7 +40,7 @@ def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr)
 
         if line.startswith("PICO_START"):
             print("Sende: PICO_START") #debug
-            ser_Ard.write(b"START\n")
+            ser_Ard.write(b"NOISE_START\n")
             ser_Ard.flush()
             
             start_time = time.time()

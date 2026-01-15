@@ -334,7 +334,7 @@ void calc_linearity(){
 
   
   for(size_t i = 0; i<print_array_size ; i++){
-    Serial.print("LINEAR;");
+    Serial.print("RESULT;");
     Serial.print("idx:");   
     Serial.print(i);
     Serial.print(";Soll-Spannung Real:");   

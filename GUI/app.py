@@ -10,7 +10,7 @@ from pico_runner import config_pico
 from export import save_to_pdf
 from ring import build_ring
 import noise_workflow
-from linear_workflow import linear_measurement#
+from linear_workflow import linear_measurement
 
 
 # --------------- APP VARIABLES 
@@ -24,6 +24,7 @@ pico_angle = []
 
 # --------------- GUI VARIABLES
 noise_win = None
+linear_win = None
 AMLogo = Image.open('AMLogo.jpg')
 scale = 0.8
 w, h = AMLogo.size
@@ -204,8 +205,9 @@ def open_linear_win():
     wait_win.protocol("WM_DELETE_WINDOW", cancel_close)
 
 
-    threading.Thread(target=linear_measurement, args=(txt_winkel, txt_geschw, 
-                                                   stop_event, close_wait_results), daemon=True).start()
+    threading.Thread(target=linear_measurement, args=(txt_soll, txt_winkel, txt_geschw, txt_d11, 
+                                                        txt_d12, txt_d21, txt_d22, txt_d31, txt_d32, 
+                                                            stop_event, close_wait_results), daemon=True).start()
 
 
 def go_zero(stop_event, on_finish):
@@ -421,13 +423,13 @@ txt_d32.configure(state=text_rw_state)
 
 #ttk.Button(left_frame, text="Abbrechen", command=close_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
 #ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
-ttk.Button(right_frame, text="Liniarität speichern", command=export_pdf,width=18).grid(row=7, column=3, pady=(158, 5), padx=(40,0), ipadx=10)
-ttk.Button(right_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=8, column=3, pady=(20, 5), padx=(40,0), ipadx=10)
+ttk.Button(left_frame, text="Linearität speichern", command=export_pdf,width=18).grid(row=8, column=0, pady=(158, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 
-ttk.Button(left_frame, text="Mech. Enden", command=open_zero_window,width=12).grid(row=8, column=0, pady=(250, 5), padx=(20,0))
-ttk.Button(right_frame, text="Elektr. Winkel", command=open_zero_window,width=12).grid(row=8, column=0, pady=(20, 5), padx=(20,0))
-ttk.Button(right_frame, text="Rauschen", command=open_zero_window,width=12).grid(row=8, column=1, pady=(20, 5), padx=(20,0))
-ttk.Button(right_frame, text="Linearität", command=open_zero_window,width=12).grid(row=8, column=2, pady=(20, 5), padx=(20,0))
+ttk.Button(right_frame, text="Mech. Enden", command=open_zero_window,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
+ttk.Button(right_frame, text="Elektr. Winkel", command=open_zero_window,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
+ttk.Button(right_frame, text="Rauschen", command=open_noise_win,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
+ttk.Button(right_frame, text="Linearität", command=open_linear_win,width=12).grid(row=8, column=3, pady=(180, 5), padx=(20,0))
 # ttk.Button(left_frame, text="Position 0", command=open_zero_window).grid(row=8, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Links", command=go_left).grid(row=6, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Rechts", command=go_Right).grid(row=7, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
