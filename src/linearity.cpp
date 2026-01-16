@@ -200,7 +200,6 @@ void linearity_movement(){
     }
   }
 
-  //set_dyna_speed(fastSpeed);
   for (size_t i = 0; i<print_array_size; i++) {
     int32_t tick = drive_tick[i];
     //DEBUG_SERIAL.print(tick);

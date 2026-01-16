@@ -7,7 +7,7 @@ from tkinter import font
 ring_canvas = None
 ring_box = None
 noise_times = []
-
+deadzone_iids = [] 
 
 # --------------- GUI RING FUNCTIONS
 def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#969696"):
@@ -33,24 +33,33 @@ def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#969696"):
         y1 = canv_y + (radius + L) * math.sin(rad)
         ring_canvas.create_line(x0, y0, x1, y1, width=4, fill="#ffffff")
 
-def mark_deadzone(total_ticks, ring_size = 300, ring_thickness = 4):
+def clear_deadzone_marks():
+    global deadzone_iids
+    for iid in noise_times:
+        ring_canvas.delete(iid)
+    deadzone_iids.clear()
+
+def mark_deadzone(angles_deg, ring_size = 300, ring_thickness = 4):
+    global ring_canvas, deadzone_iids
+    if ring_canvas is None:
+        return
+
     fix_direction = -90
-    line_span = (total_ticks/4096)*360
-    line_side = line_span/2
     L = 50
 
-    clear_noise_marks()
-    
-    for deg in range(-1,2,2):
-        canv_x = canv_y = ring_size // 2 + 15
-        radius = (ring_size // 2) - 18
-        rad = math.radians(deg*line_side + fix_direction)
-        x0 = canv_x + (radius + ring_thickness/2- L/2) * math.cos(rad)
-        y0 = canv_y + (radius + ring_thickness/2- L/2) * math.sin(rad)
-        x1 = canv_x + (radius + L+ L/2) * math.cos(rad)
-        y1 = canv_y + (radius + L+ L/2) * math.sin(rad)
-        iid = ring_canvas.create_line(x0, y0, x1, y1, width=8, fill="#00ffff")
-        noise_times.append(iid)
+    clear_deadzone_marks()
+
+    canv_x = canv_y = ring_size // 2 + 15
+    radius = (ring_size // 2) - 18
+
+    for ang in angles_deg:
+        rad = math.radians(ang + fix_direction)
+        x0 = canv_x + (radius + ring_thickness/2 - L/2) * math.cos(rad)
+        y0 = canv_y + (radius + ring_thickness/2 - L/2) * math.sin(rad)
+        x1 = canv_x + (radius + L + L/2) * math.cos(rad)
+        y1 = canv_y + (radius + L + L/2) * math.sin(rad)
+        iid = ring_canvas.create_line(x0, y0, x1, y1, width=8, fill=color)
+        deadzone_iids.append(iid)
 
 def mark_ends(total_ticks, ring_size = 300, ring_thickness = 4):
     fix_direction = -90

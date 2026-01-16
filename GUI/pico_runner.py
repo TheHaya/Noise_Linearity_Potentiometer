@@ -3,7 +3,7 @@ import time, subprocess
 
 
 # --------------- PICOSCOPE VARIABLES
-picoEXE = r"C:\Users\wonga\Documents\PlatformIO\Projects\BA_Servo_Noise\Pico_Demo/pico_demo.exe"
+picoEXE = r"C:\Users\wonga\Documents\PlatformIO\Projects\Noise_Linearity_Potentiometer\Pico_Demo/pico_demo.exe"
 delay_compensation = 0.15   # damit Pico und Servo position synchron sind ohne Blockierung
 start_time = 0.0
 

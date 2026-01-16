@@ -5,6 +5,7 @@ from serial_client import open_first_available
 # --------------- LINEAR VARIABLES
 root = None
 MULTI_PORT = "COM15"
+daten = []
 
 # --------------- LINEAR FUNCTIONS
 def RegexMultimeter(output):
@@ -28,6 +29,7 @@ def linear_measurement(ges_v, ges_w, ges_s, d11, d12, d21, d22, d31, d32, stop_e
         except Exception as e:
             print("Multimeter kein Port")
         N = 13 #Anz Messpunkte wegen leere Zellen
+        global daten
         daten = []
         linear_sollV = [None] * N
         linear_lin = [None] * N
@@ -151,7 +153,18 @@ def linear_measurement(ges_v, ges_w, ges_s, d11, d12, d21, d22, d31, d32, stop_e
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug
 
+
+    result = {
+    "daten": daten,
+    "linear_sollV": linear_sollV,
+    "linear_lin": linear_lin,
+    "summary_vals": summary_vals,
+    "lin_max": lin_max,
+    "lin_min": lin_min,
+    "error_lin_idx": error_lin_idx}
+
     if root is not None:
-        root.after(0, on_finish)
+        root.after(0, lambda: on_finish(result))
+
     else:
-        on_finish()
+        on_finish(result)

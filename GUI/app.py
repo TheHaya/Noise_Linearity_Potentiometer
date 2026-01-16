@@ -7,10 +7,10 @@ import threading, json, time
 
 from serial_client import open_first_available
 from pico_runner import config_pico
-from export import save_to_pdf
+from export import save_to_pdf, save_to_excel
 from ring import build_ring
 import noise_workflow
-from linear_workflow import linear_measurement
+import linear_workflow
 
 
 # --------------- APP VARIABLES 
@@ -143,7 +143,9 @@ def open_noise_win():
                                                    pico_plot_volt, pico_plot_time, stop_event, close_wait_results), daemon=True).start()
 
 def open_linear_win():
-    def close_wait_results():
+    def close_wait_results(result = None):
+        global linear_result
+        linear_result = result
         wait_win.destroy()
 
         if stop_event.is_set():
@@ -205,7 +207,7 @@ def open_linear_win():
     wait_win.protocol("WM_DELETE_WINDOW", cancel_close)
 
 
-    threading.Thread(target=linear_measurement, args=(txt_soll, txt_winkel, txt_geschw, txt_d11, 
+    threading.Thread(target=linear_workflow.linear_measurement, args=(txt_soll, txt_winkel, txt_geschw, txt_d11, 
                                                         txt_d12, txt_d21, txt_d22, txt_d31, txt_d32, 
                                                             stop_event, close_wait_results), daemon=True).start()
 
@@ -241,6 +243,17 @@ def go_zero(stop_event, on_finish):
 def export_pdf():
     save_to_pdf(txt9, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt)
 
+def export_excel():
+    save_to_excel(
+        txt9,
+        linear_result["daten"],
+        linear_result["linear_sollV"],
+        linear_result["linear_lin"],
+        linear_result["summary_vals"],
+        linear_result["lin_max"],
+        linear_result["lin_min"],
+        linear_result["error_lin_idx"],
+    )
 
 def advanced_chk():
     if autosave_var.get():
@@ -423,7 +436,7 @@ txt_d32.configure(state=text_rw_state)
 
 #ttk.Button(left_frame, text="Abbrechen", command=close_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
 #ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
-ttk.Button(left_frame, text="Linearität speichern", command=export_pdf,width=18).grid(row=8, column=0, pady=(158, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=8, column=0, pady=(158, 5), padx=(20,0), ipadx=10)
 ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 
 ttk.Button(right_frame, text="Mech. Enden", command=open_zero_window,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
