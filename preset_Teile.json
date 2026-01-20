@@ -1,5 +1,5 @@
 {
-    "01 - 107357**":{
+    "107357**":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -8,10 +8,11 @@
         "d21": 140.0,
         "d22": 190.0,
         "d31": 290.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment": "Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar"
     },
 
-    "02 - 107395":{
+    "107395":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -20,10 +21,11 @@
         "d21": 140.0,
         "d22": 190.0,
         "d31": 290.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment": "Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar"
     },
 
-    "03 - 107396":{
+    "107396":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -32,10 +34,11 @@
         "d21": 140.0,
         "d22": 190.0,
         "d31": 290.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment": "Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar"
     },
 
-    "04 - 107397":{
+    "107397":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -44,10 +47,11 @@
         "d21": 163.5,
         "d22": 166.5,
         "d31": 290.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment": "Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar"
     },
 
-    "05 - 107398":{
+    "107398":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -56,10 +60,11 @@
         "d21": 150.0,
         "d22": 180.0,
         "d31": 240.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment":""
     },
 
-    "06 - 107399":{
+    "107399":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -68,10 +73,11 @@
         "d21": 145.0,
         "d22": 185.0,
         "d31": 250.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment":""
     },
 
-    "07 - 107445":{
+    "107445":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -80,10 +86,11 @@
         "d21": 140.0,
         "d22": 190.0,
         "d31": 290.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment":""
     },
 
-    "08 - 107446":{
+    "107446":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -92,10 +99,11 @@
         "d21": 140.0,
         "d22": 190.0,
         "d31": 290.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment":""
     },
 
-    "09 - 107447":{
+    "107447":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -104,10 +112,11 @@
         "d21": 140.0,
         "d22": 190.0,
         "d31": 290.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment":""
     },
 
-    "10 - 107448":{
+    "107448":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -116,10 +125,11 @@
         "d21": 163.5,
         "d22": 166.5,
         "d31": 290.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment":""
     },
 
-    "11 - 107449":{
+    "107449":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -128,10 +138,11 @@
         "d21": 163.5,
         "d22": 166.5,
         "d31": 290.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment":""
     },
 
-    "12 - 107450":{
+    "107450":{
         "sollSpannung": 5.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
@@ -140,6 +151,7 @@
         "d21": 163.5,
         "d22": 166.5,
         "d31": 250.0,
-        "d32": 330.0
+        "d32": 330.0,
+        "comment":""
     }
 }

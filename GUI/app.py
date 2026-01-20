@@ -8,7 +8,7 @@ import threading, json, time
 from serial_client import open_first_available
 from pico_runner import config_pico
 from export import save_to_pdf, save_to_excel
-from ring import build_ring
+from ring import build_ring, mark_deadzone
 import noise_workflow
 import linear_workflow
 
@@ -30,6 +30,8 @@ scale = 0.8
 w, h = AMLogo.size
 smallLogo = AMLogo.resize((int(w*scale), int(h*scale)))
 text_rw_state = 'readonly'
+deadzone_after_id = None
+debounce_id = {"id": None}
 
 # --------------- PRESETS LADEN
 preset_path = "preset_Teile.json"
@@ -65,14 +67,167 @@ def insert_preset(p):
     set_entry(txt_d22, p["d22"])
     set_entry(txt_d31, p["d31"])
     set_entry(txt_d32, p["d32"])
+    comment = (p.get("comment") or "").strip()
+    msg.configure(text=comment)
 
+    if comment == "":
+        msg.grid_remove()
+    else:
+        msg.grid(row=8, column=0,pady=(0, 40), padx=(20, 0))
+
+# ---------- Preset Search Dropdown (Overlay) ----------
+dropdown = {"win": None, "listbox": None}
+MAX_SUGGESTIONS = 10
+
+def only_digits(s: str) -> str:
+    return "".join(ch for ch in (s or "") if ch.isdigit())
+
+def rank_presets(query: str, ids: list[str]) -> list[str]:
+    matches = []
+    q = query
+    if not q:
+        return []
+    for pid in ids:
+        if pid.startswith(q):
+            matches.append(pid)
+    matches.sort()
+    return matches[:MAX_SUGGESTIONS]
+
+
+def on_up_dropdown():
+    if dropdown["win"] is not None and dropdown["win"].winfo_exists():
+        dropdown["win"].destroy()
+    dropdown["win"] = None
+    dropdown["listbox"] = None
+   
+
+def open_dropdown(anchor_entry: ttk.Entry):
+    if dropdown["win"] is not None and dropdown["win"].winfo_exists():
+        return
+
+    win = tk.Toplevel(root)
+    win.overrideredirect(True)
+    win.attributes("-topmost", True) 
+    win.configure(bg="#1c1c1c")
+
+    lb = tk.Listbox(
+    win,
+    activestyle="none",
+    exportselection=False,
+    height=1,
+    borderwidth=0,
+    highlightthickness=1,
+    relief="flat",
+)
+
+    lb.configure(
+        fg="white",
+        bg="#2a2a2a",
+        selectforeground="white",
+        selectbackground="#444444",
+        highlightbackground="#444444",
+    )
+
+    lb.pack(fill="both")
+
+    dropdown["win"] = win
+    dropdown["listbox"] = lb
+    root.bind_all("<Button-1>", lambda e: click_outside(e, anchor_entry), add=True)
+
+def position_dropdown(anchor_entry: ttk.Entry, n_rows: int):
+    win = dropdown["win"]
+    if win is None or not win.winfo_exists():
+        return
+    
+    x = anchor_entry.winfo_rootx()
+    y = anchor_entry.winfo_rooty() + anchor_entry.winfo_height()
+
+    w = anchor_entry.winfo_width()
+    row_h = 22
+    h = max(1, min(n_rows, MAX_SUGGESTIONS)) * row_h + 2
+
+    win.geometry(f"{w}x{h}+{x}+{y}")
+
+def click_outside(event, anchor_entry: ttk.Entry):
+    win = dropdown["win"]
+    if win is None or not win.winfo_exists():
+        return
+
+    widget = event.widget
+    if widget == anchor_entry or str(widget).startswith(str(win)):
+        return
+    select_from_list(preset_entry)
+    on_up_dropdown()
+    
+
+def select_from_list(anchor_entry: ttk.Entry):
+    lb = dropdown["listbox"]
+    if lb is None:
+        return
+    sel = lb.curselection()
+    if not sel:
+        return
+    pid = lb.get(sel[0])
+    anchor_entry.delete(0, tk.END)
+    anchor_entry.insert(0, pid)
+    on_up_dropdown()
+
+    # Preset übernehmen
+    if pid in presets:
+        insert_preset(presets[pid])
+
+def _update_dropdown(anchor_entry: ttk.Entry, query_var: tk.StringVar, preset_ids: list[str]):
+    q_raw = query_var.get()
+    q = only_digits(q_raw)
+
+    # Wenn User was anderes tippt: sofort "sauber" machen (digits only)
+    if q_raw != q:
+        query_var.set(q)
+        return
+
+    if not q:
+        on_up_dropdown()
+        return
+
+    suggestions = rank_presets(q, preset_ids)
+
+    if not suggestions:
+        on_up_dropdown()
+        return
+
+    open_dropdown(anchor_entry)
+    lb = dropdown["listbox"]
+    lb.delete(0, tk.END)
+    for s in suggestions:
+        lb.insert(tk.END, s)
+
+    # erste Zeile selektieren (für Enter)
+    lb.selection_clear(0, tk.END)
+    lb.selection_set(0)
+    lb.activate(0)
+
+    n = len(suggestions)
+    lb.configure(height=min(n, MAX_SUGGESTIONS))  # <<< Listbox schrumpft/wächst
+    position_dropdown(anchor_entry, n)           # <<< Toplevel schrumpft/wächst
+
+
+
+def decimal_conversion(s: str):
+    s = (s or "").strip().replace(",", ".")
+    if not s:
+        return None
+    try:
+        return float(s)
+    except ValueError:
+        return None
+    
 
 # --------------- GUI FUNCTIONS
-def close_window():
+def on_up_window():
     root.destroy()
 
 def open_noise_win():
-    def close_wait_results():
+    def on_up_wait_results():
         wait_win.destroy()
 
         if stop_event.is_set():
@@ -128,10 +283,10 @@ def open_noise_win():
 
     
     stop_event = threading.Event()    
-    def cancel_close():
+    def cancel_on_up():
         stop_event.set()
         wait_win.destroy()
-    wait_win.protocol("WM_DELETE_WINDOW", cancel_close)
+    wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
 
     global pico_plot_time
     pico_plot_time.clear()
@@ -140,10 +295,10 @@ def open_noise_win():
 
     noise_workflow.config_noise(root, txt_speed)
     threading.Thread(target=noise_workflow.noise_measurement, args=(txt_winkel, txt_geschw, 
-                                                   pico_plot_volt, pico_plot_time, stop_event, close_wait_results), daemon=True).start()
+                                                   pico_plot_volt, pico_plot_time, stop_event, on_up_wait_results), daemon=True).start()
 
 def open_linear_win():
-    def close_wait_results(result = None):
+    def on_up_wait_results(result = None):
         global linear_result
         linear_result = result
         wait_win.destroy()
@@ -201,15 +356,15 @@ def open_linear_win():
 
     
     stop_event = threading.Event()    
-    def cancel_close():
+    def cancel_on_up():
         stop_event.set()
         wait_win.destroy()
-    wait_win.protocol("WM_DELETE_WINDOW", cancel_close)
+    wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
 
 
     threading.Thread(target=linear_workflow.linear_measurement, args=(txt_soll, txt_winkel, txt_geschw, txt_d11, 
                                                         txt_d12, txt_d21, txt_d22, txt_d31, txt_d32, 
-                                                            stop_event, close_wait_results), daemon=True).start()
+                                                            stop_event, on_up_wait_results), daemon=True).start()
 
 
 def go_zero(stop_event, on_finish):
@@ -233,12 +388,11 @@ def go_zero(stop_event, on_finish):
                 break
             if line == 'CANCEL':
                 break
-        ser_Arduino.close()
+        ser_Arduino.on_up()
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug
 
     root.after(0, on_finish)
-
 
 def export_pdf():
     save_to_pdf(txt9, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt)
@@ -256,7 +410,7 @@ def export_excel():
     )
 
 def advanced_chk():
-    if autosave_var.get():
+    if advanced_mode.get():
         text_rw_state = 'normal'
     else:
         text_rw_state = 'readonly'
@@ -264,10 +418,43 @@ def advanced_chk():
     for fields in (txt_volt, txt_angle, txt_speed, txt_d11, txt_d12, txt_d21, txt_d22, txt_d31, txt_d32):
         fields.configure(state=text_rw_state)
 
+def autosave_chk():
+    if autosave_var.get():
+        if linear_win:
+            export_excel()
+        if noise_win():
+            export_pdf()
+
+def update_deadzone_ring(*_):
+    global deadzone_after_id
+    if deadzone_after_id is not None:
+        root.after_cancel(deadzone_after_id)
+    deadzone_after_id = root.after(50, instant_deadzone_ring)
+
+def instant_deadzone_ring():
+    global deadzone_after_id
+    deadzone_after_id = None
+
+    d11 = decimal_conversion(d11_var.get())
+    d12 = decimal_conversion(d12_var.get())
+    d21 = decimal_conversion(d21_var.get())
+    d22 = decimal_conversion(d22_var.get())
+    d31 = decimal_conversion(d31_var.get())
+    d32 = decimal_conversion(d32_var.get())
+
+    deadzone_angles = []
+    for angles in (d11, d12, d21, d22, d31, d32):
+        if angles is not None:
+            deadzone_angles.append(angles)
+    
+    mark_deadzone(deadzone_angles)
+
+
+
 
 # --------------- OPEN ZERO WINDOW
 def open_zero_window():
-    def close_wait_results():
+    def on_up_wait_results():
         wait_win.destroy()
 
         if stop_event.is_set():
@@ -312,11 +499,11 @@ def open_zero_window():
     ttk.Label(wait_win, text="Bitte warten...").pack(pady=30)
 
     stop_event = threading.Event()    
-    def cancel_close():
+    def cancel_on_up():
         stop_event.set()
         wait_win.destroy()
-    wait_win.protocol("WM_DELETE_WINDOW", cancel_close)
-    threading.Thread(target=go_zero, args=(stop_event, close_wait_results), daemon=True).start()
+    wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
+    threading.Thread(target=go_zero, args=(stop_event, on_up_wait_results), daemon=True).start()
 
 
 # --------------- GUI
@@ -345,18 +532,7 @@ panel = tk.Label(root, image=img)
 panel.image = img    
 panel.grid(row=0, column=0, columnspan=2,padx=24, pady=24, sticky="nw")
 
-ttk.Label(left_frame, text="Bauteil Preset:").grid(row=0, column=0, sticky="w", pady=(10, 0), padx=(20,0))
-preset_names = list(presets.keys()) 
-preset_combo = ttk.Combobox(left_frame, values=preset_names, state="readonly", width=16)
-preset_combo.grid(row=1, column=0, sticky="w", padx=(20,0))
-preset_combo.current(0)
 
-def on_select_preset(event=None):
-    name = preset_combo.get()
-    if name in presets:
-        insert_preset(presets[name])
-
-preset_combo.bind("<<ComboboxSelected>>", on_select_preset)
 
 
 right_frame.grid_columnconfigure(1, weight=0)
@@ -369,12 +545,15 @@ txt9 = ttk.Entry(left_frame, width=20)
 txt9.grid(row=5, column=0, pady=(0, 10), padx=(20,0))
 
 autosave_var = tk.BooleanVar(value=True)
-chk_autosave = ttk.Checkbutton(left_frame, text="Automatisches Speichern", variable=autosave_var, command=advanced_chk)
+chk_autosave = ttk.Checkbutton(left_frame, text="Automatisches Speichern", variable=autosave_var, command=autosave_chk)
 chk_autosave.grid(row=6, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
 
 advanced_mode = tk.BooleanVar(value=False)
-chk_autosave = ttk.Checkbutton(left_frame, text="Erweiteter Modus", variable=advanced_mode, command=advanced_chk)
-chk_autosave.grid(row=7, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_advanced_mode = ttk.Checkbutton(left_frame, text="Erweiteter Modus", variable=advanced_mode, command=advanced_chk)
+chk_advanced_mode.grid(row=7, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+
+msg = tk.Message(left_frame, width=200, bg="#5F5F5F", fg="#E97777", font='Arial 10 bold')
+
 
 ttk.Label(right_frame, text="Sollspannung in V").grid(row=1, column=0, sticky="w", pady=(40, 0), padx=(10,0))
 txt_volt = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
@@ -395,46 +574,112 @@ txt_speed.grid(row=6, column=0, pady=(0, 0), padx=(20,0))
 txt_speed.insert(0, "60,0")
 txt_speed.configure(state=text_rw_state)
 
+d11_var = tk.StringVar(value="0,0")
 ttk.Label(right_frame, text="Totzone 1 Links in °").grid(row=1, column=1, sticky="w", pady=(40, 0), padx=(10,0))
-txt_d11 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d11 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d11_var)
 txt_d11.grid(row=2, column=1, pady=(0, 0), padx=(20,0))
-txt_d11.insert(0, "5,0")
+txt_d11.insert(0, "0,0")
 txt_d11.configure(state=text_rw_state)
 
+d12_var = tk.StringVar(value="40,0")
 ttk.Label(right_frame, text="Totzone 1 Rechts in °").grid(row=1, column=2, sticky="w", pady=(40, 0), padx=(18,0))
-txt_d12 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d12 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d12_var)
 txt_d12.grid(row=2, column=2, pady=(0, 0), padx=(30,0))
-txt_d12.insert(0, "330,0")
+txt_d12.insert(0, "40,0")
 txt_d12.configure(state=text_rw_state)
 
+d21_var = tk.StringVar(value="140,0")
 ttk.Label(right_frame, text="Totzone 2 Links in °").grid(row=3, column=1, sticky="w", pady=(40, 0), padx=(10,0))
-txt_d21 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d21 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d21_var)
 txt_d21.grid(row=4, column=1, pady=(0, 0), padx=(20,0))
-txt_d21.insert(0, "60,0")
+txt_d21.insert(0, "140,0")
 txt_d21.configure(state=text_rw_state)
 
+d22_var = tk.StringVar(value="190,0")
 ttk.Label(right_frame, text="Totzone 2 Rechts in °").grid(row=3, column=2, sticky="w", pady=(40, 0), padx=(18,0))
-txt_d22 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d22 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d22_var)
 txt_d22.grid(row=4, column=2, pady=(0, 0), padx=(30,0))
-txt_d22.insert(0, "5,0")
+txt_d22.insert(0, "190,0")
 txt_d22.configure(state=text_rw_state)
 
+d31_var = tk.StringVar(value="290,0")
 ttk.Label(right_frame, text="Totzone 3 Links in °").grid(row=5, column=1, sticky="w", pady=(40, 0), padx=(10,0))
-txt_d31 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d31 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d31_var)
 txt_d31.grid(row=6, column=1, pady=(0, 0), padx=(20,0))
-txt_d31.insert(0, "330,0")
+txt_d31.insert(0, "290,0")
 txt_d31.configure(state=text_rw_state)
 
+d32_var = tk.StringVar(value="330,0")
 ttk.Label(right_frame, text="Totzone 3 Rechts in °").grid(row=5, column=2, sticky="w", pady=(40, 0), padx=(18,0))
-txt_d32 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
+txt_d32 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d32_var)
 txt_d32.grid(row=6, column=2, pady=(0, 0), padx=(30,0))
-txt_d32.insert(0, "60,0")
+txt_d32.insert(0, "330,0")
 txt_d32.configure(state=text_rw_state)
+
+for var in (d11_var, d12_var, d21_var, d22_var, d31_var, d32_var):
+    var.trace_add("write", update_deadzone_ring)
+
+ttk.Label(left_frame, text="Teilenummer:").grid(row=0, column=0, sticky="w", pady=(10, 0), padx=(20,0))
+
+search_var = tk.StringVar()
+preset_entry = ttk.Entry(left_frame, textvariable=search_var, width=16)
+preset_entry.grid(row=1, column=0, sticky="w", padx=(20,0))
+preset_ids = list(presets.keys())
+
+search_var.trace_add("write", lambda *_: _update_dropdown(preset_entry, search_var, preset_ids))
+
+def on_enter(event=None):
+    if dropdown["win"] is not None:
+        select_from_list(preset_entry)
+        return "break"
+    # wenn Dropdown zu ist, aber exakter match:
+    pid = preset_entry.get().strip()
+    if pid in presets:
+        insert_preset(presets[pid])
+    return "break"
+
+def on_down(event=None):
+    lb = dropdown["listbox"]
+    if lb is None:
+        return
+    i = lb.curselection()[0] if lb.curselection() else 0
+    j = min(i + 1, lb.size() - 1)
+    lb.selection_clear(0, tk.END)
+    lb.selection_set(j)
+    lb.activate(j)
+    return "break"
+
+def on_up(event=None):
+    lb = dropdown["listbox"]
+    if lb is None:
+        return
+    i = lb.curselection()[0] if lb.curselection() else 0
+    j = max(i - 1, 0)
+    lb.selection_clear(0, tk.END)
+    lb.selection_set(j)
+    lb.activate(j)
+    return "break"
+
+preset_entry.bind("<Return>", on_enter)
+preset_entry.bind("<Down>", on_down)
+preset_entry.bind("<Up>", on_up)
+preset_entry.bind("<Escape>", lambda e: (on_up_dropdown(), "break"))
+
+# Maus-Klick auf Liste übernimmt
+# (muss nach dem ersten Öffnen wirken -> wir binden beim Öffnen in open_dropdown nicht,
+#  daher binden wir global per "after" sobald offen, oder du setzt es in open_dropdown)
+def bind_listbox_click():
+    if dropdown["listbox"] is not None:
+        dropdown["listbox"].bind("<ButtonRelease-1>", lambda e: select_from_list(preset_entry))
+    root.after(200, bind_listbox_click)
+
+bind_listbox_click()
+
 
 # txtgo = ttk.Entry(left_frame, width=20, validate="key", validatecommand=vcmd)
 # txtgo.grid(row=3, column=1, pady=(0, 0), padx=(0,0))
 
-#ttk.Button(left_frame, text="Abbrechen", command=close_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
+#ttk.Button(left_frame, text="Abbrechen", command=on_up_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
 #ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=8, column=0, pady=(158, 5), padx=(20,0), ipadx=10)
 ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
@@ -453,11 +698,12 @@ ttk.Button(right_frame, text="Linearität", command=open_linear_win,width=12).gr
 txt_volt.bind("<Return>", lambda event: open_noise_win())
 txt_angle.bind("<Return>", lambda event: open_noise_win())
 txt9.bind("<Return>", lambda event: open_noise_win())
-root.bind("<Escape>", lambda event: close_window())
+root.bind("<Escape>", lambda event: on_up_window())
 
 
 # --------------- MAIN
 build_ring(ring_area)
-on_select_preset()
+
+instant_deadzone_ring()
 sv_ttk.set_theme("dark")
 root.mainloop()

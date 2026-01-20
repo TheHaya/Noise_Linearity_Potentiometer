@@ -35,7 +35,7 @@ def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#969696"):
 
 def clear_deadzone_marks():
     global deadzone_iids
-    for iid in noise_times:
+    for iid in deadzone_iids:
         ring_canvas.delete(iid)
     deadzone_iids.clear()
 
@@ -44,8 +44,9 @@ def mark_deadzone(angles_deg, ring_size = 300, ring_thickness = 4):
     if ring_canvas is None:
         return
 
-    fix_direction = -90
-    L = 50
+    fix_direction = 90
+    fix_mech_angle = (360-330)/2
+    L = 20
 
     clear_deadzone_marks()
 
@@ -53,12 +54,12 @@ def mark_deadzone(angles_deg, ring_size = 300, ring_thickness = 4):
     radius = (ring_size // 2) - 18
 
     for ang in angles_deg:
-        rad = math.radians(ang + fix_direction)
+        rad = math.radians(ang + fix_direction + fix_mech_angle)
         x0 = canv_x + (radius + ring_thickness/2 - L/2) * math.cos(rad)
         y0 = canv_y + (radius + ring_thickness/2 - L/2) * math.sin(rad)
         x1 = canv_x + (radius + L + L/2) * math.cos(rad)
         y1 = canv_y + (radius + L + L/2) * math.sin(rad)
-        iid = ring_canvas.create_line(x0, y0, x1, y1, width=8, fill=color)
+        iid = ring_canvas.create_line(x0, y0, x1, y1, width=4, fill="#ffd000")
         deadzone_iids.append(iid)
 
 def mark_ends(total_ticks, ring_size = 300, ring_thickness = 4):
