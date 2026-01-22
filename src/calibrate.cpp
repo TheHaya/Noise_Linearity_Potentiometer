@@ -15,6 +15,7 @@ const float CHECK_ENDS_TOL_DEG = 10;
 int32_t start_tick, end_tick, mid_tick;
 int32_t sim_mercy_start, sim_mercy_end;
 
+float ist_start_volt, ist_end_volt, ist_mid_volt;
 float slow_rpm = 5;
 float user_rpm, rpm1, rpm2, rpm3;
 float real_time1 = 0, real_time2 = 0, real_time3 = 0;
@@ -25,6 +26,101 @@ float delay1, delay2, delay3;
 
 
 // --------------- CALIBRATIONS
+float corr_measure(float current_volt){
+  cancelled = false;
+  Serial.println("VOLTR");
+  delay(50);
+  if(cancelled == false){
+    for(;;){
+    String VCommand = Serial.readStringUntil('\n');
+    VCommand.trim();
+      if(VCommand.startsWith("ISTV:")){
+        current_volt = VCommand.substring(5).toFloat();
+        break;
+      }
+    }
+  }
+  return current_volt;
+}
+
+
+// dead_direction 0 -> deadzone links von position //////--- ;;; 1 -> rechts von position ---//////
+float correction_movement(float &current_volt, float goal_volt, 
+                          int dead_direction, int timeout){
+  const float v_tol = 0.001f;        
+  const int32_t TICK_TOL = 1;
+  int32_t low, high;
+  current_volt = corr_measure(current_volt);
+
+  while (!cancelled && fabsf(current_volt - goal_volt) <= v_tol) {
+    int32_t t = 0;
+    int32_t back = 0;
+    if(dead_direction == 0){ // dead links
+      t = get_tick_position() - 20;
+      back = t + 1000;
+    } else if(dead_direction == 1){ // dead rechts
+      t = get_tick_position() + 20;
+      back = t - 1000;
+    }
+    drive_to(back, user_rpm);
+    reached_goal(back, 2);
+    drive_to(t, user_rpm);
+    reached_goal(t, 2);
+    current_volt = corr_measure(current_volt);
+  }
+
+  high = get_tick_position();
+
+  while (!cancelled && fabsf(current_volt - goal_volt) > v_tol) {
+    int32_t t = 0;
+    int32_t back = 0;
+    if(dead_direction == 0){
+      t = get_tick_position() + 20;
+      back = t + 1000;
+    } else if(dead_direction == 1){
+      t = get_tick_position() - 20;
+      back = t - 1000;
+    }
+    drive_to(back, user_rpm);
+    reached_goal(back, 2);
+    drive_to(t, user_rpm);
+    reached_goal(t, 2);
+    current_volt = corr_measure(current_volt);
+  }
+
+  low = get_tick_position();
+
+  while (!cancelled && abs(high - low) > TICK_TOL) {
+    int32_t mid;
+    int32_t back;
+    if(dead_direction == 0){
+      mid = (high + low) / 2;
+      back = mid + 1000;
+    } else if(dead_direction == 1){
+      mid = (high + low) / 2;
+      back = mid - 1000;
+    }
+    drive_to(back, user_rpm);
+    reached_goal(back, 2);
+    drive_to(mid, user_rpm);
+    reached_goal(mid, 2);
+
+    current_volt = corr_measure(current_volt);
+    if ((current_volt - goal_volt) > v_tol) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+  }
+  float edge_deg = 0;
+    if(dead_direction == 0){
+      edge_deg = tick_to_deg(low);
+    } else if(dead_direction == 1){
+      edge_deg = tick_to_deg(high);
+    }
+  return edge_deg;
+}
+
 void calibrate_currents(){
   drive_to(CALIBRATE_CURRENT_CW, user_rpm);
   reached_goal(CALIBRATE_CURRENT_CW, 2, 1);
@@ -71,14 +167,18 @@ void calibrate_currents(){
 
 
 // --------------- MECHANICAL ENDS
-void check_ends(){
+void check_ends(bool uses_dmm){
   int32_t check_mercy_start = deg_to_tick(360 - target_deg_total + CHECK_ENDS_TOL_DEG);
   int32_t check_mercy_end = deg_to_tick(target_deg_total - CHECK_ENDS_TOL_DEG);
+  
+  if(uses_dmm){ist_mid_volt = corr_measure(ist_mid_volt);}
+
   drive_to(check_mercy_start, rpm3);
   reached_goal(check_mercy_start, 3);
   drive_to(CHECK_END_START, slow_rpm);
   if(reached_goal(CHECK_END_START, 0) == false){
     start_tick = stopped_tick;
+    if(uses_dmm){ist_start_volt = corr_measure(ist_start_volt);}
   }
   for(int i = 0; i < 5; i++){
     dxl.ledOff(1);
@@ -91,13 +191,17 @@ void check_ends(){
   drive_to(CHECK_END_END, slow_rpm);
   if(reached_goal(CHECK_END_END, 0) == false){
     end_tick = stopped_tick;
+    if(uses_dmm){ist_end_volt = corr_measure(ist_end_volt);}
   }
   
   sim_mercy_start = start_tick + MERCY_TOLERANCE_TICK;
   sim_mercy_end = end_tick - MERCY_TOLERANCE_TICK;
+  uint32_t total_distance = abs(end_tick - start_tick);
   uint32_t sim_distance = abs(sim_mercy_end - sim_mercy_start);
-  Serial.print("ANGLE");
+  Serial.print("TICKS");
   Serial.println(sim_distance);
+  Serial.print("ANGLE");
+  Serial.println(tick_to_deg(total_distance));
   for(int i = 0; i < 5; i++){
     dxl.ledOff(1);
     delay(100);

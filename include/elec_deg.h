@@ -3,6 +3,7 @@
 
 
 // --------------- VARIABLES
+extern const size_t ELEC_ARRAY_SIZE;
 extern int32_t elec_deg;
 
 // --------------- ELEC_DEG_FUNCTIONS

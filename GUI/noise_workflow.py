@@ -94,12 +94,12 @@ def calc_rel_angle(time_arr, turn_arr, angle_arr):
 
 
 # --------------- NOISE FUNCTIONS
-def config_noise(app_root, txt_speed_entry):
+def config(app_root, txt_speed_entry):
     global root, txt_speed
     root = app_root
     txt_speed = txt_speed_entry
 
-def noise_measurement(ges_w, ges_s, pico_plot_volt, pico_plot_time, stop_event, on_finish):
+def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_plot_time=None, stop_event=None, on_finish=None):
     try:
         global pico_pdf_time
         pico_pdf_time = []
@@ -132,16 +132,16 @@ def noise_measurement(ges_w, ges_s, pico_plot_volt, pico_plot_time, stop_event, 
 
             line = ser_Arduino.readline().decode('utf-8').strip()
             #print("Empfangen:", line) #debug
-            if line.startswith("ANGLE"):
+            if line.startswith("TICKS"):
                 global total_ticks
                 total_ticks = float(line[5::])
 
             if line == 'NOISE_READY':
                 print("Config Pico")
                 pico_runner.config_pico(
-                    txt_s=lambda: txt_speed.get(),      # callable
-                    calc_d=calc_duration,            # callable
-                    total_t=lambda: total_ticks          # callable
+                    txt_s=lambda: txt_speed.get(),
+                    calc_d=calc_duration,
+                    total_t=lambda: total_ticks
                 )
                 print("start run_pico")
                 pico_runner.run_pico(ser_Arduino, pico_time, pico_volt, pico_pdf_time, pico_plot_volt, pico_plot_time)

@@ -23,10 +23,8 @@ bool error_midDead;
 bool error_lin_index[print_array_size];
 
 int32_t real_tick_total, soll_tick_total;
-float soll_deg_total;
 float d11_deg, d12_deg, d21_deg, d22_deg, d31_deg, d32_deg;
 int32_t d11_tick, d12_tick, d21_tick, d22_tick, d31_tick, d32_tick;
-float ist_start_volt, ist_end_volt, ist_mid_volt;
 float ccw_links, ccw_rechts, cw_links, cw_rechts, aktiv_ccw, aktiv_cw, ges_aktiv;
 float real_mid_deg;
 float lin_min, lin_max;
@@ -62,105 +60,18 @@ float dead_soll_volt_deg(float deg, float tar_volt,
   return tar_volt;
 }
 
-float corr_measure(float current_volt){
-  cancelled = false;
-  Serial.println("VOLTR");
-  delay(50);
-  if(cancelled == false){
-    for(;;){
-    String VCommand = Serial.readStringUntil('\n');
-    VCommand.trim();
-      if(VCommand.startsWith("ISTV:")){
-        current_volt = VCommand.substring(5).toFloat();
-        break;
-      }
-    }
-  }
-  return current_volt;
-}
-
-// dead_direction 0 -> deadzone links von position //////--- ;;; 1 -> rechts von position ---//////
-float correction_movement(float &current_volt, float goal_volt, 
-                          int dead_direction, int timeout){
-  const float v_tol = 0.001f;        
-  const int32_t tick_tol = 1;
-  int32_t low, high;
-  current_volt = corr_measure(current_volt);
-
-  while (!cancelled && fabsf(current_volt - goal_volt) <= v_tol) {
-    int32_t t = 0;
-    int32_t back = 0;
-    if(dead_direction == 0){ // dead links
-      t = get_tick_position() + 20;
-      back = t - 50;
-    } else if(dead_direction == 1){ // dead rechts
-      t = get_tick_position() - 20;
-      back = t + 50;
-    }
-    drive_to(back, user_rpm);
-    reached_goal(back, 2);
-    drive_to(t, user_rpm);
-    reached_goal(t, 2);
-    current_volt = corr_measure(current_volt);
-  }
-
-  high = get_tick_position();
-
-  while (!cancelled && fabsf(current_volt - goal_volt) > v_tol) {
-    int32_t t = 0;
-    int32_t back = 0;
-    if(dead_direction == 0){
-      t = get_tick_position() - 10;
-      back = t - 50;
-    } else if(dead_direction == 1){
-      t = get_tick_position() + 10;
-      back = t + 50;
-    }
-    drive_to(back, user_rpm);
-    reached_goal(back, 2);
-    drive_to(t, user_rpm);
-    reached_goal(t, 2);
-    current_volt = corr_measure(current_volt);
-  }
-
-  low = get_tick_position();
-
-  while (!cancelled && abs(high - low) > tick_tol) {
-    int32_t mid = (high + low) / 2;
-    int32_t back = mid + 50;
-    drive_to(back, user_rpm);
-    reached_goal(back, 2);
-    drive_to(mid, user_rpm);
-    reached_goal(mid, 2);
-
-    current_volt = corr_measure(current_volt);
-    if (fabsf(current_volt - goal_volt) > v_tol) {
-      high = mid;
-    } else {
-      low = mid;
-    }
-  }
-  float edge_deg = 0;
-    if(dead_direction == 0){
-      edge_deg = tick_to_deg(low);
-    } else if(dead_direction == 1){
-      edge_deg = tick_to_deg(high);
-    }
-  return edge_deg;
-}
-
 void linearity_movement(){
   // 1° = 11.375 ticks
   // 1 Tick = 0.08791208791 °
   float real_deg_total = tick_to_deg(real_tick_total);
   if(real_deg_total < 298.0 || real_deg_total > 332.0) error_mech = true;
   // real_tick_total = deg_to_tick(real_deg_total); // ca. 331.2°
-  soll_tick_total = deg_to_tick(soll_deg_total); // ca. 330°
+  soll_tick_total = deg_to_tick(target_deg_total); // ca. 330°
   real_tick_total = end_tick - start_tick;
 
   float mid_degs = 25;
   real_mid_deg = real_deg_total/2;
-  float soll_mid_deg = soll_deg_total/2;
+  float soll_mid_deg = target_deg_total/2;
   int32_t mid_steps = deg_to_tick(25); // ca. 284 Ticks
   int32_t real_mid = real_tick_total/2;
   int32_t offset_von_soll = (real_tick_total-soll_tick_total) / 2;

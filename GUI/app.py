@@ -11,6 +11,8 @@ from export import save_to_pdf, save_to_excel
 from ring import build_ring, mark_deadzone
 import noise_workflow
 import linear_workflow
+import mech_ends_workflow
+import elec_deg_workflow
 
 
 # --------------- APP VARIABLES 
@@ -226,7 +228,7 @@ def decimal_conversion(s: str):
 def on_up_window():
     root.destroy()
 
-def open_noise_win():
+def open_measurement_win(mode, mode_args):
     def on_up_wait_results():
         wait_win.destroy()
 
@@ -254,6 +256,7 @@ def open_noise_win():
         txt_soll = float(txt_volt.get().strip().replace(',', '.'))
         txt_winkel = float(txt_angle.get().strip().replace(',', '.'))
         txt_geschw = float(txt_speed.get().strip().replace(',', '.'))
+        
 
     except ValueError:
         error_win = tk.Toplevel(root)
@@ -288,14 +291,34 @@ def open_noise_win():
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
 
+    threading.Thread(target=mode.measurement, args=(txt_soll, txt_winkel, txt_geschw, *mode_args, stop_event, on_up_wait_results), daemon=True).start()
+
+def start_noise_measurement():
     global pico_plot_time
     pico_plot_time.clear()
     global pico_plot_volt
     pico_plot_volt.clear()
+    
+    mode_args = (pico_plot_volt, pico_plot_time)
+    noise_workflow.config(root, txt_speed)
+    open_measurement_win(noise_workflow, mode_args)
 
-    noise_workflow.config_noise(root, txt_speed)
-    threading.Thread(target=noise_workflow.noise_measurement, args=(txt_winkel, txt_geschw, 
-                                                   pico_plot_volt, pico_plot_time, stop_event, on_up_wait_results), daemon=True).start()
+def start_linear_measurement():
+    mode_args = (txt_d11, txt_d12, txt_d21, txt_d22, txt_d31, txt_d32)
+    open_measurement_win(linear_workflow, mode_args)
+
+def start_mech_ends_measurement():
+    mode_args = ()
+    open_measurement_win(mech_ends_workflow, mode_args)
+
+def start_elec_deg_measurement():
+    d12 = decimal_conversion(d12_var.get())
+    d21 = decimal_conversion(d21_var.get())
+    d22 = decimal_conversion(d22_var.get())
+    d31 = decimal_conversion(d31_var.get())
+    mode_args = (d12, d21, d22, d31)
+    elec_deg_workflow.config(root, txt_speed)
+    open_measurement_win(elec_deg_workflow, mode_args)
 
 def open_linear_win():
     def on_up_wait_results(result = None):
@@ -684,10 +707,10 @@ bind_listbox_click()
 ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=8, column=0, pady=(158, 5), padx=(20,0), ipadx=10)
 ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 
-ttk.Button(right_frame, text="Mech. Enden", command=open_zero_window,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
-ttk.Button(right_frame, text="Elektr. Winkel", command=open_zero_window,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
-ttk.Button(right_frame, text="Rauschen", command=open_noise_win,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
-ttk.Button(right_frame, text="Linearität", command=open_linear_win,width=12).grid(row=8, column=3, pady=(180, 5), padx=(20,0))
+ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
+ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
+ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
+ttk.Button(right_frame, text="Linearität", command=start_linear_measurement,width=12).grid(row=8, column=3, pady=(180, 5), padx=(20,0))
 # ttk.Button(left_frame, text="Position 0", command=open_zero_window).grid(row=8, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Links", command=go_left).grid(row=6, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Rechts", command=go_Right).grid(row=7, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
@@ -695,9 +718,7 @@ ttk.Button(right_frame, text="Linearität", command=open_linear_win,width=12).gr
 # ttk.Button(left_frame, text="Curr Position", command=curr_Pos).grid(row=8, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="Go To", command=goto).grid(row=4, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 
-txt_volt.bind("<Return>", lambda event: open_noise_win())
-txt_angle.bind("<Return>", lambda event: open_noise_win())
-txt9.bind("<Return>", lambda event: open_noise_win())
+
 root.bind("<Escape>", lambda event: on_up_window())
 
 

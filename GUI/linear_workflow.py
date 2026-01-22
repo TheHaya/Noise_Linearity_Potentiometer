@@ -15,12 +15,13 @@ def RegexMultimeter(output):
         return match.group(0)
     return None
 
-def config_linear(app_root, txt_speed_entry):
+def config(app_root, txt_speed_entry):
     global root, txt_speed
     root = app_root
     txt_speed = txt_speed_entry
 
-def linear_measurement(ges_v, ges_w, ges_s, d11, d12, d21, d22, d31, d32, stop_event, on_finish):
+def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None, 
+                d21=None, d22=None, d31=None, d32=None, stop_event=None, on_finish=None):
     try:
         ser_Arduino = open_first_available(baud=115200, timeout=5)
         try:
@@ -70,7 +71,7 @@ def linear_measurement(ges_v, ges_w, ges_s, d11, d12, d21, d22, d31, d32, stop_e
                 break
 
             line = ser_Arduino.readline().decode('utf-8').strip()
-            print("Empfangen:", line) #debug
+            #print("Empfangen:", line) #debug
             if line == 'VOLTR':
                 ser_Multi.reset_input_buffer()
                 ser_Multi.reset_output_buffer()
