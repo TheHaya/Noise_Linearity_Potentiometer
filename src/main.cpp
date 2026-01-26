@@ -62,13 +62,13 @@ void loop(){
       drive_to(ZERO_TICK, user_rpm);
       reached_goal(ZERO_TICK, 2);
       dxl.ledOff(DID);
+      Serial.println("ENDS_FINISH");
     }
 
      if(command == "ELEC_DEG_GO"){
       dxl_init();
       calibrate_currents();
       check_ends(true);
-      
       if(cancelled == false){
         Serial.println("ELEC_DEG_READY");
       } else{
@@ -78,7 +78,6 @@ void loop(){
     }
     if(command == "ELEC_DEG_START"){
       elec_deg_movement();
-
       if(cancelled == true){
         Serial.println("CANCEL");
         cancelled = false;
@@ -86,6 +85,7 @@ void loop(){
       drive_to(ZERO_TICK, user_rpm);
       reached_goal(ZERO_TICK, 2);
       dxl.ledOff(DID);
+      Serial.println("ELEC_DEG_FINISH");
     }
 
     if(command == "NOISE_GO"){
@@ -110,6 +110,7 @@ void loop(){
       drive_to(ZERO_TICK, user_rpm);
       reached_goal(ZERO_TICK, 2);
       dxl.ledOff(DID);
+      Serial.println("NOISE_FINISH");
     }
 
     if(command == "LINEAR_GO"){
@@ -135,6 +136,7 @@ void loop(){
       drive_to(ZERO_TICK, user_rpm);
       reached_goal(ZERO_TICK, 2);
       dxl.ledOff(DID);
+      Serial.println("LINEAR_FINISH");
     }
   }
 }

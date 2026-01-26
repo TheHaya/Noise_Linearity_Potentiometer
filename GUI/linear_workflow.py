@@ -145,6 +145,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
                     continue
             elif line == 'LINEAR_READY':
                 ser_Arduino.write(b"LINEAR_START\n")
+            elif line == 'LINEAR_FINISH':
+                break
             elif line == 'CANCEL':
                 break
             
@@ -165,7 +167,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
     "error_lin_idx": error_lin_idx}
 
     if root is not None:
-        root.after(0, lambda: on_finish(result))
+        root.after(0, lambda: on_finish)
 
     else:
-        on_finish(result)
+        on_finish()

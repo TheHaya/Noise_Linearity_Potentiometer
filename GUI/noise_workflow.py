@@ -156,6 +156,8 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
                 set_circle_text(pico_angle)
                 break
 
+            elif line == 'NOISE_FINISH':
+                break
             elif line == 'CANCEL':
                 break
 

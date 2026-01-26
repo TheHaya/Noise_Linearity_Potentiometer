@@ -304,7 +304,14 @@ def start_noise_measurement():
     open_measurement_win(noise_workflow, mode_args)
 
 def start_linear_measurement():
-    mode_args = (txt_d11, txt_d12, txt_d21, txt_d22, txt_d31, txt_d32)
+    d11 = decimal_conversion(d11_var.get())
+    d12 = decimal_conversion(d12_var.get())
+    d21 = decimal_conversion(d21_var.get())
+    d22 = decimal_conversion(d22_var.get())
+    d31 = decimal_conversion(d31_var.get())
+    d32 = decimal_conversion(d32_var.get())
+    mode_args = (d11, d12, d21, d22, d31, d32)
+    linear_workflow.config(root, txt_speed)
     open_measurement_win(linear_workflow, mode_args)
 
 def start_mech_ends_measurement():
@@ -447,6 +454,18 @@ def autosave_chk():
             export_excel()
         if noise_win():
             export_pdf()
+
+def measurement_chk():
+    mode = chk_meas_mode.get()
+    if mode == "mech":
+        start_mech_ends_measurement()
+    elif mode == "elec":
+        start_elec_deg_measurement() 
+    elif mode == "noise":
+        start_noise_measurement() 
+    elif mode == "linear":
+        start_linear_measurement() 
+
 
 def update_deadzone_ring(*_):
     global deadzone_after_id
@@ -699,18 +718,29 @@ def bind_listbox_click():
 bind_listbox_click()
 
 
+chk_meas_mode = tk.StringVar(value="mech")
+chk_meas_ends = ttk.Radiobutton(right_frame, text="Mech. Enden", style='TRadiobutton', variable=chk_meas_mode, value="mech")
+chk_meas_ends.grid(row=8, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_elec_deg = ttk.Radiobutton(right_frame, text="Elektr. Winkel", style='TRadiobutton', variable=chk_meas_mode, value="elec")
+chk_elec_deg.grid(row=8, column=1, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_noise = ttk.Radiobutton(right_frame, text="Rauschen", style='TRadiobutton', variable=chk_meas_mode, value="noise")
+chk_noise.grid(row=8, column=2, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_linearity = ttk.Radiobutton(right_frame, text="Linearität", style='TRadiobutton', variable=chk_meas_mode, value="linear")
+chk_linearity.grid(row=8, column=3, sticky="w", pady=(20, 0), padx=(20, 0))
+
 # txtgo = ttk.Entry(left_frame, width=20, validate="key", validatecommand=vcmd)
 # txtgo.grid(row=3, column=1, pady=(0, 0), padx=(0,0))
 
 #ttk.Button(left_frame, text="Abbrechen", command=on_up_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
 #ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
-ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=8, column=0, pady=(158, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=8, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 
-ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
-ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
-ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
-ttk.Button(right_frame, text="Linearität", command=start_linear_measurement,width=12).grid(row=8, column=3, pady=(180, 5), padx=(20,0))
+#ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
+#ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
+#ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
+ttk.Button(right_frame, text="Messen", command=measurement_chk,width=12).grid(row=8, column=3, pady=(180, 5), padx=(20,0))
+
 # ttk.Button(left_frame, text="Position 0", command=open_zero_window).grid(row=8, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Links", command=go_left).grid(row=6, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Rechts", command=go_Right).grid(row=7, column=1, pady=(4, 5), padx=(0,0), ipadx=40)

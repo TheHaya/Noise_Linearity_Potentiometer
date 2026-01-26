@@ -41,7 +41,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
                 print("Gesamtwinkel ist: ")
                 print(total_angle)
                 break
-
+            elif line == 'ENDS_FINISH':
+                break
             elif line == 'CANCEL':
                 break
 

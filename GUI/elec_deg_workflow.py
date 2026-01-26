@@ -84,11 +84,12 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
                     print("Problem bei Response")
                     None
                 continue
-            
             elif line == 'ELEC_DEG_READY':
                 print("ELEC_DEG_READY empfangen")
                 ser_Arduino.write(b"ELEC_DEG_START\n")
                 print("Sende: ELEC_DEG_START")
+            elif line == 'ELEC_DEG_FINISH':
+                break
             elif line == 'CANCEL':
                 break
             

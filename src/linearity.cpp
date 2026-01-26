@@ -63,11 +63,13 @@ float dead_soll_volt_deg(float deg, float tar_volt,
 void linearity_movement(){
   // 1° = 11.375 ticks
   // 1 Tick = 0.08791208791 °
+  real_tick_total = end_tick - start_tick;
+  soll_tick_total = deg_to_tick(target_deg_total); // ca. 330°
   float real_deg_total = tick_to_deg(real_tick_total);
   if(real_deg_total < 298.0 || real_deg_total > 332.0) error_mech = true;
   // real_tick_total = deg_to_tick(real_deg_total); // ca. 331.2°
-  soll_tick_total = deg_to_tick(target_deg_total); // ca. 330°
-  real_tick_total = end_tick - start_tick;
+  
+  
 
   float mid_degs = 25;
   real_mid_deg = real_deg_total/2;
@@ -131,7 +133,7 @@ void linearity_movement(){
        }
 
     // SOLL-WINKEL
-    if(rel_tick == real_mid-9){
+    if(rel_tick == real_mid){
       print_soll_deg[i] = soll_Deg[i]-real_mid_deg;
     } else if(rel_tick == mercy_end || rel_tick == mercy_start){
        print_soll_deg[i] = soll_Deg[i]-real_mid_deg;
@@ -162,16 +164,16 @@ void linearity_movement(){
     } else if(rel_tick == mercy_start){
       print_ist_deg[i] = -real_mid_deg;
     } else if(rel_tick == d12_tick + offset_von_soll){
-      print_ist_deg[i] = correction_movement(print_ist_volt[i], ist_start_volt, 0) - tick_to_deg(start_tick) - real_mid_deg;
+      print_ist_deg[i] = correction_movement(print_ist_volt[i], ist_start_volt, 0, 0) - tick_to_deg(start_tick) - real_mid_deg;
       ccw_links = print_ist_deg[i];
     } else if(rel_tick == d21_tick + offset_von_soll){
-      print_ist_deg[i] = correction_movement(print_ist_volt[i], ist_mid_volt, 1) - tick_to_deg(start_tick) - real_mid_deg;
+      print_ist_deg[i] = correction_movement(print_ist_volt[i], ist_mid_volt, 1, 0) - tick_to_deg(start_tick) - real_mid_deg;
       ccw_rechts = print_ist_deg[i];
     } else if(rel_tick == d22_tick + offset_von_soll){
-      print_ist_deg[i] = correction_movement(print_ist_volt[i], ist_mid_volt, 0) - tick_to_deg(start_tick) - real_mid_deg;
+      print_ist_deg[i] = correction_movement(print_ist_volt[i], ist_mid_volt, 0, 1) - tick_to_deg(start_tick) - real_mid_deg;
       cw_links = print_ist_deg[i];
     } else if(rel_tick == d31_tick + offset_von_soll){
-      print_ist_deg[i] = correction_movement(print_ist_volt[i], ist_end_volt, 1) - tick_to_deg(start_tick) - real_mid_deg;
+      print_ist_deg[i] = correction_movement(print_ist_volt[i], ist_end_volt, 1, 1) - tick_to_deg(start_tick) - real_mid_deg;
       cw_rechts = print_ist_deg[i];
     }
     else{
