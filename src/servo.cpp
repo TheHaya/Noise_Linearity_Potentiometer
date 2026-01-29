@@ -4,6 +4,7 @@
 #include <math.h>
 #include <elapsedMillis.h>
 #include <array>
+#include <vector>
 
 // --------------- DYNAMIXEL VARIABLES
 #define DXL_SERIAL Serial1
@@ -32,7 +33,8 @@ float cur_tolerance = 5;
 bool cancelled;
 int32_t cur_pos;
 float cur_cur;
-
+using std::vector;
+vector<int> modes;
 
 
 int32_t deg_to_tick(float deg){
@@ -64,6 +66,7 @@ void dxl_init(){
   cal_cur1 = 0;
   cal_cur2 = 0;
   cal_cur3 = 0;
+  modes.clear();
 }
 
 

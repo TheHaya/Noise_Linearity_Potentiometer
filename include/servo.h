@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <Dynamixel2Arduino.h>
+#include <vector>
 
 // --------------- DYNAMIXEL VARIABLES
 #define DXL_SERIAL Serial1
@@ -31,6 +32,8 @@ extern bool cancelled;
 extern int32_t cur_pos;
 extern float cur_cur;
 
+using std::vector;
+extern vector<int> modes;
 
 // --------------- HELPER FUNCTIONS
 int32_t deg_to_tick(float deg);

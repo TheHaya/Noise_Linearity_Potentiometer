@@ -5,7 +5,7 @@ from PIL import ImageTk, Image
 import sv_ttk
 import threading, json, time
 
-from serial_client import open_first_available
+
 from pico_runner import config_pico
 from export import save_to_pdf, save_to_excel
 from ring import build_ring, mark_deadzone
@@ -228,6 +228,8 @@ def decimal_conversion(s: str):
 def on_up_window():
     root.destroy()
 
+
+"""
 def open_measurement_win(mode, mode_args):
     def on_up_wait_results():
         wait_win.destroy()
@@ -275,7 +277,7 @@ def open_measurement_win(mode, mode_args):
         ok_button.focus_set()
         error_win.bind("<Return>", lambda event: ok_button.invoke())
         return
-        
+    
     wait_win = tk.Toplevel(root)
     wait_win.title("Datenmessung")
     wait_win.geometry(f"{scr_wid//8}x{scr_hei//8}+{scr_wid//2}+{scr_hei//2}")
@@ -291,7 +293,10 @@ def open_measurement_win(mode, mode_args):
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
 
-    threading.Thread(target=mode.measurement, args=(txt_soll, txt_winkel, txt_geschw, *mode_args, stop_event, on_up_wait_results), daemon=True).start()
+    for modes in 
+        threading.Thread(target=mode.measurement, args=(txt_soll, txt_winkel, txt_geschw, *mode_args, stop_event), daemon=True).start()
+
+    on_up_wait_results()
 
 def start_noise_measurement():
     global pico_plot_time
@@ -326,103 +331,83 @@ def start_elec_deg_measurement():
     mode_args = (d12, d21, d22, d31)
     elec_deg_workflow.config(root, txt_speed)
     open_measurement_win(elec_deg_workflow, mode_args)
+"""
 
-def open_linear_win():
-    def on_up_wait_results(result = None):
-        global linear_result
-        linear_result = result
-        wait_win.destroy()
-
-        if stop_event.is_set():
-            global cancelled_win
-            
-            cancelled_win = tk.Toplevel(root)
-            cancelled_win.title("Abbruch")
-            cancelled_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
-            cancelled_win.grid_rowconfigure(0, weight=1)
-            cancelled_win.grid_rowconfigure(1, weight=1)
-            cancelled_win.grid_columnconfigure(0, weight=1)
-            
-            ttk.Label(cancelled_win, text="Vorgang wurde abgebrochen.").grid(row=0, column=0)
-            ok_button = ttk.Button(cancelled_win, text="OK", command=cancelled_win.destroy)
-            ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
-            ok_button.focus_set()  
-            cancelled_win.bind("<Return>", lambda event: ok_button.invoke())
-        else:
-            global linear_win
-            if linear_win is not None and linear_win.winfo_exists():
-                linear_win.destroy()
-
-    try:
-        txt_soll = float(txt_volt.get().strip().replace(',', '.'))
-        txt_winkel = float(txt_angle.get().strip().replace(',', '.'))
-        txt_geschw = float(txt_speed.get().strip().replace(',', '.'))
-
-    except ValueError:
-        error_win = tk.Toplevel(root)
-        error_win.title("Falsche Eingabe!")
-        error_win.geometry(f"{scr_wid//8}x{scr_hei//8}+{scr_wid//2}+{scr_hei//2}")
-        error_win.resizable(False, False)
-        error_win.transient(root)
-        error_win.grab_set()
-        error_win.grid_rowconfigure(0, weight=1)
-        error_win.grid_rowconfigure(1, weight=1)
-        error_win.grid_columnconfigure(0, weight=1)
-        error_win.bell()
-        ttk.Label(error_win, text="Leeres Feld gefunden!").grid(row=0, column=0)
-        ok_button = ttk.Button(error_win, text="OK", command=error_win.destroy)
-        ok_button.grid(row=1, column=0, ipadx=20)
-        ok_button.focus_set()
-        error_win.bind("<Return>", lambda event: ok_button.invoke())
-        return
-        
+def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     wait_win = tk.Toplevel(root)
     wait_win.title("Datenmessung")
     wait_win.geometry(f"{scr_wid//8}x{scr_hei//8}+{scr_wid//2}+{scr_hei//2}")
     wait_win.transient(root)
     wait_win.grab_set()
     wait_win.resizable(False, False)
-    ttk.Label(wait_win, text="Bitte warten...").pack(pady=30)
-
     
-    stop_event = threading.Event()    
-    def cancel_on_up():
+    status_label = ttk.Label(wait_win, text="Bitte warten...")
+    status_label.pack(pady=30)
+
+    stop_event = threading.Event()   
+
+    def cancel():
         stop_event.set()
         wait_win.destroy()
-    wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
+    wait_win.protocol("WM_DELETE_WINDOW", cancel)
 
 
-    threading.Thread(target=linear_workflow.linear_measurement, args=(txt_soll, txt_winkel, txt_geschw, txt_d11, 
-                                                        txt_d12, txt_d21, txt_d22, txt_d31, txt_d32, 
-                                                            stop_event, on_up_wait_results), daemon=True).start()
+    def worker():    
+        try:
+            for i, (workflow, workflow_args, title, needs_config) in enumerate(modes, start=1):
+                if stop_event.is_set():
+                    break
+                
+                root.after(0, lambda t=title, i=i, n=len(modes):
+                            status_label.configure(text=f"Messung {i}/{n}: {t}"))
+                
+                if needs_config:
+                    workflow.config(root, txt_speed)
 
+                workflow.measurement(meas_volt, meas_angle, meas_speed, *workflow_args ,stop_event, lambda: None)
+        
+        except Exception as e:
+            print("Fehler bei measurements:", e)
 
-def go_zero(stop_event, on_finish):
+        root.after(0, wait_win.destroy)
+    
+    threading.Thread(target=worker, daemon=True).start()
+
+def measurement_chk():
     try:
-        ser_Arduino = open_first_available(baud=115200, timeout=5)
-        ser_Arduino.reset_input_buffer() 
-        ser_Arduino.reset_output_buffer()
-        time.sleep(1)
-        print("zero geschrieben")
-        ser_Arduino.write(b"ZERO\n")
-        ser_Arduino.timeout = 0.1
-        while True:
-            if stop_event.is_set():
-                ser_Arduino.write(b"STOP\n")
-                ser_Arduino.flush()
-                time.sleep(0.2)
-                break
-            line = ser_Arduino.readline().decode('utf-8').strip()
-            print("Empfangen:", line) #debug
-            if line == 'READY':
-                break
-            if line == 'CANCEL':
-                break
-        ser_Arduino.on_up()
-    except Exception as e:
-        print("Fehler bei Serial: ", e) #debug
+        meas_volt = float(txt_volt.get().strip().replace(',', '.'))
+        meas_angle = float(txt_angle.get().strip().replace(',', '.'))
+        meas_speed = float(txt_speed.get().strip().replace(',', '.'))
+    except ValueError:
+        print("Eingabefehler bei Sollwerten!")
+        return
+    
+    d11 = decimal_conversion(d11_var.get())
+    d12 = decimal_conversion(d12_var.get())
+    d21 = decimal_conversion(d21_var.get())
+    d22 = decimal_conversion(d22_var.get())
+    d31 = decimal_conversion(d31_var.get())
+    d32 = decimal_conversion(d32_var.get())
 
-    root.after(0, on_finish)
+    modes = []
+    modes.append((mech_ends_workflow, (), "Mech. Endwinkel", False))
+    if chk_ends_mode.get():
+        output_ends = True
+    if chk_elec_mode.get():
+        modes.append((elec_deg_workflow, (d12, d21, d22, d31), "Elektr. Winkel", True))
+    if chk_noise_mode.get():
+        pico_plot_time.clear()
+        pico_plot_volt.clear()
+        modes.append((noise_workflow, (pico_plot_volt, pico_plot_time), "Rauschprüfung", True))
+    if chk_linear_mode.get():
+        modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True))
+
+    if not modes:
+        print("Keine Messungen gewählt.")
+        return
+    
+    #send_modes(chk_ends_mode.get(), chk_elec_mode.get(), chk_noise_mode.get(), chk_linear_mode.get())
+    start_measurements(modes, meas_volt, meas_angle, meas_speed)
 
 def export_pdf():
     save_to_pdf(txt9, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt)
@@ -430,13 +415,13 @@ def export_pdf():
 def export_excel():
     save_to_excel(
         txt9,
-        linear_result["daten"],
-        linear_result["linear_sollV"],
-        linear_result["linear_lin"],
-        linear_result["summary_vals"],
-        linear_result["lin_max"],
-        linear_result["lin_min"],
-        linear_result["error_lin_idx"],
+        linear_workflow.linear_result["daten"],
+        linear_workflow.linear_result["linear_sollV"],
+        linear_workflow.linear_result["linear_lin"],
+        linear_workflow.linear_result["summary_vals"],
+        linear_workflow.linear_result["lin_max"],
+        linear_workflow.linear_result["lin_min"],
+        linear_workflow.linear_result["error_lin_idx"],
     )
 
 def advanced_chk():
@@ -454,18 +439,6 @@ def autosave_chk():
             export_excel()
         if noise_win():
             export_pdf()
-
-def measurement_chk():
-    mode = chk_meas_mode.get()
-    if mode == "mech":
-        start_mech_ends_measurement()
-    elif mode == "elec":
-        start_elec_deg_measurement() 
-    elif mode == "noise":
-        start_noise_measurement() 
-    elif mode == "linear":
-        start_linear_measurement() 
-
 
 def update_deadzone_ring(*_):
     global deadzone_after_id
@@ -490,8 +463,6 @@ def instant_deadzone_ring():
             deadzone_angles.append(angles)
     
     mark_deadzone(deadzone_angles)
-
-
 
 
 # --------------- OPEN ZERO WINDOW
@@ -573,9 +544,6 @@ img = ImageTk.PhotoImage(smallLogo)
 panel = tk.Label(root, image=img)
 panel.image = img    
 panel.grid(row=0, column=0, columnspan=2,padx=24, pady=24, sticky="nw")
-
-
-
 
 right_frame.grid_columnconfigure(1, weight=0)
 # right_frame.grid_rowconfigure(0, weight=0)
@@ -718,14 +686,17 @@ def bind_listbox_click():
 bind_listbox_click()
 
 
-chk_meas_mode = tk.StringVar(value="mech")
-chk_meas_ends = ttk.Radiobutton(right_frame, text="Mech. Enden", style='TRadiobutton', variable=chk_meas_mode, value="mech")
+chk_ends_mode = tk.BooleanVar(value=False)
+chk_elec_mode = tk.BooleanVar(value=False)
+chk_noise_mode = tk.BooleanVar(value=False)
+chk_linear_mode = tk.BooleanVar(value=False)
+chk_meas_ends = ttk.Checkbutton(right_frame, text="Mech. Enden", variable=chk_ends_mode)
 chk_meas_ends.grid(row=8, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
-chk_elec_deg = ttk.Radiobutton(right_frame, text="Elektr. Winkel", style='TRadiobutton', variable=chk_meas_mode, value="elec")
+chk_elec_deg = ttk.Checkbutton(right_frame, text="Elektr. Winkel", variable=chk_elec_mode)
 chk_elec_deg.grid(row=8, column=1, sticky="w", pady=(20, 0), padx=(20, 0))
-chk_noise = ttk.Radiobutton(right_frame, text="Rauschen", style='TRadiobutton', variable=chk_meas_mode, value="noise")
+chk_noise = ttk.Checkbutton(right_frame, text="Rauschen", variable=chk_noise_mode)
 chk_noise.grid(row=8, column=2, sticky="w", pady=(20, 0), padx=(20, 0))
-chk_linearity = ttk.Radiobutton(right_frame, text="Linearität", style='TRadiobutton', variable=chk_meas_mode, value="linear")
+chk_linearity = ttk.Checkbutton(right_frame, text="Linearität", variable=chk_linear_mode)
 chk_linearity.grid(row=8, column=3, sticky="w", pady=(20, 0), padx=(20, 0))
 
 # txtgo = ttk.Entry(left_frame, width=20, validate="key", validatecommand=vcmd)

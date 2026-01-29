@@ -21,7 +21,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
         time.sleep(0.2)
         print("speed ist", ges_s)
         print("Sende: GO") #debug
-        ser_Arduino.write(b"ENDS_GO\n")
+        ser_Arduino.write(b"INIT_GO\n")
 
         ser_Arduino.timeout = 0.1
         while True:
@@ -41,8 +41,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
                 print("Gesamtwinkel ist: ")
                 print(total_angle)
                 break
-            elif line == 'ENDS_FINISH':
-                break
+            #elif line == 'ENDS_FINISH':
+            #    break
             elif line == 'CANCEL':
                 break
 

@@ -47,3 +47,26 @@ def serial_ports():
         except (OSError, serial.SerialException):
             pass
     return result
+
+"""
+def send_modes(ends=None, elec=None, noise=None, linear=None):
+    try:
+        ser_Arduino = open_first_available(baud=115200, timeout=5)
+        if ends:
+            ser_Arduino.write(b"ENDS\n")
+            time.sleep(0.2)
+        if elec:
+            ser_Arduino.write(b"ELEC\n")
+            time.sleep(0.2)
+        if noise:
+            ser_Arduino.write(b"NOISE\n")
+            time.sleep(0.2)
+        if linear:
+            ser_Arduino.write(b"LINEAR\n")
+            time.sleep(0.2)
+
+
+    except Exception as e:
+        print("Serial Fehler bei Modes: ", e)
+    
+    ser_Arduino.close()"""

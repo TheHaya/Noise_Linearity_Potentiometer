@@ -2,13 +2,15 @@
 #include <Dynamixel2Arduino.h>
 #include <math.h>
 #include <elapsedMillis.h>
-#include <array>
 
 #include <servo.h>
 #include <calibrate.h>
 #include <noise.h>
 #include <linearity.h>
 #include <elec_deg.h>
+
+
+// --------------- VARIABLES
 
 
 // --------------- SETUP AND ASSIST FUNCTIONS
@@ -49,7 +51,127 @@ void loop(){
     if(command == "ZERO"){
       go_zero();
     }
-    
+    /*
+    if(command == "ENDS"){
+      modes.push_back(1);
+    }
+    if(command == "ELEC"){
+      modes.push_back(2);
+    }
+    if(command == "NOISE"){
+      modes.push_back(3);
+    }
+    if(command == "LINEAR"){
+      modes.push_back(4);
+    }*/
+
+    if(command == "INIT_GO"){
+      dxl_init();
+      calibrate_currents();
+      check_ends(true); // >>>>>>>>>>>>>>>>>>>>>> ÄNDERN- NUR MIT DMM = TRUE
+      if(cancelled == true){
+        Serial.println("CANCEL");
+        cancelled = false;
+      }
+    }
+
+    if(command == "ELEC_DEG_GO"){
+      if(cancelled == false){
+        Serial.println("ELEC_DEG_READY");
+      } else{
+        Serial.println("CANCEL");
+        cancelled = false;
+      }
+    }
+    if(command == "ELEC_DEG_START"){
+      elec_deg_movement();
+      if(cancelled == true){
+        Serial.println("CANCEL");
+        cancelled = false;
+      }
+      drive_to(ZERO_TICK, user_rpm);
+      reached_goal(ZERO_TICK, 2);
+      dxl.ledOff(DID);
+      Serial.println("ELEC_DEG_FINISH");
+    }
+
+    if(command == "NOISE_GO"){
+      if(cancelled == false){
+        Serial.println("NOISE_READY");
+      } else{
+        Serial.println("CANCEL");
+        cancelled = false;
+      }
+    }
+    if(command == "NOISE_START"){
+      noise_movement();
+      if(cancelled == true){
+        Serial.println("CANCEL");
+        cancelled = false;
+      }
+      drive_to(ZERO_TICK, user_rpm);
+      reached_goal(ZERO_TICK, 2);
+      dxl.ledOff(DID);
+      Serial.println("NOISE_FINISH");
+    }
+
+    if(command == "LINEAR_GO"){
+      if(cancelled == false){
+        Serial.println("LINEAR_READY");
+      } else{
+        Serial.println("CANCEL");
+        cancelled = false;
+      }
+    }
+    if(command == "LINEAR_START"){
+      linearity_movement();
+
+      if(cancelled == true){
+        Serial.println("CANCEL");
+        cancelled = false;
+      }
+      drive_to(ZERO_TICK, user_rpm);
+      reached_goal(ZERO_TICK, 2);
+      dxl.ledOff(DID);
+      Serial.println("LINEAR_FINISH");
+    }
+    /*
+    if(command == "START"){
+      if(modes.size() > 0){
+        for(int i = 0; i < modes.size(); i++){
+          switch(modes[i]){
+            case 1:
+                
+                Serial.println("ENDS_FINISH");
+                break;
+                
+            case 2:
+              elec_deg_movement();
+              break;
+            case 3:
+              noise_movement();
+              break;
+            case 4:
+              linearity_movement();
+              break;
+            default:
+              break;
+          }
+          if(cancelled == true){
+          Serial.println("CANCEL");
+          cancelled = false;
+          }
+        }
+      }   
+      drive_to(ZERO_TICK, user_rpm);
+      reached_goal(ZERO_TICK, 2);
+      dxl.ledOff(DID);
+      Serial.println("FINISH");
+    }*/
+
+
+
+    /*
     if(command == "ENDS_GO"){
       dxl_init();
       calibrate_currents();
@@ -137,6 +259,6 @@ void loop(){
       reached_goal(ZERO_TICK, 2);
       dxl.ledOff(DID);
       Serial.println("LINEAR_FINISH");
-    }
+    }*/
   }
 }
