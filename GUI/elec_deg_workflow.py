@@ -49,7 +49,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
         time.sleep(0.2)
         ser_Arduino.write(f"dead31:{d31}\n".encode())
         time.sleep(0.2)
-        print("Sende: ELEC_DEG_GO") #debug
+        print("Sende: GO") #debug
         #print(d11, d12, d21, d22, d31, d32)
         ser_Arduino.write(b"ELEC_DEG_GO\n")
 
@@ -85,9 +85,15 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
                     None
                 continue
             elif line == 'ELEC_DEG_READY':
-                print("ELEC_DEG_READY empfangen")
+                print("ELEC_DEG READY empfangen")
                 ser_Arduino.write(b"ELEC_DEG_START\n")
-                print("Sende: ELEC_DEG_START")
+                print("Sende: ELEC_DEG START")
+            elif line.startswith('TOTAL_ELEC'):
+                global total_elec
+                total_elec = float(line[10::])
+                print("Gesamt Elektr. Winkel:")
+                print(total_elec)
+
             elif line == 'ELEC_DEG_FINISH':
                 break
             elif line == 'CANCEL':

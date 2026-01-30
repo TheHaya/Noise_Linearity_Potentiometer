@@ -7,15 +7,16 @@
 
 // --------------- VARIABLES
 const size_t ELEC_ARRAY_SIZE = 4;
-int32_t elec_deg;
 float print_elec_deg[ELEC_ARRAY_SIZE];
 float print_elec_volt[ELEC_ARRAY_SIZE];
 
+
 // --------------- ELEC_DEG_FUNCTIONS
 void elec_deg_movement(){
+    float total_elec_deg = 0;
     soll_tick_total = deg_to_tick(target_deg_total); // ca. 330°
     real_tick_total = end_tick - start_tick;
-
+    
     int32_t offset_von_soll = (real_tick_total-soll_tick_total) / 2;
     
 
@@ -59,5 +60,9 @@ void elec_deg_movement(){
             print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 1, 1) - tick_to_deg(start_tick) - real_mid_deg;
             cw_rechts = print_elec_deg[i];
         }
+        
     }
+    total_elec_deg = (print_elec_deg[1]-print_elec_deg[0]) + (print_elec_deg[2]-print_elec_deg[3]);
+    Serial.print("TOTAL_ELEC");
+    Serial.println(total_elec_deg);
 }

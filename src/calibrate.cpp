@@ -16,7 +16,7 @@ int32_t start_tick, end_tick, mid_tick;
 int32_t sim_mercy_start, sim_mercy_end;
 
 float ist_start_volt, ist_end_volt, ist_mid_volt;
-float slow_rpm = 5;
+float slow_rpm = 8;
 float user_rpm, rpm1, rpm2, rpm3;
 float real_time1 = 0, real_time2 = 0, real_time3 = 0;
 float theo_time1 = 0, theo_time2 = 0, theo_time3 = 0;
@@ -126,8 +126,8 @@ float correction_movement(float &current_volt, float goal_volt,
   
 
 void calibrate_currents(){
-  drive_to(CALIBRATE_CURRENT_CW, user_rpm);
-  reached_goal(CALIBRATE_CURRENT_CW, 2, 1);
+  drive_to(CALIBRATE_CURRENT_CW, slow_rpm);
+  reached_goal(CALIBRATE_CURRENT_CW, 0,1);
 
   drive_to(CALIBRATE_CURRENT_CCW, slow_rpm);
   reached_goal(CALIBRATE_CURRENT_CCW, 0, 1);
@@ -172,13 +172,13 @@ void calibrate_currents(){
 
 // --------------- MECHANICAL ENDS
 void check_ends(bool uses_dmm){
-  int32_t check_mercy_start = deg_to_tick(360 - target_deg_total + CHECK_ENDS_TOL_DEG);
-  int32_t check_mercy_end = deg_to_tick(target_deg_total - CHECK_ENDS_TOL_DEG);
+  //int32_t check_mercy_start = deg_to_tick(360 - target_deg_total + CHECK_ENDS_TOL_DEG);
+  //int32_t check_mercy_end = start_tick + deg_to_tick(target_deg_total - CHECK_ENDS_TOL_DEG);
   
   if(uses_dmm){ist_mid_volt = corr_measure(ist_mid_volt);}
 
-  drive_to(check_mercy_start, rpm3);
-  reached_goal(check_mercy_start, 3);
+  //drive_to(check_mercy_start, rpm3);
+  //reached_goal(check_mercy_start, 3);
   drive_to(CHECK_END_START, slow_rpm);
   if(reached_goal(CHECK_END_START, 0) == false){
     start_tick = stopped_tick;
@@ -190,8 +190,8 @@ void check_ends(bool uses_dmm){
      dxl.ledOn(1);
     delay(100);
   } 
-  drive_to(check_mercy_end, rpm3);
-  reached_goal(check_mercy_end, 3);
+  //drive_to(check_mercy_end, rpm2);
+  ///reached_goal(check_mercy_end, 2);
   drive_to(CHECK_END_END, slow_rpm);
   if(reached_goal(CHECK_END_END, 0) == false){
     end_tick = stopped_tick;

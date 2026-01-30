@@ -1,18 +1,24 @@
-import time
+import time, serial
 from serial_client import open_first_available
 import pico_runner
 from ring import mark_ends, mark_noise_segments, set_circle_text
-
+from elec_deg_workflow import RegexMultimeter
 
 # --------------- MECH ENDS VARIABLES
 root = None
 txt_speed = None
-
+MULTI_PORT = "COM15"
   
 # --------------- MECH ENDS FUNCTIONS
 
 def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=None):
     try:
+        try:
+            ser_Multi = serial.Serial(MULTI_PORT, baudrate=9600, timeout = 0.5)
+            print(f"[SERIAL] Verbunden: {MULTI_PORT}")
+        except Exception as e:
+            print("Multimeter kein Port")
+
         ser_Arduino = open_first_available(baud=115200, timeout=5)
         time.sleep(0.2)
         ser_Arduino.write(f"SETW:{ges_w}\n".encode())
@@ -21,7 +27,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
         time.sleep(0.2)
         print("speed ist", ges_s)
         print("Sende: GO") #debug
-        ser_Arduino.write(b"ENDS_GO\n")
+        ser_Arduino.write(b"INIT_GO\n")
 
         ser_Arduino.timeout = 0.1
         while True:
@@ -34,15 +40,35 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
 
             line = ser_Arduino.readline().decode('utf-8').strip()
             #print("Empfangen:", line) #debug
-
+    
+            if line == 'VOLTR':
+                ser_Multi.reset_input_buffer()
+                ser_Multi.reset_output_buffer()
+                ser_Multi.write(b':MEAS:VOLT:DC?\n')
+                #print("geschrieben")
+                time.sleep(0.05)
+                #print("sleep 0.2 sek")
+                response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
+                #print("geantwortet")
+                if(RegexMultimeter(response)):
+                    #print("check1")
+                    voltage  = float(RegexMultimeter(response))
+                    #print("check2")
+                    print(voltage)
+                    ser_Arduino.write(f"ISTV:{voltage}\n".encode())
+                    #print("check3")
+                else:
+                    print("Problem bei Response")
+                    None
+                continue
             if line.startswith("ANGLE"):
-                global total_angle
-                total_angle = float(line[5::])
+                global total_mech
+                total_mech = float(line[5::])
                 print("Gesamtwinkel ist: ")
-                print(total_angle)
+                print(total_mech)
                 break
-            elif line == 'ENDS_FINISH':
-                break
+            #elif line == 'ENDS_FINISH':
+            #    break
             elif line == 'CANCEL':
                 break
 

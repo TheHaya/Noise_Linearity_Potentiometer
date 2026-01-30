@@ -29,4 +29,4 @@ float corr_measure(float current_volt);
 void calibrate_currents();
 void check_ends(bool uses_dmm=false);
 float correction_movement(float &current_volt, float goal_volt, 
-                          int dead_direction, int dead_half, uint timeout=20000);
+                          int dead_direction, int dead_half, uint timeout=200000);

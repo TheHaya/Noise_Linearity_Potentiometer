@@ -96,7 +96,7 @@ void linearity_movement(){
      d22_deg, d22_deg+mid_degs, d22_deg+2*mid_degs, d22_deg+3*mid_degs, d31_deg, real_deg_total,
       d21_deg, d21_deg-mid_degs, d21_deg-2*mid_degs, d21_deg-3*mid_degs, d12_deg, 0};
   
-  int32_t mercy_tick = 10; // 10 Ticks vor jeweiligem Ende
+  int32_t mercy_tick = 100; // 10 Ticks vor jeweiligem Ende
   int32_t mercy_start = mercy_tick;
   int32_t mercy_end = real_tick_total - mercy_tick;
 
@@ -190,6 +190,10 @@ void linearity_movement(){
       print_real_diff_mid[i] = print_ist_deg[i] - ccw_rechts;
     } 
   }
+
+  // --------------- AUSGABE ELEG_DEG
+  
+
   // --------------- ERROR MITTELANZAPFUNG
   if(fabsf((cw_links + ccw_rechts) - (d21_deg + d22_deg)) > 1.5){
     error_midDead = true;
