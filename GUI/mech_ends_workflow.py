@@ -65,7 +65,11 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
                 global total_mech
                 total_mech = float(line[5::])
                 print("Gesamtwinkel ist: ")
+<<<<<<< HEAD
                 print(total_mech)
+=======
+                print(total_angle)
+>>>>>>> fe0c7f2c4be90154e219a7b25893af06822d6b7c
                 break
             #elif line == 'ENDS_FINISH':
             #    break

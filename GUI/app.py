@@ -6,6 +6,7 @@ import sv_ttk
 import threading, json, time
 
 
+
 from pico_runner import config_pico
 from export import save_to_pdf, save_to_excel
 from ring import build_ring, mark_deadzone
@@ -231,6 +232,8 @@ def on_up_window():
 
 
 """
+
+"""
 def open_measurement_win(mode, mode_args):
     def on_up_wait_results():
         wait_win.destroy()
@@ -335,12 +338,22 @@ def start_elec_deg_measurement():
 """
 
 def start_measurements(modes, meas_volt, meas_angle, meas_speed):
+"""
+
+def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     wait_win = tk.Toplevel(root)
     wait_win.title("Datenmessung")
     wait_win.geometry(f"{scr_wid//8}x{scr_hei//8}+{scr_wid//2}+{scr_hei//2}")
     wait_win.transient(root)
     wait_win.grab_set()
     wait_win.resizable(False, False)
+    
+    status_label = ttk.Label(wait_win, text="Bitte warten...")
+    status_label.pack(pady=30)
+
+    stop_event = threading.Event()   
+
+    def cancel():
     
     status_label = ttk.Label(wait_win, text="Bitte warten...")
     status_label.pack(pady=30)
@@ -443,6 +456,13 @@ def export_pdf():
 def export_excel():
     save_to_excel(
         txt9,
+        linear_workflow.linear_result["daten"],
+        linear_workflow.linear_result["linear_sollV"],
+        linear_workflow.linear_result["linear_lin"],
+        linear_workflow.linear_result["summary_vals"],
+        linear_workflow.linear_result["lin_max"],
+        linear_workflow.linear_result["lin_min"],
+        linear_workflow.linear_result["error_lin_idx"],
         linear_workflow.linear_result["daten"],
         linear_workflow.linear_result["linear_sollV"],
         linear_workflow.linear_result["linear_lin"],
@@ -719,11 +739,19 @@ chk_elec_mode = tk.BooleanVar(value=False)
 chk_noise_mode = tk.BooleanVar(value=False)
 chk_linear_mode = tk.BooleanVar(value=False)
 chk_meas_ends = ttk.Checkbutton(right_frame, text="Mech. Enden", variable=chk_ends_mode)
+chk_ends_mode = tk.BooleanVar(value=False)
+chk_elec_mode = tk.BooleanVar(value=False)
+chk_noise_mode = tk.BooleanVar(value=False)
+chk_linear_mode = tk.BooleanVar(value=False)
+chk_meas_ends = ttk.Checkbutton(right_frame, text="Mech. Enden", variable=chk_ends_mode)
 chk_meas_ends.grid(row=8, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_elec_deg = ttk.Checkbutton(right_frame, text="Elektr. Winkel", variable=chk_elec_mode)
 chk_elec_deg = ttk.Checkbutton(right_frame, text="Elektr. Winkel", variable=chk_elec_mode)
 chk_elec_deg.grid(row=8, column=1, sticky="w", pady=(20, 0), padx=(20, 0))
 chk_noise = ttk.Checkbutton(right_frame, text="Rauschen", variable=chk_noise_mode)
+chk_noise = ttk.Checkbutton(right_frame, text="Rauschen", variable=chk_noise_mode)
 chk_noise.grid(row=8, column=2, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_linearity = ttk.Checkbutton(right_frame, text="Linearität", variable=chk_linear_mode)
 chk_linearity = ttk.Checkbutton(right_frame, text="Linearität", variable=chk_linear_mode)
 chk_linearity.grid(row=8, column=3, sticky="w", pady=(20, 0), padx=(20, 0))
 
