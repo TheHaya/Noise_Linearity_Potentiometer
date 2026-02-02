@@ -230,116 +230,6 @@ def decimal_conversion(s: str):
 def on_up_window():
     root.destroy()
 
-
-"""
-
-"""
-def open_measurement_win(mode, mode_args):
-    def on_up_wait_results():
-        wait_win.destroy()
-
-        if stop_event.is_set():
-            global cancelled_win
-            
-            cancelled_win = tk.Toplevel(root)
-            cancelled_win.title("Abbruch")
-            cancelled_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
-            cancelled_win.grid_rowconfigure(0, weight=1)
-            cancelled_win.grid_rowconfigure(1, weight=1)
-            cancelled_win.grid_columnconfigure(0, weight=1)
-            
-            ttk.Label(cancelled_win, text="Vorgang wurde abgebrochen.").grid(row=0, column=0)
-            ok_button = ttk.Button(cancelled_win, text="OK", command=cancelled_win.destroy)
-            ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
-            ok_button.focus_set()  
-            cancelled_win.bind("<Return>", lambda event: ok_button.invoke())
-        else:
-            global noise_win
-            if noise_win is not None and noise_win.winfo_exists():
-                noise_win.destroy()
-
-    try:
-        txt_soll = float(txt_volt.get().strip().replace(',', '.'))
-        txt_winkel = float(txt_angle.get().strip().replace(',', '.'))
-        txt_geschw = float(txt_speed.get().strip().replace(',', '.'))
-        
-
-    except ValueError:
-        error_win = tk.Toplevel(root)
-        error_win.title("Falsche Eingabe!")
-        error_win.geometry(f"{scr_wid//8}x{scr_hei//8}+{scr_wid//2}+{scr_hei//2}")
-        error_win.resizable(False, False)
-        error_win.transient(root)
-        error_win.grab_set()
-        error_win.grid_rowconfigure(0, weight=1)
-        error_win.grid_rowconfigure(1, weight=1)
-        error_win.grid_columnconfigure(0, weight=1)
-        error_win.bell()
-        ttk.Label(error_win, text="Leeres Feld gefunden!").grid(row=0, column=0)
-        ok_button = ttk.Button(error_win, text="OK", command=error_win.destroy)
-        ok_button.grid(row=1, column=0, ipadx=20)
-        ok_button.focus_set()
-        error_win.bind("<Return>", lambda event: ok_button.invoke())
-        return
-    
-    wait_win = tk.Toplevel(root)
-    wait_win.title("Datenmessung")
-    wait_win.geometry(f"{scr_wid//8}x{scr_hei//8}+{scr_wid//2}+{scr_hei//2}")
-    wait_win.transient(root)
-    wait_win.grab_set()
-    wait_win.resizable(False, False)
-    ttk.Label(wait_win, text="Bitte warten...").pack(pady=30)
-
-    
-    stop_event = threading.Event()    
-    def cancel_on_up():
-        stop_event.set()
-        wait_win.destroy()
-    wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
-
-    for modes in 
-        threading.Thread(target=mode.measurement, args=(txt_soll, txt_winkel, txt_geschw, *mode_args, stop_event), daemon=True).start()
-
-    on_up_wait_results()
-
-def start_noise_measurement():
-    global pico_plot_time
-    pico_plot_time.clear()
-    global pico_plot_volt
-    pico_plot_volt.clear()
-    
-    mode_args = (pico_plot_volt, pico_plot_time)
-    noise_workflow.config(root, txt_speed)
-    open_measurement_win(noise_workflow, mode_args)
-
-def start_linear_measurement():
-    d11 = decimal_conversion(d11_var.get())
-    d12 = decimal_conversion(d12_var.get())
-    d21 = decimal_conversion(d21_var.get())
-    d22 = decimal_conversion(d22_var.get())
-    d31 = decimal_conversion(d31_var.get())
-    d32 = decimal_conversion(d32_var.get())
-    mode_args = (d11, d12, d21, d22, d31, d32)
-    linear_workflow.config(root, txt_speed)
-    open_measurement_win(linear_workflow, mode_args)
-
-def start_mech_ends_measurement():
-    mode_args = ()
-    open_measurement_win(mech_ends_workflow, mode_args)
-
-def start_elec_deg_measurement():
-    d12 = decimal_conversion(d12_var.get())
-    d21 = decimal_conversion(d21_var.get())
-    d22 = decimal_conversion(d22_var.get())
-    d31 = decimal_conversion(d31_var.get())
-    mode_args = (d12, d21, d22, d31)
-    elec_deg_workflow.config(root, txt_speed)
-    open_measurement_win(elec_deg_workflow, mode_args)
-"""
-
-def start_measurements(modes, meas_volt, meas_angle, meas_speed):
-"""
-
 def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     wait_win = tk.Toplevel(root)
     wait_win.title("Datenmessung")
@@ -347,13 +237,6 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     wait_win.transient(root)
     wait_win.grab_set()
     wait_win.resizable(False, False)
-    
-    status_label = ttk.Label(wait_win, text="Bitte warten...")
-    status_label.pack(pady=30)
-
-    stop_event = threading.Event()   
-
-    def cancel():
     
     status_label = ttk.Label(wait_win, text="Bitte warten...")
     status_label.pack(pady=30)

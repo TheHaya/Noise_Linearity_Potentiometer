@@ -5,7 +5,7 @@ from serial_client import open_first_available
 # --------------- ELEC DEG VARIABLES
 root = None
 MULTI_PORT = "COM15"
-daten = []
+
 
 
 # --------------- ELEC DEG FUNCTIONS
@@ -31,8 +31,6 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
         except Exception as e:
             print("Multimeter kein Port")
         N = 13 #Anz Messpunkte wegen leere Zellen
-        global daten
-        daten = []
 
         time.sleep(0.2)
         ser_Arduino.write(f"SETV:{ges_v}\n".encode())
@@ -88,15 +86,12 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
                 print("ELEC_DEG READY empfangen")
                 ser_Arduino.write(b"ELEC_DEG_START\n")
                 print("Sende: ELEC_DEG START")
-<<<<<<< HEAD
             elif line.startswith('TOTAL_ELEC'):
                 global total_elec
                 total_elec = float(line[10::])
                 print("Gesamt Elektr. Winkel:")
                 print(total_elec)
 
-=======
->>>>>>> fe0c7f2c4be90154e219a7b25893af06822d6b7c
             elif line == 'ELEC_DEG_FINISH':
                 break
             elif line == 'CANCEL':
