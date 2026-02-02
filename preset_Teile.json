@@ -1,8 +1,10 @@
 {
     "107357**":{
-        "sollSpannung": 5.0,
-        "sollWinkel": 330.0,
-        "sollGeschwindigkeit": 60.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
+        "soll_winkel": 330.0,
+        "soll_geschwindigkeit": 60.0,
         "d11": 0.0,
         "d12": 40.0,
         "d21": 140.0,
@@ -13,7 +15,9 @@
     },
 
     "107395":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,
@@ -26,7 +30,9 @@
     },
 
     "107396":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,
@@ -39,7 +45,9 @@
     },
 
     "107397":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,
@@ -52,7 +60,9 @@
     },
 
     "107398":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,
@@ -65,7 +75,9 @@
     },
 
     "107399":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,
@@ -78,7 +90,9 @@
     },
 
     "107445":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,
@@ -91,7 +105,9 @@
     },
 
     "107446":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,
@@ -104,7 +120,9 @@
     },
 
     "107447":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,
@@ -117,7 +135,9 @@
     },
 
     "107448":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,
@@ -130,7 +150,9 @@
     },
 
     "107449":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,
@@ -143,7 +165,9 @@
     },
 
     "107450":{
-        "sollSpannung": 5.0,
+        "sollspannung_rauschen": 5.0,
+        "sollspannung_linear": 10.0,
+        "sollspannung_widerstand": 2.0,
         "sollWinkel": 330.0,
         "sollGeschwindigkeit": 60.0,
         "d11": 0.0,

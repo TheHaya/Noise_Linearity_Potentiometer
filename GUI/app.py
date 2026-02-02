@@ -5,8 +5,6 @@ from PIL import ImageTk, Image
 import sv_ttk
 import threading, json, time
 
-
-
 from pico_runner import config_pico
 from export import save_to_pdf, save_to_excel
 from ring import build_ring, mark_deadzone
@@ -62,9 +60,9 @@ def set_entry(txt_entry, decimal_val):
     txt_entry.configure(state=text_rw_state)
     
 def insert_preset(p):
-    set_entry(txt_volt, p["sollSpannung"])
-    set_entry(txt_angle, p["sollWinkel"])
-    set_entry(txt_speed, p["sollGeschwindigkeit"])
+    set_entry(txt_volt, p["soll_spannung_linear"])
+    set_entry(txt_angle, p["soll_winkel"])
+    set_entry(txt_speed, p["soll_geschwindigkeit"])
     set_entry(txt_d11, p["d11"])
     set_entry(txt_d12, p["d12"])
     set_entry(txt_d21, p["d21"])
@@ -240,14 +238,15 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     
     status_label = ttk.Label(wait_win, text="Bitte warten...")
     status_label.pack(pady=30)
-
     stop_event = threading.Event()   
+
+    mech_angle_var.set("Mechanischer Winkel: --")
+    elec_angle_var.set("Elektrischer Winkel: --")
 
     def cancel():
         stop_event.set()
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel)
-
 
     def worker():    
         try:
@@ -274,10 +273,10 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                         root.after(0, lambda v=val: mech_angle_var.set(
                             f"Mechanischer Winkel: {v:.2f}°"
                         ))
-                    else:
-                        root.after(0, lambda: mech_angle_var.set(
-                            "Mechanischer Winkel: --"
-                        ))
+                    #else:
+                    #    root.after(0, lambda: mech_angle_var.set(
+                    #        "Mechanischer Winkel: --"
+                    #    ))
                 
                 if workflow is elec_deg_workflow:
                     val = getattr(elec_deg_workflow, "total_elec", None)
@@ -285,10 +284,10 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                         root.after(0, lambda v=val: elec_angle_var.set(
                             f"Elektrischer Winkel: {v:.2f}°"
                         ))
-                    else:
-                        root.after(0, lambda: elec_angle_var.set(
-                            "Elektrischer Winkel: --"
-                        ))
+                    #else:
+                    #    root.after(0, lambda: elec_angle_var.set(
+                    #        "Elektrischer Winkel: --"
+                    #    ))
         except Exception as e:
             print("Fehler bei measurements:", e)
 
@@ -346,13 +345,7 @@ def export_excel():
         linear_workflow.linear_result["lin_max"],
         linear_workflow.linear_result["lin_min"],
         linear_workflow.linear_result["error_lin_idx"],
-        linear_workflow.linear_result["daten"],
-        linear_workflow.linear_result["linear_sollV"],
-        linear_workflow.linear_result["linear_lin"],
-        linear_workflow.linear_result["summary_vals"],
-        linear_workflow.linear_result["lin_max"],
-        linear_workflow.linear_result["lin_min"],
-        linear_workflow.linear_result["error_lin_idx"],
+
     )
 
 def advanced_chk():
@@ -617,11 +610,7 @@ def bind_listbox_click():
 bind_listbox_click()
 
 
-chk_ends_mode = tk.BooleanVar(value=False)
-chk_elec_mode = tk.BooleanVar(value=False)
-chk_noise_mode = tk.BooleanVar(value=False)
-chk_linear_mode = tk.BooleanVar(value=False)
-chk_meas_ends = ttk.Checkbutton(right_frame, text="Mech. Enden", variable=chk_ends_mode)
+
 chk_ends_mode = tk.BooleanVar(value=False)
 chk_elec_mode = tk.BooleanVar(value=False)
 chk_noise_mode = tk.BooleanVar(value=False)
@@ -629,12 +618,9 @@ chk_linear_mode = tk.BooleanVar(value=False)
 chk_meas_ends = ttk.Checkbutton(right_frame, text="Mech. Enden", variable=chk_ends_mode)
 chk_meas_ends.grid(row=8, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
 chk_elec_deg = ttk.Checkbutton(right_frame, text="Elektr. Winkel", variable=chk_elec_mode)
-chk_elec_deg = ttk.Checkbutton(right_frame, text="Elektr. Winkel", variable=chk_elec_mode)
 chk_elec_deg.grid(row=8, column=1, sticky="w", pady=(20, 0), padx=(20, 0))
 chk_noise = ttk.Checkbutton(right_frame, text="Rauschen", variable=chk_noise_mode)
-chk_noise = ttk.Checkbutton(right_frame, text="Rauschen", variable=chk_noise_mode)
 chk_noise.grid(row=8, column=2, sticky="w", pady=(20, 0), padx=(20, 0))
-chk_linearity = ttk.Checkbutton(right_frame, text="Linearität", variable=chk_linear_mode)
 chk_linearity = ttk.Checkbutton(right_frame, text="Linearität", variable=chk_linear_mode)
 chk_linearity.grid(row=8, column=3, sticky="w", pady=(20, 0), padx=(20, 0))
 

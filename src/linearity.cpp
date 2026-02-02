@@ -211,10 +211,6 @@ void linearity_movement(){
     Serial.print(";DiffMid-Winkel:");
     Serial.println(print_real_diff_mid[i],1);
   }
-
-  drive_to(mid_tick, user_rpm);
-  reached_goal(mid_tick, 2);
-  dxl.ledOff(DID);
 }
 
 // ----------------- LINEARITÄT
@@ -279,10 +275,10 @@ void calc_summary(){
 
 // ERROR AUSGABE EXCEL
 void calc_errors(){
+  Serial.print("ERROR_LIN;");
+  Serial.print("IDX:");
+  bool first = true;
   if (error_lin == true) {
-    Serial.print("ERROR_LIN;");
-    Serial.print("IDX:");
-    bool first = true;
     for (size_t i = 0; i < print_array_size; i++) {
       if (error_lin_index[i]) {
         if (first) {
@@ -294,9 +290,9 @@ void calc_errors(){
         }
       }
     }
-    Serial.print(";LIN_MAX:");
-    Serial.print(lin_max, 6);
-    Serial.print(";LIN_MIN:");
-    Serial.println(lin_min, 6);
   }
+  Serial.print(";LIN_MAX:");
+  Serial.print(lin_max, 6);
+  Serial.print(";LIN_MIN:");
+  Serial.println(lin_min, 6);
 }

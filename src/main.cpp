@@ -10,8 +10,16 @@
 #include <elec_deg.h>
 
 
-// --------------- VARIABLES
+// --------------- CONSTANTS
+const int BUTTON = 12;
 
+
+// --------------- VARIABLES
+bool linear_checked;
+elapsedMillis but_millis;
+int but_timer = 200;
+bool but_up = HIGH;
+bool but_press;
 
 // --------------- SETUP AND ASSIST FUNCTIONS
 void setup(){
@@ -26,13 +34,22 @@ void setup(){
   dxl.writeControlTableItem(PROFILE_VELOCITY, DID, 1000);
   dxl.writeControlTableItem(PROFILE_ACCELERATION, DID, 500);
   dxl.torqueOn(DID);
-
   dxl.ledOn(DID);
+
+  pinMode(BUTTON, INPUT_PULLUP);
+
 }
 
 
 // --------------- LOOP
 void loop(){
+  but_press = digitalRead(BUTTON);
+  if(but_press == LOW && but_up == HIGH && but_millis > but_timer){
+    Serial.println("BUTTON");
+    but_millis = 0;
+  }
+  but_up = but_press;
+
   if(Serial.available()){
     String command = Serial.readStringUntil('\n');
     command.trim();
@@ -66,6 +83,8 @@ void loop(){
     }*/
 
     if(command == "INIT_GO"){
+      bool linear_checked = false;
+
       dxl_init();
       calibrate_currents();
       check_ends(true); // >>>>>>>>>>>>>>>>>>>>>> ÄNDERN- NUR MIT DMM = TRUE
@@ -73,26 +92,6 @@ void loop(){
         Serial.println("CANCEL");
         cancelled = false;
       }
-    }
-
-    if(command == "ELEC_DEG_GO"){
-      if(cancelled == false){
-        Serial.println("ELEC_DEG_READY");
-      } else{
-        Serial.println("CANCEL");
-        cancelled = false;
-      }
-    }
-    if(command == "ELEC_DEG_START"){
-      elec_deg_movement();
-      if(cancelled == true){
-        Serial.println("CANCEL");
-        cancelled = false;
-      }
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
-      dxl.ledOff(DID);
-      Serial.println("ELEC_DEG_FINISH");
     }
 
     if(command == "NOISE_GO"){
@@ -116,6 +115,8 @@ void loop(){
     }
 
     if(command == "LINEAR_GO"){
+      linear_checked = true;
+
       if(cancelled == false){
         Serial.println("LINEAR_READY");
       } else{
@@ -135,6 +136,29 @@ void loop(){
       dxl.ledOff(DID);
       Serial.println("LINEAR_FINISH");
     }
+
+    if(linear_checked == false){ // Falls elec_deg und linear beide angekreuzt wurden dann einfach elec_deg ignorieren
+      if(command == "ELEC_DEG_GO"){
+        if(cancelled == false){
+          Serial.println("ELEC_DEG_READY");
+        } else{
+          Serial.println("CANCEL");
+          cancelled = false;
+        }
+      }
+      if(command == "ELEC_DEG_START"){
+        elec_deg_movement();
+        if(cancelled == true){
+          Serial.println("CANCEL");
+          cancelled = false;
+        }
+        drive_to(ZERO_TICK, user_rpm);
+        reached_goal(ZERO_TICK, 2);
+        dxl.ledOff(DID);
+        Serial.println("ELEC_DEG_FINISH");
+      }
+    }
+    
     /*
     if(command == "START"){
       if(modes.size() > 0){

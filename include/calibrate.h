@@ -14,7 +14,7 @@ extern const float CHECK_ENDS_TOL_DEG;
 
 // --------------- CALIBRATE VARIABLES
 extern int32_t stopped_tick;
-extern int32_t start_tick, end_tick, mid_tick;
+extern int32_t start_tick, end_tick;
 extern int32_t sim_mercy_start, sim_mercy_end;
 
 extern float slow_rpm;
