@@ -10,7 +10,7 @@ noise_times = []
 deadzone_iids = [] 
 
 # --------------- GUI RING FUNCTIONS
-def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#969696"):
+def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#1c1c1c"):
     global ring_canvas, ring_box
     ring_canvas = tk.Canvas(
         frame, width=ring_size+30, height=ring_size+30,
@@ -21,7 +21,7 @@ def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#969696"):
     radius = (ring_size // 2) - 18
     ring_box = (canv_x - radius, canv_y - radius, canv_x + radius, canv_y + radius)
     ring_canvas.create_arc(ring_box, start=0, extent=359.9,
-                           style="arc", width=ring_thickness, outline="#1c1c1c")
+                           style="arc", width=ring_thickness, outline="#969696")
     
     for deg in range(0, 360, 10):
         long_tick = (deg % 30 == 0)

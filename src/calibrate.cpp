@@ -18,7 +18,7 @@ int32_t start_tick, end_tick;
 int32_t sim_mercy_start, sim_mercy_end;
 
 float ist_start_volt, ist_end_volt, ist_mid_volt;
-float slow_rpm = 8;
+float slow_rpm = 5;
 float user_rpm, rpm1, rpm2, rpm3;
 float real_time1 = 0, real_time2 = 0, real_time3 = 0;
 float theo_time1 = 0, theo_time2 = 0, theo_time3 = 0;
@@ -48,7 +48,7 @@ float corr_measure(float current_volt){
 // dead_direction 0 -> deadzone links von position //////--- ;;; 1 -> rechts von position ---//////
 float correction_movement(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, uint timeout){
-  const float v_tol = 0.0001f;        
+  const float v_tol = 0.0015f;        
   const int32_t TICK_TOL = 1;
   elapsedMillis error_timer;
   int32_t low, high;
@@ -67,8 +67,8 @@ float correction_movement(float &current_volt, float goal_volt,
         if(dead_half == 0){ back = t + PUSHBACK;} 
         else { back = t - PUSHBACK;}
       }
-      //drive_to(back, user_rpm);
-      //reached_goal(back, 2);
+      drive_to(back, user_rpm);
+      reached_goal(back, 2);
       drive_to(t, user_rpm);
       reached_goal(t, 2);
       current_volt = corr_measure(current_volt);
@@ -88,8 +88,8 @@ float correction_movement(float &current_volt, float goal_volt,
         if(dead_half == 0){ back = t + PUSHBACK;}
         else { back = t - PUSHBACK;}
       }
-      //drive_to(back, user_rpm);
-      //reached_goal(back, 2);
+      drive_to(back, user_rpm);
+      reached_goal(back, 2);
       drive_to(t, user_rpm);
       reached_goal(t, 2);
       current_volt = corr_measure(current_volt);
@@ -169,6 +169,14 @@ void calibrate_currents(){
   drive_to(ZERO_TICK, rpm1);
   reached_goal(ZERO_TICK, rpm1);
 }
+
+/*
+void calibrate_currents(){
+  drive_to(2021, user_rpm);
+  reached_goal(2021, 2 ,1);
+  drive_to(2334, user_rpm);
+  reached_goal(2334, 2 ,1);
+}*/
 
 
 // --------------- MECHANICAL ENDS

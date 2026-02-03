@@ -94,10 +94,11 @@ def calc_rel_angle(time_arr, turn_arr, angle_arr):
 
 
 # --------------- NOISE FUNCTIONS
-def config(app_root, txt_speed_entry):
-    global root, txt_speed
+def config(app_root, txt_speed_entry, ser_arduino_app=None):
+    global root, txt_speed, ser_arduino
     root = app_root
     txt_speed = txt_speed_entry
+    #ser_arduino = ser_arduino_app
 
 def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_plot_time=None, stop_event=None, on_finish=None):
     try:
@@ -111,26 +112,26 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
         global pico_volt
         pico_volt = []
 
-        ser_Arduino = open_first_available(baud=115200, timeout=5)
+        ser_arduino = open_first_available(baud=115200, timeout=5)
         time.sleep(0.2)
-        ser_Arduino.write(f"SETW:{ges_w}\n".encode())
+        ser_arduino.write(f"SETW:{ges_w}\n".encode())
         time.sleep(0.2)
-        ser_Arduino.write(f"SETS:{ges_s}\n".encode())
+        ser_arduino.write(f"SETS:{ges_s}\n".encode())
         time.sleep(0.2)
         print("speed ist", ges_s)
         print("Sende: GO") #debug
-        ser_Arduino.write(b"NOISE_GO\n")
+        ser_arduino.write(b"NOISE_GO\n")
 
-        ser_Arduino.timeout = 0.1
+        ser_arduino.timeout = 0.1
         while True:
             if stop_event.is_set():
-                ser_Arduino.write(b"STOP\n")
+                ser_arduino.write(b"STOP\n")
                 time.sleep(0.5)
-                ser_Arduino.flush()
+                ser_arduino.flush()
                 time.sleep(0.2)
                 break
 
-            line = ser_Arduino.readline().decode('utf-8').strip()
+            line = ser_arduino.readline().decode('utf-8').strip()
             #print("Empfangen:", line) #debug
             if line.startswith("TICKS"):
                 global total_ticks
@@ -144,7 +145,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
                     total_t=lambda: total_ticks
                 )
                 print("start run_pico")
-                pico_runner.run_pico(ser_Arduino, pico_time, pico_volt, pico_pdf_time, pico_plot_volt, pico_plot_time)
+                pico_runner.run_pico(ser_arduino, pico_time, pico_volt, pico_pdf_time, pico_plot_volt, pico_plot_time)
 
             elif line == 'FINISH':
                 finish_time = time.time()
@@ -176,7 +177,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
                 delay_time3 = float(line[6::])
                 print(f"{delay_time3}")
            
-        ser_Arduino.close()
+        ser_arduino.close()
 
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug

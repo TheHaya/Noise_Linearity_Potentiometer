@@ -11,6 +11,12 @@ MULTI_PORT = "COM15"
   
 # --------------- MECH ENDS FUNCTIONS
 
+def config(app_root, txt_speed_entry, ser_arduino_app=None):
+    global root, txt_speed, ser_arduino
+    root = app_root
+    txt_speed = txt_speed_entry
+    #ser_arduino = ser_arduino_app
+    
 def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=None):
     try:
         try:
@@ -19,26 +25,26 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
         except Exception as e:
             print("Multimeter kein Port")
 
-        ser_Arduino = open_first_available(baud=115200, timeout=5)
+        ser_arduino = open_first_available(baud=115200, timeout=5)
         time.sleep(0.2)
-        ser_Arduino.write(f"SETW:{ges_w}\n".encode())
+        ser_arduino.write(f"SETW:{ges_w}\n".encode())
         time.sleep(0.2)
-        ser_Arduino.write(f"SETS:{ges_s}\n".encode())
+        ser_arduino.write(f"SETS:{ges_s}\n".encode())
         time.sleep(0.2)
         print("speed ist", ges_s)
         print("Sende: GO") #debug
-        ser_Arduino.write(b"INIT_GO\n")
+        ser_arduino.write(b"INIT_GO\n")
 
-        ser_Arduino.timeout = 0.1
+        ser_arduino.timeout = 0.1
         while True:
             if stop_event.is_set():
-                ser_Arduino.write(b"STOP\n")
+                ser_arduino.write(b"STOP\n")
                 time.sleep(0.5)
-                ser_Arduino.flush()
+                ser_arduino.flush()
                 time.sleep(0.2)
                 break
 
-            line = ser_Arduino.readline().decode('utf-8').strip()
+            line = ser_arduino.readline().decode('utf-8').strip()
             #print("Empfangen:", line) #debug
     
             if line == 'VOLTR':
@@ -55,7 +61,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
                     voltage  = float(RegexMultimeter(response))
                     #print("check2")
                     print(voltage)
-                    ser_Arduino.write(f"ISTV:{voltage}\n".encode())
+                    ser_arduino.write(f"ISTV:{voltage}\n".encode())
                     #print("check3")
                 else:
                     print("Problem bei Response")
@@ -66,14 +72,13 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
                 total_mech = float(line[5::])
                 print("Gesamtwinkel ist: ")
                 print(total_mech)
-
                 break
             #elif line == 'ENDS_FINISH':
             #    break
             elif line == 'CANCEL':
                 break
 
-        ser_Arduino.close()
+        ser_arduino.close()
 
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug

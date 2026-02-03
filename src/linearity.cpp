@@ -40,7 +40,7 @@ void lin_init(){
     lin_min = 0;
     }
 }
-    
+  
 
 float lerp_dead(int32_t x, int32_t d1, int32_t d2){
   if(d1 == d2){
@@ -265,9 +265,9 @@ void calc_summary(){
   Serial.print("SUMMARY;");
   Serial.print("Totzone:");   
   Serial.print(totzone, 1);
-  Serial.print(";aktiv_cw:"); 
+  Serial.print(";AktivCW:"); 
   Serial.print(aktiv_cw, 1);
-  Serial.print(";aktiv_ccw:");
+  Serial.print(";AktivCCW:");
   Serial.print(aktiv_ccw, 1);
   Serial.print(";AktivSumme:");
   Serial.println(ges_aktiv, 1);

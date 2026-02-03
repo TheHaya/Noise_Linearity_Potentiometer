@@ -16,15 +16,16 @@ def RegexMultimeter(output):
         return match.group(0)
     return None
 
-def config(app_root, txt_speed_entry):
-    global root, txt_speed
+def config(app_root, txt_speed_entry, ser_arduino_app=None):
+    global root, txt_speed, ser_arduino
     root = app_root
     txt_speed = txt_speed_entry
+    #ser_arduino = ser_arduino_app
 
 def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None, 
                 d21=None, d22=None, d31=None, stop_event=None, on_finish=None):
     try:
-        ser_Arduino = open_first_available(baud=115200, timeout=5)
+        ser_arduino = open_first_available(baud=115200, timeout=5)
         try:
             ser_Multi = serial.Serial(MULTI_PORT, baudrate=9600, timeout = 0.5)
             print(f"[SERIAL] Verbunden: {MULTI_PORT}")
@@ -33,34 +34,34 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
         N = 13 #Anz Messpunkte wegen leere Zellen
 
         time.sleep(0.2)
-        ser_Arduino.write(f"SETV:{ges_v}\n".encode())
+        ser_arduino.write(f"SETV:{ges_v}\n".encode())
         time.sleep(0.2)
-        ser_Arduino.write(f"SETW:{ges_w}\n".encode())
+        ser_arduino.write(f"SETW:{ges_w}\n".encode())
         time.sleep(0.2)
-        ser_Arduino.write(f"SETS:{ges_s}\n".encode())
+        ser_arduino.write(f"SETS:{ges_s}\n".encode())
         time.sleep(0.2)
-        ser_Arduino.write(f"dead12:{d12}\n".encode())
+        ser_arduino.write(f"dead12:{d12}\n".encode())
         time.sleep(0.2)
-        ser_Arduino.write(f"dead21:{d21}\n".encode())
+        ser_arduino.write(f"dead21:{d21}\n".encode())
         time.sleep(0.2)
-        ser_Arduino.write(f"dead22:{d22}\n".encode())
+        ser_arduino.write(f"dead22:{d22}\n".encode())
         time.sleep(0.2)
-        ser_Arduino.write(f"dead31:{d31}\n".encode())
+        ser_arduino.write(f"dead31:{d31}\n".encode())
         time.sleep(0.2)
         print("Sende: GO") #debug
         #print(d11, d12, d21, d22, d31, d32)
-        ser_Arduino.write(b"ELEC_DEG_GO\n")
+        ser_arduino.write(b"ELEC_DEG_GO\n")
 
-        ser_Arduino.timeout = 0.1
+        ser_arduino.timeout = 0.1
         while True:
             if stop_event.is_set():
-                ser_Arduino.write(b"STOP\n")
+                ser_arduino.write(b"STOP\n")
                 time.sleep(0.5)
-                ser_Arduino.flush()
+                ser_arduino.flush()
                 time.sleep(0.2)
                 break
 
-            line = ser_Arduino.readline().decode('utf-8').strip()
+            line = ser_arduino.readline().decode('utf-8').strip()
             #print("Empfangen:", line) #debug
             if line == 'VOLTR':
                 ser_Multi.reset_input_buffer()
@@ -76,7 +77,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
                     voltage  = float(RegexMultimeter(response))
                     #print("check2")
                     print(voltage)
-                    ser_Arduino.write(f"ISTV:{voltage}\n".encode())
+                    ser_arduino.write(f"ISTV:{voltage}\n".encode())
                     #print("check3")
                 else:
                     print("Problem bei Response")
@@ -84,7 +85,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
                 continue
             elif line == 'ELEC_DEG_READY':
                 print("ELEC_DEG READY empfangen")
-                ser_Arduino.write(b"ELEC_DEG_START\n")
+                ser_arduino.write(b"ELEC_DEG_START\n")
                 print("Sende: ELEC_DEG START")
             elif line.startswith('TOTAL_ELEC'):
                 global total_elec
@@ -97,7 +98,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
             elif line == 'CANCEL':
                 break
             
-        ser_Arduino.close()
+        ser_arduino.close()
         ser_Multi.close()
                         
     except Exception as e:

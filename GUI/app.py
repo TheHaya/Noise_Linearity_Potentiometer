@@ -5,6 +5,7 @@ from PIL import ImageTk, Image
 import sv_ttk
 import threading, json, time
 
+from serial_client import serial_manager
 from pico_runner import config_pico
 from export import save_to_pdf, save_to_excel
 from ring import build_ring, mark_deadzone
@@ -77,7 +78,6 @@ def insert_preset(p):
     else:
         msg.grid(row=8, column=0,pady=(0, 40), padx=(20, 0))
 
-# ---------- Preset Search Dropdown (Overlay) ----------
 dropdown = {"win": None, "listbox": None}
 MAX_SUGGESTIONS = 10
 
@@ -174,7 +174,6 @@ def select_from_list(anchor_entry: ttk.Entry):
     anchor_entry.insert(0, pid)
     on_up_dropdown()
 
-    # Preset übernehmen
     if pid in presets:
         insert_preset(presets[pid])
 
@@ -182,7 +181,6 @@ def _update_dropdown(anchor_entry: ttk.Entry, query_var: tk.StringVar, preset_id
     q_raw = query_var.get()
     q = only_digits(q_raw)
 
-    # Wenn User was anderes tippt: sofort "sauber" machen (digits only)
     if q_raw != q:
         query_var.set(q)
         return
@@ -203,16 +201,13 @@ def _update_dropdown(anchor_entry: ttk.Entry, query_var: tk.StringVar, preset_id
     for s in suggestions:
         lb.insert(tk.END, s)
 
-    # erste Zeile selektieren (für Enter)
     lb.selection_clear(0, tk.END)
     lb.selection_set(0)
     lb.activate(0)
 
     n = len(suggestions)
-    lb.configure(height=min(n, MAX_SUGGESTIONS))  # <<< Listbox schrumpft/wächst
-    position_dropdown(anchor_entry, n)           # <<< Toplevel schrumpft/wächst
-
-
+    lb.configure(height=min(n, MAX_SUGGESTIONS)) 
+    position_dropdown(anchor_entry, n) 
 
 def decimal_conversion(s: str):
     s = (s or "").strip().replace(",", ".")
@@ -248,7 +243,8 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel)
 
-    def worker():    
+    def worker():
+        #ser_arduino.busy = True    
         try:
             for i, (workflow, workflow_args, title, needs_config) in enumerate(modes, start=1):
                 if stop_event.is_set():
@@ -263,6 +259,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                             status_label.configure(text=f"Messung {i}/{n}: {t}"))
                 
                 if needs_config:
+                    #workflow.config(root, txt_speed, ser_arduino)
                     workflow.config(root, txt_speed)
 
                 workflow.measurement(meas_volt, meas_angle, meas_speed, *workflow_args ,stop_event, lambda: None)
@@ -291,6 +288,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
         except Exception as e:
             print("Fehler bei measurements:", e)
 
+        #ser_arduino.busy = False
         root.after(0, wait_win.destroy)
     
     threading.Thread(target=worker, daemon=True).start()
@@ -312,7 +310,7 @@ def measurement_chk():
     d32 = decimal_conversion(d32_var.get())
 
     modes = []
-    modes.append((mech_ends_workflow, (), "Mech. Endwinkel", False))
+    modes.append((mech_ends_workflow, (), "Mech. Endwinkel", True))
     if chk_ends_mode.get():
         global output_ends
         output_ends = True
@@ -338,14 +336,13 @@ def export_pdf():
 def export_excel():
     save_to_excel(
         txt9,
-        linear_workflow.linear_result["daten"],
-        linear_workflow.linear_result["linear_sollV"],
-        linear_workflow.linear_result["linear_lin"],
-        linear_workflow.linear_result["summary_vals"],
-        linear_workflow.linear_result["lin_max"],
-        linear_workflow.linear_result["lin_min"],
-        linear_workflow.linear_result["error_lin_idx"],
-
+        linear_workflow.result["daten"],
+        linear_workflow.result["linear_sollV"],
+        linear_workflow.result["linear_lin"],
+        linear_workflow.result["summary_vals"],
+        linear_workflow.result["lin_max"],
+        linear_workflow.result["lin_min"],
+        linear_workflow.result["error_lin_idx"],
     )
 
 def advanced_chk():
@@ -447,9 +444,11 @@ def open_zero_window():
 root = tk.Tk()
 scr_wid = root.winfo_screenwidth()
 scr_hei = root.winfo_screenheight()
-root.geometry(f"{scr_wid - scr_wid//5}x{scr_hei - scr_hei//5}+0+0")
+root.minsize(width=1200, height=800)
+root.geometry("1200x800")
+#root.geometry(f"{scr_wid - scr_wid//5}x{scr_hei - scr_hei//5}+0+0")
 root.title("Rauschprüfung")
-root.resizable(False, False)
+root.resizable(True, True)
 root.configure(bg="#1c1c1c")
 
 root.grid_columnconfigure(0, weight=0)
@@ -462,7 +461,7 @@ right_frame = ttk.Frame(root)
 left_frame.grid(row=1, column=0, sticky="nw", padx=12, pady=12)
 right_frame.grid(row=1, column=1, sticky="nw",  padx=12, pady=12)
 ring_area = ttk.Frame(root)
-ring_area.grid(row=1, column=2, sticky="nw", padx=120, pady=12)
+ring_area.grid(row=1, column=2, sticky="nw", padx=(0,30), pady=12)
 
 img = ImageTk.PhotoImage(smallLogo)
 panel = tk.Label(root, image=img)
@@ -471,6 +470,9 @@ panel.grid(row=0, column=0, columnspan=2,padx=24, pady=24, sticky="nw")
 
 right_frame.grid_columnconfigure(1, weight=0)
 # right_frame.grid_rowconfigure(0, weight=0)
+
+#ser_arduino = serial_manager(root, on_button=measurement_chk)
+#ser_arduino.connect()
 
 vcmd = (root.register(lambda P: (P.count(',') <= 1 and all(ch.isdigit() or ch == ',' for ch in P))), "%P")
 
@@ -486,7 +488,7 @@ advanced_mode = tk.BooleanVar(value=False)
 chk_advanced_mode = ttk.Checkbutton(left_frame, text="Erweiteter Modus", variable=advanced_mode, command=advanced_chk)
 chk_advanced_mode.grid(row=7, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
 
-msg = tk.Message(left_frame, width=200, bg="#5F5F5F", fg="#E97777", font='Arial 10 bold')
+msg = tk.Message(left_frame, width=200, bg="#5F5F5F", fg="#FF4747", font='Arial 10 bold')
 
 
 ttk.Label(right_frame, text="Sollspannung in V").grid(row=1, column=0, sticky="w", pady=(40, 0), padx=(10,0))
@@ -609,28 +611,26 @@ def bind_listbox_click():
 
 bind_listbox_click()
 
-
-
 chk_ends_mode = tk.BooleanVar(value=False)
 chk_elec_mode = tk.BooleanVar(value=False)
 chk_noise_mode = tk.BooleanVar(value=False)
 chk_linear_mode = tk.BooleanVar(value=False)
 chk_meas_ends = ttk.Checkbutton(right_frame, text="Mech. Enden", variable=chk_ends_mode)
-chk_meas_ends.grid(row=8, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_meas_ends.grid(row=7, column=0, sticky="w", pady=(60, 0), padx=(20, 0))
 chk_elec_deg = ttk.Checkbutton(right_frame, text="Elektr. Winkel", variable=chk_elec_mode)
-chk_elec_deg.grid(row=8, column=1, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_elec_deg.grid(row=7, column=1, sticky="w", pady=(60, 0), padx=(20, 0))
 chk_noise = ttk.Checkbutton(right_frame, text="Rauschen", variable=chk_noise_mode)
-chk_noise.grid(row=8, column=2, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_noise.grid(row=7, column=2, sticky="w", pady=(60, 0), padx=(20, 0))
 chk_linearity = ttk.Checkbutton(right_frame, text="Linearität", variable=chk_linear_mode)
-chk_linearity.grid(row=8, column=3, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_linearity.grid(row=7, column=3, sticky="w", pady=(60, 0), padx=(20, 0))
 
 mech_angle_var = tk.StringVar(value="Mechanischer Winkel: --")
-lbl_mech = ttk.Label(right_frame, textvariable=mech_angle_var)
-lbl_mech.grid(row=10, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
+lbl_mech = ttk.Label(right_frame, textvariable=mech_angle_var, font="Verdana 12 bold")
+lbl_mech.grid(row=9, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
 
 elec_angle_var = tk.StringVar(value="Elektrischer Winkel: --")
-lbl_elec = ttk.Label(right_frame, textvariable=elec_angle_var)
-lbl_elec.grid(row=9, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
+lbl_elec = ttk.Label(right_frame, textvariable=elec_angle_var, font="Verdana 12 bold")
+lbl_elec.grid(row=10, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
 
 # txtgo = ttk.Entry(left_frame, width=20, validate="key", validatecommand=vcmd)
 # txtgo.grid(row=3, column=1, pady=(0, 0), padx=(0,0))
@@ -643,7 +643,7 @@ ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=1
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
-ttk.Button(right_frame, text="Messen", command=measurement_chk,width=12).grid(row=8, column=3, pady=(180, 5), padx=(20,0))
+ttk.Button(right_frame, text="Messen", command=measurement_chk,width=12).grid(row=8, column=3, pady=(20, 5), padx=(20,0))
 
 # ttk.Button(left_frame, text="Position 0", command=open_zero_window).grid(row=8, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Links", command=go_left).grid(row=6, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
@@ -652,9 +652,7 @@ ttk.Button(right_frame, text="Messen", command=measurement_chk,width=12).grid(ro
 # ttk.Button(left_frame, text="Curr Position", command=curr_Pos).grid(row=8, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="Go To", command=goto).grid(row=4, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 
-
 root.bind("<Escape>", lambda event: on_up_window())
-
 
 # --------------- MAIN
 build_ring(ring_area)

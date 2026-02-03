@@ -27,7 +27,7 @@ using namespace ControlTableItem;
 const int POLL_TIMER = 1;
 
 int32_t stopped_tick;
-float start_current = 180;
+float start_current = 300;
 float cal_cur0, cal_cur1, cal_cur2, cal_cur3;
 float cur_tolerance = 4;
 float cur_tolerance_slow = 1;

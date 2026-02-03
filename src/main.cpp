@@ -17,7 +17,7 @@ const int BUTTON = 12;
 // --------------- VARIABLES
 bool linear_checked;
 elapsedMillis but_millis;
-int but_timer = 200;
+uint but_timer = 200;
 bool but_up = HIGH;
 bool but_press;
 
@@ -87,6 +87,7 @@ void loop(){
 
       dxl_init();
       calibrate_currents();
+      //Serial.println("CANCEL");
       check_ends(true); // >>>>>>>>>>>>>>>>>>>>>> ÄNDERN- NUR MIT DMM = TRUE
       if(cancelled == true){
         Serial.println("CANCEL");
@@ -125,8 +126,11 @@ void loop(){
       }
     }
     if(command == "LINEAR_START"){
+      lin_init();
       linearity_movement();
-
+      calc_summary();
+      calc_linearity();
+      calc_errors();
       if(cancelled == true){
         Serial.println("CANCEL");
         cancelled = false;
