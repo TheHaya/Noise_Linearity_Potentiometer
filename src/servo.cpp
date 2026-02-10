@@ -75,17 +75,18 @@ void dxl_init(){
 void drive_to(int32_t tick, float rpm, uint8_t DYN_ID){
   dxl.torqueOff(DYN_ID);
   dxl.writeControlTableItem(PROFILE_VELOCITY, DYN_ID, rpm_to_time(tick, rpm)); 
+  //dxl.writeControlTableItem(PROFILE_VELOCITY, DYN_ID, rpm);
   dxl.writeControlTableItem(PROFILE_ACCELERATION, DYN_ID, 0);
   dxl.torqueOn(DYN_ID);
   dxl.setGoalPosition(DYN_ID, tick, UNIT_RAW);
 }
 
 bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode,
-                  uint8_t error_tick, uint32_t timeout, uint8_t DYN_ID){
+                  uint8_t error_tick, uint8_t DYN_ID){
   elapsedMillis polling;
   elapsedMillis t;
 
-  while(t < timeout && cancelled == false){
+  while(cancelled == false){
     if(polling > POLL_TIMER){
       cur_pos = get_tick_position();
       cur_cur = fabsf(dxl.getPresentCurrent(DID, UNIT_MILLI_AMPERE));

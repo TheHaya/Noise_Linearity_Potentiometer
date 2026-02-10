@@ -93,6 +93,8 @@ void loop(){
         Serial.println("CANCEL");
         cancelled = false;
       }
+      drive_to(ZERO_TICK, user_rpm);
+      reached_goal(ZERO_TICK, 2);
     }
 
     if(command == "NOISE_GO"){

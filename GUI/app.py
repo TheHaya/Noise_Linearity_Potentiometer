@@ -161,7 +161,6 @@ def click_outside(event, anchor_entry: ttk.Entry):
     select_from_list(preset_entry)
     on_up_dropdown()
     
-
 def select_from_list(anchor_entry: ttk.Entry):
     lb = dropdown["listbox"]
     if lb is None:
@@ -289,6 +288,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
             print("Fehler bei measurements:", e)
 
         #ser_arduino.busy = False
+        
         root.after(0, wait_win.destroy)
     
     threading.Thread(target=worker, daemon=True).start()
@@ -488,7 +488,7 @@ advanced_mode = tk.BooleanVar(value=False)
 chk_advanced_mode = ttk.Checkbutton(left_frame, text="Erweiteter Modus", variable=advanced_mode, command=advanced_chk)
 chk_advanced_mode.grid(row=7, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
 
-msg = tk.Message(left_frame, width=200, bg="#5F5F5F", fg="#FF4747", font='Arial 10 bold')
+msg = tk.Message(left_frame, width=200, bg="#CCCCCC", fg="#C00000", font='Arial 10 bold')
 
 
 ttk.Label(right_frame, text="Sollspannung in V").grid(row=1, column=0, sticky="w", pady=(40, 0), padx=(10,0))
@@ -637,8 +637,8 @@ lbl_elec.grid(row=10, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12
 
 #ttk.Button(left_frame, text="Abbrechen", command=on_up_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
 #ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
-ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=8, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
-ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=10, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))

@@ -114,21 +114,33 @@ float correction_movement(float &current_volt, float goal_volt,
         low = mid;
       }
     }
+    /*
     float edge_deg = 0;
-      if(dead_direction == 0){
-        edge_deg = tick_to_deg(low);
-      } else if(dead_direction == 1){
-        edge_deg = tick_to_deg(high);
-      }
-    return edge_deg;
+    if(dead_direction == 0){
+      edge_deg = tick_to_deg(low);
+    } else if(dead_direction == 1){
+      edge_deg = tick_to_deg(high);
+    }*/
+    return tick_to_deg(high);
   }
-  return false;
+  return NAN;
 }
   
 
 void calibrate_currents(){
+  /*dxl.torqueOff(DID);
+  dxl.setOperatingMode(DID, OP_EXTENDED_POSITION);
+  dxl.writeControlTableItem(DRIVE_MODE, DID, 0b001);
+  dxl.writeControlTableItem(HOMING_OFFSET, DID, 0);
+  dxl.writeControlTableItem(PROFILE_VELOCITY, DID, 50);
+  dxl.writeControlTableItem(PROFILE_ACCELERATION, DID, 15);
+  dxl.torqueOn(DID);
+  dxl.ledOn(DID);
+  drive_to(-204800, 280);
+  reached_goal(-204800, 2, 1);
+  */
   drive_to(CALIBRATE_CURRENT_CW, slow_rpm);
-  reached_goal(CALIBRATE_CURRENT_CW, 0,1);
+  reached_goal(CALIBRATE_CURRENT_CW, 0, 1);
 
   drive_to(CALIBRATE_CURRENT_CCW, slow_rpm);
   reached_goal(CALIBRATE_CURRENT_CCW, 0, 1);

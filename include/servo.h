@@ -48,4 +48,4 @@ void dxl_init();
 // --------------- DRIVE FUNCTIONS
 void drive_to(int32_t tick, float rpm, uint8_t DYN_ID = 1);
 bool reached_goal(int32_t target_tick, uint8_t measure_spd = 0, uint8_t measure_mode = 0, 
-                    uint8_t error_tick = 1, uint32_t timeout = 20000, uint8_t DYN_ID = 1);
+                    uint8_t error_tick = 1, uint8_t DYN_ID = 1);
