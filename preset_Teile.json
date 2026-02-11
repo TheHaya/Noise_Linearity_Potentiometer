@@ -177,5 +177,20 @@
         "d31": 250.0,
         "d32": 330.0,
         "comment":""
+    },
+
+    "111111":{
+        "soll_spannung_rauschen": 5.0,
+        "soll_spannung_linear": 10.0,
+        "soll_spannung_widerstand": 2.0,
+        "soll_winkel": 330.0,
+        "soll_geschwindigkeit": 60.0,
+        "d11": 0.0,
+        "d12": 50.0,
+        "d21": null,
+        "d22": null,
+        "d31": 280.0,
+        "d32": 330.0,
+        "comment":""
     }
 }

@@ -48,7 +48,9 @@ def load_presets():
 presets = load_presets()
 
 def set_entry(txt_entry, decimal_val):
-    if isinstance(decimal_val, (int, float)):
+    if decimal_val is None:
+        val = ""
+    elif isinstance(decimal_val, (int, float)):
         val = f"{decimal_val}".replace('.' , ',')
     else:
         val = str(decimal_val)
@@ -245,17 +247,18 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     def worker():
         #ser_arduino.busy = True    
         try:
-            for i, (workflow, workflow_args, title, needs_config) in enumerate(modes, start=1):
+            visible_total = sum(1 for m in modes if m[4] is True)
+            visible_i = 0
+
+            for (workflow, workflow_args, title, needs_config, visible) in modes:
                 if stop_event.is_set():
                     break
                 
-                if output_ends is True:
-                    amount_modes = len(modes)
-                else:
-                    amount_modes = len(modes)-1
-                    
-                root.after(0, lambda t=title, i=i, n=amount_modes:
+                if visible:
+                    visible_i += 1
+                    root.after(0, lambda t=title, i=visible_i, n=visible_total:
                             status_label.configure(text=f"Messung {i}/{n}: {t}"))
+                
                 
                 if needs_config:
                     #workflow.config(root, txt_speed, ser_arduino)
@@ -288,7 +291,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
             print("Fehler bei measurements:", e)
 
         #ser_arduino.busy = False
-        
+
         root.after(0, wait_win.destroy)
     
     threading.Thread(target=worker, daemon=True).start()
@@ -310,20 +313,19 @@ def measurement_chk():
     d32 = decimal_conversion(d32_var.get())
 
     modes = []
-    modes.append((mech_ends_workflow, (), "Mech. Endwinkel", True))
-    if chk_ends_mode.get():
-        global output_ends
-        output_ends = True
+    ends_checked = chk_ends_mode.get()
+    modes.append((mech_ends_workflow, (), "Mech. Endwinkel", True, ends_checked))
+
     if chk_elec_mode.get():
-        modes.append((elec_deg_workflow, (d12, d21, d22, d31), "Elektr. Winkel", True))
+        modes.append((elec_deg_workflow, (d12, d21, d22, d31), "Elektr. Winkel", True, True))
     if chk_noise_mode.get():
         pico_plot_time.clear()
         pico_plot_volt.clear()
-        modes.append((noise_workflow, (pico_plot_volt, pico_plot_time), "Rauschprüfung", True))
+        modes.append((noise_workflow, (pico_plot_volt, pico_plot_time), "Rauschprüfung", True, True))
     if chk_linear_mode.get():
-        modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True))
+        modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True, True))
 
-    if not modes:
+    if len(modes) == 1 and ends_checked is False:
         print("Keine Messungen gewählt.")
         return
     

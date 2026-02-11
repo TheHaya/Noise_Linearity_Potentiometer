@@ -19,7 +19,7 @@ def config_pico(txt_s, calc_d, total_t):
     calc_duration_f = calc_d
     total_ticks_getter = total_t
 
-def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr):
+def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr, stop_event=None):
     global start_time, picoEXE, delay_compensation
     out_volt = False
     out_found = False
@@ -35,6 +35,13 @@ def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr)
         text=True, bufsize=1
     )
     for line in p.stdout:
+        if stop_event.is_set():
+                ser_Ard.write(b"STOP\n")
+                time.sleep(0.5)
+                ser_Ard.flush()
+                time.sleep(0.2)
+                break
+        
         line = line.strip()
         print(line)
 
