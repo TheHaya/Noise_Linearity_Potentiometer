@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <noise.h>
 #include <calibrate.h>
-#include <servo.h>
+#include <dxl_servo.h>
 
 int32_t user_go_to;
 
@@ -10,8 +10,7 @@ void noise_movement(){
   float sim_rpm;
   float rpm_intervall; 
 
-  drive_to(sim_mercy_end, user_rpm/2);
-  reached_goal(sim_mercy_end, 1);
+  
   for(int i = 1; i <= 3; i++){
     rpm_intervall = user_rpm/2;
     sim_rpm = rpm_intervall * i;

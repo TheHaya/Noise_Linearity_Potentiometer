@@ -4,7 +4,7 @@
 // --------------- VARIABLES
 extern int tar_volt;
 
-extern const size_t print_array_size;
+extern const size_t PRINT_ARRAY_SIZE;
 extern float print_ist_deg[];
 extern float print_soll_deg[];
 extern float print_soll_volt[];

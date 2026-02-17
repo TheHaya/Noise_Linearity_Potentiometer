@@ -3,7 +3,7 @@
 #include <math.h>
 #include <elapsedMillis.h>
 
-#include <servo.h>
+#include <dxl_servo.h>
 #include <calibrate.h>
 #include <noise.h>
 #include <linearity.h>
@@ -88,7 +88,7 @@ void loop(){
       dxl_init();
       calibrate_currents();
       //Serial.println("CANCEL");
-      check_ends(true); // >>>>>>>>>>>>>>>>>>>>>> ÄNDERN- NUR MIT DMM = TRUE
+      check_ends(false); // >>>>>>>>>>>>>>>>>>>>>> ÄNDERN- NUR MIT DMM = TRUE
       if(cancelled == true){
         Serial.println("CANCEL");
         cancelled = false;
@@ -99,6 +99,8 @@ void loop(){
 
     if(command == "NOISE_GO"){
       if(cancelled == false){
+        drive_to(sim_mercy_end, user_rpm/2);
+        reached_goal(sim_mercy_end, 1);
         Serial.println("NOISE_READY");
       } else{
         Serial.println("CANCEL");

@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <servo.h>
+#include <dxl_servo.h>
 #include <calibrate.h>
 #include <linearity.h>
 #include <elec_deg.h>

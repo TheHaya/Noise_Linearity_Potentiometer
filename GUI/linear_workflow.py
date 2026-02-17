@@ -4,7 +4,8 @@ from serial_client import open_first_available
 
 # --------------- LINEAR VARIABLES
 root = None
-MULTI_PORT = "COM15"
+MULTI_PORT = "COM17"
+PSU_PORT = "COM15"
 daten = []
 result = {}
 
@@ -31,6 +32,21 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
             print(f"[SERIAL] Verbunden: {MULTI_PORT}")
         except Exception as e:
             print("Multimeter kein Port")
+
+        try:
+            ser_PSU = serial.Serial(PSU_PORT, baudrate=115200, timeout = 0.5)
+            print(f"[SERIAL] Verbunden: {PSU_PORT}")
+        except Exception as e:
+            print("Netzteil kein Port")
+
+        ser_PSU.write(b"VOLT 10\n")
+        time.sleep(0.2)
+        ser_PSU.write(b"CURR 0.004\n")
+        time.sleep(0.2)
+        ser_PSU.write(b"VOLT:LIM 12\n")
+        time.sleep(0.2)
+        ser_PSU.write(b"CURR:LIM 0.120\n")
+        time.sleep(0.2)
         N = 13 #Anz Messpunkte wegen leere Zellen
         global daten
         daten = []

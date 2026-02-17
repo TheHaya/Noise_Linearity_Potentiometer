@@ -5,7 +5,7 @@ from PIL import ImageTk, Image
 import sv_ttk
 import threading, json, time
 
-from serial_client import serial_manager
+
 from pico_runner import config_pico
 from export import save_to_pdf, save_to_excel
 from ring import build_ring, mark_deadzone
@@ -13,7 +13,7 @@ import noise_workflow
 import linear_workflow
 import mech_ends_workflow
 import elec_deg_workflow
-
+from tester import tests
 
 # --------------- APP VARIABLES 
 # ARDUINO_PORTS = ["COM3", "COM5", "COM9"]
@@ -326,6 +326,7 @@ def measurement_chk():
         modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True, True))
 
     if len(modes) == 1 and ends_checked is False:
+        open_nocheck_window()
         print("Keine Messungen gewählt.")
         return
     
@@ -388,6 +389,7 @@ def instant_deadzone_ring():
     mark_deadzone(deadzone_angles)
 
 
+
 # --------------- OPEN ZERO WINDOW
 def open_zero_window():
     def on_up_wait_results():
@@ -440,6 +442,22 @@ def open_zero_window():
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
     threading.Thread(target=go_zero, args=(stop_event, on_up_wait_results), daemon=True).start()
+
+def open_nocheck_window():
+    global nocheck_win
+    nocheck_win = tk.Toplevel(root)
+    nocheck_win.title("Fehler")
+    nocheck_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
+    nocheck_win.grid_rowconfigure(0, weight=1)
+    nocheck_win.grid_rowconfigure(1, weight=1)
+    nocheck_win.grid_columnconfigure(0, weight=1)
+    
+    ttk.Label(nocheck_win, text="Bitte eine Messung ankreuzen.").grid(row=0, column=0)
+    ok_button = ttk.Button(nocheck_win, text="OK", command=nocheck_win.destroy)
+    ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
+    ok_button.focus_set()  
+    nocheck_win.bind("<Return>", lambda event: ok_button.invoke())
+    
 
 
 # --------------- GUI
@@ -646,7 +664,7 @@ ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=1
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
 ttk.Button(right_frame, text="Messen", command=measurement_chk,width=12).grid(row=8, column=3, pady=(20, 5), padx=(20,0))
-
+ttk.Button(right_frame, text="Netzteil Test", command=tests,width=12).grid(row=9, column=3, pady=(20, 5), padx=(20,0))
 # ttk.Button(left_frame, text="Position 0", command=open_zero_window).grid(row=8, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Links", command=go_left).grid(row=6, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Rechts", command=go_Right).grid(row=7, column=1, pady=(4, 5), padx=(0,0), ipadx=40)

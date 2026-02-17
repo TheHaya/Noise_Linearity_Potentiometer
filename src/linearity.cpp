@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <Dynamixel2Arduino.h>
-#include <servo.h>
+#include <dxl_servo.h>
 #include <calibrate.h>
 #include <linearity.h>
 
@@ -8,19 +8,19 @@
 // --------------- VARIABLES
 int tar_volt = 10;
 
-const size_t print_array_size = 13;
-float print_ist_deg[print_array_size];
-float print_soll_deg[print_array_size];
-float print_soll_volt[print_array_size];
-float print_ist_volt[print_array_size];
-float print_real_diff_mid[print_array_size];
-float print_soll_volt_real[print_array_size];
-float print_linear_real[print_array_size];
-bool empty_cells[print_array_size];
+const size_t PRINT_ARRAY_SIZE = 13;
+float print_ist_deg[PRINT_ARRAY_SIZE];
+float print_soll_deg[PRINT_ARRAY_SIZE];
+float print_soll_volt[PRINT_ARRAY_SIZE];
+float print_ist_volt[PRINT_ARRAY_SIZE];
+float print_real_diff_mid[PRINT_ARRAY_SIZE];
+float print_soll_volt_real[PRINT_ARRAY_SIZE];
+float print_linear_real[PRINT_ARRAY_SIZE];
+bool empty_cells[PRINT_ARRAY_SIZE];
 bool error_lin;
 bool error_mech;
 bool error_midDead;
-bool error_lin_index[print_array_size];
+bool error_lin_index[PRINT_ARRAY_SIZE];
 
 int32_t real_tick_total, soll_tick_total;
 float d11_deg, d12_deg, d21_deg, d22_deg, d31_deg, d32_deg;
@@ -34,13 +34,13 @@ void lin_init(){
     error_lin = false;
     error_mech = false;
     error_midDead = false;
-    for (size_t i = 0; i < print_array_size; ++i) {
-    error_lin_index[i] = false;
-    lin_max = 0;
-    lin_min = 0;
+    for (size_t i = 0; i < PRINT_ARRAY_SIZE; ++i) {
+      error_lin_index[i] = false;
+      lin_max = -100;
+      lin_min = 100;
     }
 }
-  
+
 
 float lerp_dead(int32_t x, int32_t d1, int32_t d2){
   if(d1 == d2){
@@ -52,11 +52,11 @@ float lerp_dead(int32_t x, int32_t d1, int32_t d2){
 
 float dead_soll_volt_deg(float deg, float tar_volt,
                       float d12_deg, float d21_deg, float d22_deg, float d31_deg) {
-  const float half = tar_volt * 0.5f;
+  const float HALF = tar_volt * 0.5f;
   if (deg <= d12_deg) return 0.0f;
-  if (deg <= d21_deg) return half * (deg - d12_deg) / (d21_deg - d12_deg);
-  if (deg <= d22_deg) return half;
-  if (deg <= d31_deg) return half + half * (deg - d22_deg) / (d31_deg - d22_deg);
+  if (deg <= d21_deg) return HALF * (deg - d12_deg) / (d21_deg - d12_deg);
+  if (deg <= d22_deg) return HALF;
+  if (deg <= d31_deg) return HALF + HALF * (deg - d22_deg) / (d31_deg - d22_deg);
   return tar_volt;
 }
 
@@ -104,8 +104,8 @@ void linearity_movement(){
      d22_tick, d22_tick+mid_steps, d22_tick+2*mid_steps, d22_tick+3*mid_steps, d31_tick, mercy_end,
       d21_tick, d21_tick-mid_steps, d21_tick-2*mid_steps, d21_tick-3*mid_steps, d12_tick, mercy_start};
   
-  int32_t drive_tick[print_array_size];
-  for(size_t i = 0; i<print_array_size; i++){    
+  int32_t drive_tick[PRINT_ARRAY_SIZE];
+  for(size_t i = 0; i<PRINT_ARRAY_SIZE; i++){    
     if(sim_tick[i] == real_mid || sim_tick[i] == mercy_end || sim_tick[i] == mercy_start){
       drive_tick[i] = sim_tick[i] + start_tick;
     } else {
@@ -113,7 +113,7 @@ void linearity_movement(){
     }
   }
 
-  for (size_t i = 0; i<print_array_size; i++) {
+  for (size_t i = 0; i<PRINT_ARRAY_SIZE; i++) {
     int32_t tick = drive_tick[i];
     //DEBUG_SERIAL.print(tick);
     drive_to(tick, user_rpm);
@@ -199,7 +199,7 @@ void linearity_movement(){
     error_midDead = true;
   }
   // --------------- ÜBERGABE AN PYTHON
-  for (size_t i = 0; i<print_array_size; i++) {
+  for (size_t i = 0; i<PRINT_ARRAY_SIZE; i++) {
     Serial.print("Soll-Winkel:");
     Serial.print(print_soll_deg[i],1);
     Serial.print(";Soll-Spannung:");
@@ -215,10 +215,10 @@ void linearity_movement(){
 
 // ----------------- LINEARITÄT
 void calc_linearity(){
-  const float real_volt_per_deg = tar_volt/ges_aktiv;
-  const float mid_soll_volt_real = aktiv_ccw*real_volt_per_deg;
+  const float REAL_VOLT_PER_DEG = tar_volt/ges_aktiv;
+  const float MID_SOLL_VOLT_REAL = aktiv_ccw*REAL_VOLT_PER_DEG;
 
-  for(size_t i = 0; i<print_array_size ; i++){
+  for(size_t i = 0; i<PRINT_ARRAY_SIZE ; i++){
     // LEERE ZELLEN ÜBERSPRINGEN
     if (empty_cells[i] == true) {
       print_soll_volt_real[i] = NAN;
@@ -227,7 +227,7 @@ void calc_linearity(){
     }
 
     // SOLLSPANNUNG REAL
-    print_soll_volt_real[i] = print_real_diff_mid[i] * real_volt_per_deg + mid_soll_volt_real;
+    print_soll_volt_real[i] = print_real_diff_mid[i] * REAL_VOLT_PER_DEG + MID_SOLL_VOLT_REAL;
     
     // LINEARITÄT
     print_linear_real[i] = (print_ist_volt[i] - print_soll_volt_real[i])/tar_volt;
@@ -245,7 +245,7 @@ void calc_linearity(){
   }
 
   
-  for(size_t i = 0; i<print_array_size ; i++){
+  for(size_t i = 0; i<PRINT_ARRAY_SIZE ; i++){
     Serial.print("RESULT;");
     Serial.print("idx:");   
     Serial.print(i);
@@ -279,7 +279,7 @@ void calc_errors(){
   Serial.print("IDX:");
   bool first = true;
   if (error_lin == true) {
-    for (size_t i = 0; i < print_array_size; i++) {
+    for (size_t i = 0; i < PRINT_ARRAY_SIZE; i++) {
       if (error_lin_index[i]) {
         if (first) {
           Serial.print(i);
