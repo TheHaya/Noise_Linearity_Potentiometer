@@ -170,6 +170,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
             
         ser_arduino.close()
         ser_Multi.close()
+        ser_PSU.close()
                         
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug

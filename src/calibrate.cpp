@@ -24,6 +24,8 @@ float real_time1 = 0, real_time2 = 0, real_time3 = 0;
 float theo_time1 = 0, theo_time2 = 0, theo_time3 = 0;
 float target_deg_total;
 float delay1, delay2, delay3;
+float safety_pos_volt;
+float tar_volt = 10;
 
 
 // --------------- CALIBRATIONS
@@ -47,7 +49,7 @@ float corr_measure(float current_volt){
 
 // dead_direction 0 -> deadzone links von position //////--- ;;; 1 -> rechts von position ---//////
 float correction_movement(float &current_volt, float goal_volt, 
-                          int dead_direction, int dead_half, uint timeout){
+                          int dead_direction, int dead_half, int timeout){
   const float V_TOL = 0.002f;        
   const int32_t TICK_TOL = 1;
   elapsedMillis error_timer;
@@ -126,6 +128,13 @@ float correction_movement(float &current_volt, float goal_volt,
   return NAN;
 }
   
+void check_beginning(){
+  safety_pos_volt = corr_measure(safety_pos_volt);
+  if(fabsf(safety_pos_volt - tar_volt) < 1){
+    Serial.println("SAFETY");
+    cancelled = true;
+  }
+}
 
 void calibrate_currents(){
   /*dxl.torqueOff(DID);

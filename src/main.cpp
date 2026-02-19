@@ -8,18 +8,19 @@
 #include <noise.h>
 #include <linearity.h>
 #include <elec_deg.h>
-
+#include <relay.h>
 
 // --------------- CONSTANTS
-const int BUTTON = 12;
+const int BUTTON = 19;
 
 
 // --------------- VARIABLES
 bool linear_checked;
 elapsedMillis but_millis;
-uint but_timer = 200;
+int but_timer = 200;
 bool but_up = HIGH;
 bool but_press;
+int counter_mode;
 
 // --------------- SETUP AND ASSIST FUNCTIONS
 void setup(){
@@ -35,7 +36,8 @@ void setup(){
   dxl.writeControlTableItem(PROFILE_ACCELERATION, DID, 500);
   dxl.torqueOn(DID);
   dxl.ledOn(DID);
-
+  relays_init();
+  all_relays_off();
   pinMode(BUTTON, INPUT_PULLUP);
 
 }
@@ -55,6 +57,7 @@ void loop(){
     command.trim();
 
     // EINGABE VON PYTHON
+    if(command.startsWith("SETV:")){tar_volt = command.substring(5).toFloat();}
     if(command.startsWith("SETW:")){target_deg_total = command.substring(5).toFloat();}
     if(command.startsWith("SETS:")){user_rpm = command.substring(5).toFloat();}
     if(command.startsWith("goto:")){user_go_to = command.substring(5).toFloat();}
@@ -68,20 +71,7 @@ void loop(){
     if(command == "ZERO"){
       go_zero();
     }
-    /*
-    if(command == "ENDS"){
-      modes.push_back(1);
-    }
-    if(command == "ELEC"){
-      modes.push_back(2);
-    }
-    if(command == "NOISE"){
-      modes.push_back(3);
-    }
-    if(command == "LINEAR"){
-      modes.push_back(4);
-    }*/
-
+  
     if(command == "INIT_GO"){
       bool linear_checked = false;
 
@@ -98,6 +88,7 @@ void loop(){
     }
 
     if(command == "NOISE_GO"){
+      apply_relay_mode(NOISE_RELAY_MODE);
       if(cancelled == false){
         drive_to(sim_mercy_end, user_rpm/2);
         reached_goal(sim_mercy_end, 1);
@@ -120,8 +111,8 @@ void loop(){
     }
 
     if(command == "LINEAR_GO"){
-      linear_checked = true;
-
+      //linear_checked = true;
+      apply_relay_mode(LINEARITY_RELAY_MODE);
       if(cancelled == false){
         Serial.println("LINEAR_READY");
       } else{
@@ -147,6 +138,7 @@ void loop(){
 
     if(linear_checked == false){ // Falls elec_deg und linear beide angekreuzt wurden dann einfach elec_deg ignorieren
       if(command == "ELEC_DEG_GO"){
+        apply_relay_mode(ELEC_DEG_RELAY_MODE);
         if(cancelled == false){
           Serial.println("ELEC_DEG_READY");
         } else{
@@ -166,131 +158,56 @@ void loop(){
         Serial.println("ELEC_DEG_FINISH");
       }
     }
-    
     /*
-    if(command == "START"){
-      if(modes.size() > 0){
-        for(int i = 0; i < modes.size(); i++){
-          switch(modes[i]){
-            case 1:
-                
-                Serial.println("ENDS_FINISH");
-                break;
-                
-            case 2:
-              elec_deg_movement();
-              break;
-            case 3:
-              noise_movement();
-              break;
-            case 4:
-              linearity_movement();
-              break;
-            default:
-              break;
-          }
-          if(cancelled == true){
-          Serial.println("CANCEL");
-          cancelled = false;
-          }
-        }
-      }   
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
-      dxl.ledOff(DID);
-      Serial.println("FINISH");
-    }*/
-
-
-
-    /*
-    if(command == "ENDS_GO"){
-      dxl_init();
-      calibrate_currents();
-      check_ends();
-      
-      if(cancelled == true){
-        Serial.println("CANCEL");
-        cancelled = false;
+    if(command =="SWITCH"){
+      switch(counter_mode){
+        case 0:
+          apply_relay_mode(0);
+          counter_mode++;
+          break;
+        case 1:
+          apply_relay_mode(1);
+          counter_mode++;
+          break;
+        case 2:
+          apply_relay_mode(2);
+          counter_mode++;
+          break;
+        case 3:
+          apply_relay_mode(4);
+          counter_mode++;
+          break;
+        case 4:
+          apply_relay_mode(8);
+          counter_mode++;
+          break;
+        case 5:
+          apply_relay_mode(16);
+          counter_mode++;
+          break;
+        case 6:
+          apply_relay_mode(32);
+          counter_mode++;
+          break;
+        case 7:
+          apply_relay_mode(64);
+          counter_mode++;
+          break;
+        case 8:
+          apply_relay_mode(128);
+          counter_mode++;
+          break;
+        case 9:
+          apply_relay_mode(256);
+          counter_mode++;
+          break;
+        case 10:
+          apply_relay_mode(512);
+          counter_mode=0;
+          break;
+        default:
+          break;
       }
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
-      dxl.ledOff(DID);
-      Serial.println("ENDS_FINISH");
-    }
-
-     if(command == "ELEC_DEG_GO"){
-      dxl_init();
-      calibrate_currents();
-      check_ends(true);
-      if(cancelled == false){
-        Serial.println("ELEC_DEG_READY");
-      } else{
-        Serial.println("CANCEL");
-        cancelled = false;
-      }
-    }
-    if(command == "ELEC_DEG_START"){
-      elec_deg_movement();
-      if(cancelled == true){
-        Serial.println("CANCEL");
-        cancelled = false;
-      }
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
-      dxl.ledOff(DID);
-      Serial.println("ELEC_DEG_FINISH");
-    }
-
-    if(command == "NOISE_GO"){
-      dxl_init();
-      calibrate_currents();
-      check_ends();
-      
-      if(cancelled == false){
-        Serial.println("NOISE_READY");
-      } else{
-        Serial.println("CANCEL");
-        cancelled = false;
-      }
-    }
-    if(command == "NOISE_START"){
-      noise_movement();
-
-      if(cancelled == true){
-        Serial.println("CANCEL");
-        cancelled = false;
-      }
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
-      dxl.ledOff(DID);
-      Serial.println("NOISE_FINISH");
-    }
-
-    if(command == "LINEAR_GO"){
-      dxl_init();
-      lin_init();
-      calibrate_currents();
-      check_ends(true);
-      
-      if(cancelled == false){
-        Serial.println("LINEAR_READY");
-      } else{
-        Serial.println("CANCEL");
-        cancelled = false;
-      }
-    }
-    if(command == "LINEAR_START"){
-      linearity_movement();
-
-      if(cancelled == true){
-        Serial.println("CANCEL");
-        cancelled = false;
-      }
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
-      dxl.ledOff(DID);
-      Serial.println("LINEAR_FINISH");
     }*/
   }
 }

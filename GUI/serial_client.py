@@ -5,7 +5,7 @@ import serial.tools.list_ports
 ser_Arduino = None
 ARDUINO_PORT1 = "COM3"
 ARDUINO_PORT2 = "COM5"
-ARDUINO_PORT3 = "COM9"
+ARDUINO_PORT3 = "COM18"
 
 
 # --------------- SERIAL MIT SERVO

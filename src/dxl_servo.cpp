@@ -3,14 +3,12 @@
 #include <Dynamixel2Arduino.h>
 #include <math.h>
 #include <elapsedMillis.h>
-#include <array>
-#include <vector>
 
 // --------------- DYNAMIXEL VARIABLES
 #define DXL_SERIAL Serial1
 #define DEBUG_SERIAL Serial
 
-const int DXL_DIR_PIN = A6;
+const int DXL_DIR_PIN = 2;
 const uint8_t DID = 1;
 const float DXL_PROTOCOL = 2.0;
 const uint32_t DXL_BAUD = 1000000;
@@ -34,8 +32,7 @@ float cur_tolerance_slow = 1;
 bool cancelled;
 int32_t cur_pos;
 float cur_cur;
-using std::vector;
-vector<int> modes;
+
 
 
 int32_t deg_to_tick(float deg){
@@ -67,7 +64,6 @@ void dxl_init(){
   cal_cur1 = 0;
   cal_cur2 = 0;
   cal_cur3 = 0;
-  modes.clear();
 }
 
 

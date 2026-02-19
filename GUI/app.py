@@ -38,7 +38,6 @@ output_ends = False
 
 # --------------- PRESETS LADEN
 preset_path = "preset_Teile.json"
-
 def load_presets():
     try:
         with open (preset_path, "r", encoding="utf-8") as p:

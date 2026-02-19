@@ -177,6 +177,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
                 break
            
         ser_arduino.close()
+        ser_PSU.close()
 
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug

@@ -6,8 +6,6 @@
 
 
 // --------------- VARIABLES
-int tar_volt = 10;
-
 const size_t PRINT_ARRAY_SIZE = 13;
 float print_ist_deg[PRINT_ARRAY_SIZE];
 float print_soll_deg[PRINT_ARRAY_SIZE];

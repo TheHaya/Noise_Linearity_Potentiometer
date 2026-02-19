@@ -45,6 +45,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
         time.sleep(0.2)
         ser_PSU.write(b"CURR:LIM 0.120\n")
         time.sleep(0.2)
+        ser_arduino.write(f"SETV:{ges_v}\n".encode())
+        time.sleep(0.2)
         ser_arduino.write(f"SETW:{ges_w}\n".encode())
         time.sleep(0.2)
         ser_arduino.write(f"SETS:{ges_s}\n".encode())
@@ -115,7 +117,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
                 break
 
         ser_arduino.close()
-
+        ser_Multi.close()
+        ser_PSU.close()
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug
 

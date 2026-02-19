@@ -5,7 +5,7 @@ from serial_client import open_first_available
 # --------------- ELEC DEG VARIABLES
 root = None
 MULTI_PORT = "COM17"
-
+PSU_PORT = "COM15"
 
 
 # --------------- ELEC DEG FUNCTIONS
@@ -46,7 +46,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
         time.sleep(0.2)
         ser_PSU.write(b"CURR:LIM 0.120\n")
         time.sleep(0.2)
-        
+
         N = 13 #Anz Messpunkte wegen leere Zellen
 
         time.sleep(0.2)
@@ -116,6 +116,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
             
         ser_arduino.close()
         ser_Multi.close()
+        ser_PSU.close()
                         
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug

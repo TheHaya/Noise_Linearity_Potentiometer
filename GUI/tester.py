@@ -2,18 +2,15 @@ import time, serial
 from elec_deg_workflow import RegexMultimeter
 
 
-PSU_PORT = "COM15"
+ard_port = "COM18"
 
 
 
 def tests():
-    with serial.Serial(PSU_PORT, baudrate=115200, timeout=5) as psu:
-
+    with serial.Serial(ard_port, baudrate=115200, timeout=5) as ser_ard:
+        time.sleep(2.0)  # wichtig: Arduino booten lassen!
+        ser_ard.reset_input_buffer()
+        ser_ard.write(b"SWITCH\n")
         time.sleep(0.2)
-        psu.reset_input_buffer()
-        psu.reset_output_buffer()
-
-        psu.write(b"VOLT 10\n")
         time.sleep(0.2)
-        psu.write(b"OUTP?\n")
-        print("OUT:", psu.readline().decode(errors="ignore").strip())
+        print(ser_ard.read_all().decode(errors="ignore"))

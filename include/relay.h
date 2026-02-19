@@ -1,0 +1,40 @@
+#pragma once
+#include <Arduino.h>
+
+// --------------- RELAY VARIABLES
+extern const int RELAY_AMOUNT;
+extern const int RELAY_PINS[];
+
+extern const uint16_t RELAY_1;
+extern const uint16_t RELAY_2;
+extern const uint16_t RELAY_3;
+extern const uint16_t RELAY_4;
+extern const uint16_t RELAY_5;
+extern const uint16_t RELAY_6;
+extern const uint16_t RELAY_7;
+extern const uint16_t RELAY_8;
+extern const uint16_t RELAY_9;
+extern const uint16_t RELAY_10;
+extern const uint16_t RELAY_11;
+extern const uint16_t RELAY_12;
+
+extern const uint16_t IDLE_RELAY_MODE;
+extern const uint16_t LINEARITY_RELAY_MODE;
+extern const uint16_t NOISE_RELAY_MODE;
+extern const uint16_t NOISE_LOADED_RELAY_MODE;
+extern const uint16_t ELEC_DEG_RELAY_MODE;
+extern const uint16_t TOTAL_RESISTANCE_RELAY_MODE;
+extern const uint16_t INITIAL_RESISTANCE_RELAY_MODE;
+extern const uint16_t FINAL_RESISTANCE_RELAY_MODE;
+extern const uint16_t FIRST_HALF_RESISTANCE;
+extern const uint16_t SECOND_HALF_RESISTANCE;
+extern const uint16_t MIDDLE_RESISTANCE;
+
+extern uint16_t current_mode;
+
+void relays_init();
+void switch_relays(int idx, bool turn_on);
+
+void apply_relay_mode(uint16_t mode);
+
+void all_relays_off();

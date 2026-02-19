@@ -24,9 +24,11 @@ extern float theo_time1, theo_time2, theo_time3;
 extern float target_deg_total;
 extern float delay1, delay2, delay3;
 extern float ist_start_volt, ist_end_volt, ist_mid_volt;
+extern float safety_pos_volt;
+extern float tar_volt;
 
 float corr_measure(float current_volt);
 void calibrate_currents();
 void check_ends(bool uses_dmm=false);
 float correction_movement(float &current_volt, float goal_volt, 
-                          int dead_direction, int dead_half, uint timeout=18000);
+                          int dead_direction, int dead_half, int timeout=18000);
