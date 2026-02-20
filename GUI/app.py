@@ -351,12 +351,14 @@ def export_excel():
 def advanced_chk():
     if advanced_mode.get():
         text_rw_state = 'normal'
+        set_goto_visible(True)
     else:
         text_rw_state = 'readonly'
+        set_goto_visible(False)
 
     for fields in (txt_volt, txt_angle, txt_speed, txt_d11, txt_d12, txt_d21, txt_d22, txt_d31, txt_d32):
         fields.configure(state=text_rw_state)
-
+        
 def autosave_chk():
     if autosave_var.get():
         if linear_win:
@@ -388,7 +390,17 @@ def instant_deadzone_ring():
     
     mark_deadzone(deadzone_angles)
 
+def goto_execute():
+    side_functions.goto(float(txt_go.get().strip()))
 
+def set_goto_visible(visible: bool):
+    widgets = (lbl_go, txt_go, but_go)
+    if visible:
+        for w in widgets:
+            w.grid()
+    else:
+        for w in widgets:
+            w.grid_remove()
 
 # --------------- OPEN ZERO WINDOW
 def open_zero_window():
@@ -458,7 +470,6 @@ def open_nocheck_window():
     ok_button.focus_set()  
     nocheck_win.bind("<Return>", lambda event: ok_button.invoke())
     
-
 
 # --------------- GUI
 root = tk.Tk()
@@ -652,13 +663,15 @@ elec_angle_var = tk.StringVar(value="Elektrischer Winkel: --")
 lbl_elec = ttk.Label(right_frame, textvariable=elec_angle_var, font="Verdana 12 bold")
 lbl_elec.grid(row=10, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
 
-# txtgo = ttk.Entry(left_frame, width=20, validate="key", validatecommand=vcmd)
-# txtgo.grid(row=3, column=1, pady=(0, 0), padx=(0,0))
+lbl_go = ttk.Label(right_frame, text="Anfahrt:")
+lbl_go.grid(row=8, column=2, pady=(20,0))
+txt_go = ttk.Entry(right_frame, width=5, validate="key", validatecommand=vcmd)
+txt_go.grid(row=9, column=2)
 
 #ttk.Button(left_frame, text="Abbrechen", command=on_up_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
 #ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
-ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=10, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=10, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
 ttk.Button(left_frame, text="Position 0", command=open_zero_window, width=18).grid(row=11, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
@@ -670,13 +683,14 @@ ttk.Button(right_frame, text="Messen", command=measurement_chk,width=12).grid(ro
 # ttk.Button(left_frame, text="0.1 Rechts", command=go_Right).grid(row=7, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="Conn Serial", command=ser_Connect).grid(row=5, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="Curr Position", command=curr_Pos).grid(row=8, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
-# ttk.Button(left_frame, text="Go To", command=goto).grid(row=4, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
+but_go = ttk.Button(right_frame, text="Go To", command=goto_execute)
+but_go.grid(row=10, column=2, pady=(5, 5))
 
 root.bind("<Escape>", lambda event: on_up_window())
 
 # --------------- MAIN
 build_ring(ring_area)
-
+set_goto_visible(False)
 instant_deadzone_ring()
 sv_ttk.set_theme("dark")
 root.mainloop()
