@@ -19,6 +19,7 @@ extern const uint16_t RELAY_11;
 extern const uint16_t RELAY_12;
 
 extern const uint16_t IDLE_RELAY_MODE;
+extern const uint16_t INIT_RELAY_MODE;
 extern const uint16_t LINEARITY_RELAY_MODE;
 extern const uint16_t NOISE_RELAY_MODE;
 extern const uint16_t NOISE_LOADED_RELAY_MODE;
@@ -32,6 +33,8 @@ extern const uint16_t MIDDLE_RESISTANCE;
 
 extern uint16_t current_mode;
 
+
+// --------------- RELAY FUNCTIONS
 void relays_init();
 void switch_relays(int idx, bool turn_on);
 

@@ -37,6 +37,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
         except Exception as e:
             print("Netzteil kein Port")
 
+        ser_PSU.write(b"OUTP OFF\n")
+        time.sleep(0.2)
         ser_PSU.write(b"VOLT 10\n")
         time.sleep(0.2)
         ser_PSU.write(b"CURR 0.004\n")
@@ -44,6 +46,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
         ser_PSU.write(b"VOLT:LIM 12\n")
         time.sleep(0.2)
         ser_PSU.write(b"CURR:LIM 0.120\n")
+        time.sleep(0.2)
+        ser_PSU.write(b"OUTP ON\n")
         time.sleep(0.2)
         ser_arduino.write(f"SETV:{ges_v}\n".encode())
         time.sleep(0.2)
@@ -113,6 +117,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
 
             #elif line == 'ENDS_FINISH':
             #    break
+            elif line == 'SAFETY':
+                break
             elif line == 'CANCEL':
                 break
 

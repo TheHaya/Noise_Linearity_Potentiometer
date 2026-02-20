@@ -9,13 +9,14 @@
 #include <linearity.h>
 #include <elec_deg.h>
 #include <relay.h>
+#include <side_functions.h>
 
 // --------------- CONSTANTS
 const int BUTTON = 19;
 
 
 // --------------- VARIABLES
-bool linear_checked;
+bool linear_checked = false;
 elapsedMillis but_millis;
 int but_timer = 200;
 bool but_up = HIGH;
@@ -42,7 +43,6 @@ void setup(){
 
 }
 
-
 // --------------- LOOP
 void loop(){
   but_press = digitalRead(BUTTON);
@@ -67,42 +67,36 @@ void loop(){
     if(command.startsWith("dead22:")){d22_deg = command.substring(7).toFloat();}
     if(command.startsWith("dead31:")){d31_deg = command.substring(7).toFloat();}
     if(command.startsWith("dead32:")){d32_deg = command.substring(7).toFloat();}
-
-    if(command == "ZERO"){
-      go_zero();
-    }
   
     if(command == "INIT_GO"){
-      bool linear_checked = false;
-
+      linear_checked = false;
       dxl_init();
-      calibrate_currents();
-      //Serial.println("CANCEL");
-      check_ends(false); // >>>>>>>>>>>>>>>>>>>>>> ÄNDERN- NUR MIT DMM = TRUE
-      if(cancelled == true){
-        Serial.println("CANCEL");
-        cancelled = false;
-      }
+      apply_relay_mode(INIT_RELAY_MODE);
+      check_beginning();        if(abort_if_cancelled()) return;
+      calibrate_currents();     if(abort_if_cancelled()) return;
+      check_ends(false);        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
+      
       drive_to(ZERO_TICK, user_rpm);
       reached_goal(ZERO_TICK, 2);
     }
 
     if(command == "NOISE_GO"){
+      if(abort_if_cancelled()) return;
       apply_relay_mode(NOISE_RELAY_MODE);
-      if(cancelled == false){
-        drive_to(sim_mercy_end, user_rpm/2);
-        reached_goal(sim_mercy_end, 1);
-        Serial.println("NOISE_READY");
-      } else{
-        Serial.println("CANCEL");
-        cancelled = false;
-      }
+      // if(cancelled == false){
+      drive_to(sim_mercy_end, user_rpm/2);
+      reached_goal(sim_mercy_end, 1); 
+      Serial.println("NOISE_READY");
+      // } else{
+        // Serial.println("CANCEL");
+        // cancelled = false;
+      // }
     }
     if(command == "NOISE_START"){
       noise_movement();
       if(cancelled == true){
         Serial.println("CANCEL");
-        cancelled = false;
+        // cancelled = false;
       }
       drive_to(ZERO_TICK, user_rpm);
       reached_goal(ZERO_TICK, 2);
@@ -111,13 +105,13 @@ void loop(){
     }
 
     if(command == "LINEAR_GO"){
-      //linear_checked = true;
+      linear_checked = true; if(abort_if_cancelled()) return;
       apply_relay_mode(LINEARITY_RELAY_MODE);
       if(cancelled == false){
         Serial.println("LINEAR_READY");
       } else{
         Serial.println("CANCEL");
-        cancelled = false;
+        // cancelled = false;
       }
     }
     if(command == "LINEAR_START"){
@@ -128,7 +122,7 @@ void loop(){
       calc_errors();
       if(cancelled == true){
         Serial.println("CANCEL");
-        cancelled = false;
+        // cancelled = false;
       }
       drive_to(ZERO_TICK, user_rpm);
       reached_goal(ZERO_TICK, 2);
@@ -138,19 +132,20 @@ void loop(){
 
     if(linear_checked == false){ // Falls elec_deg und linear beide angekreuzt wurden dann einfach elec_deg ignorieren
       if(command == "ELEC_DEG_GO"){
+        if(abort_if_cancelled()) return;
         apply_relay_mode(ELEC_DEG_RELAY_MODE);
         if(cancelled == false){
           Serial.println("ELEC_DEG_READY");
         } else{
           Serial.println("CANCEL");
-          cancelled = false;
+          // cancelled = false;
         }
       }
       if(command == "ELEC_DEG_START"){
         elec_deg_movement();
         if(cancelled == true){
           Serial.println("CANCEL");
-          cancelled = false;
+          //cancelled = false;
         }
         drive_to(ZERO_TICK, user_rpm);
         reached_goal(ZERO_TICK, 2);
@@ -158,56 +153,13 @@ void loop(){
         Serial.println("ELEC_DEG_FINISH");
       }
     }
-    /*
-    if(command =="SWITCH"){
-      switch(counter_mode){
-        case 0:
-          apply_relay_mode(0);
-          counter_mode++;
-          break;
-        case 1:
-          apply_relay_mode(1);
-          counter_mode++;
-          break;
-        case 2:
-          apply_relay_mode(2);
-          counter_mode++;
-          break;
-        case 3:
-          apply_relay_mode(4);
-          counter_mode++;
-          break;
-        case 4:
-          apply_relay_mode(8);
-          counter_mode++;
-          break;
-        case 5:
-          apply_relay_mode(16);
-          counter_mode++;
-          break;
-        case 6:
-          apply_relay_mode(32);
-          counter_mode++;
-          break;
-        case 7:
-          apply_relay_mode(64);
-          counter_mode++;
-          break;
-        case 8:
-          apply_relay_mode(128);
-          counter_mode++;
-          break;
-        case 9:
-          apply_relay_mode(256);
-          counter_mode++;
-          break;
-        case 10:
-          apply_relay_mode(512);
-          counter_mode=0;
-          break;
-        default:
-          break;
-      }
-    }*/
+
+    if(command == "ZERO"){
+      go_zero();
+    } 
+
+    if(command == "GOTO"){
+      go_to();
+    } 
   }
 }

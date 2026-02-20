@@ -105,14 +105,17 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
             break;
           case 1: if(cur_cur > cal_cur1 + cur_tolerance){
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
+            cancelled = true;
             return false;} 
             break;
           case 2: if(cur_cur > cal_cur2 + cur_tolerance){
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
+            cancelled = true;
             return false;} 
             break;
           case 3: if(cur_cur > cal_cur3 + cur_tolerance){
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
+            cancelled = true;
             return false;} 
             break;
           default: break;

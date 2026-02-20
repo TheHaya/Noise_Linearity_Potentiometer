@@ -20,6 +20,7 @@ const uint16_t RELAY_11 = 1UL << 10;
 const uint16_t RELAY_12 = 1UL << 11; // bis jetzt bis 0b0000100000000000
 
 const uint16_t IDLE_RELAY_MODE = 0;
+const uint16_t INIT_RELAY_MODE = RELAY_1 | RELAY_4 | RELAY_8;
 const uint16_t LINEARITY_RELAY_MODE = RELAY_1 | RELAY_4 | RELAY_8;
 const uint16_t NOISE_RELAY_MODE = RELAY_1 | RELAY_4 | RELAY_7 | RELAY_8;
 const uint16_t NOISE_LOADED_RELAY_MODE = RELAY_7 | RELAY_9;

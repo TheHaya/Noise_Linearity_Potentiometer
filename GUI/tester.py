@@ -1,10 +1,7 @@
 import time, serial
 from elec_deg_workflow import RegexMultimeter
 
-
 ard_port = "COM18"
-
-
 
 def tests():
     with serial.Serial(ard_port, baudrate=115200, timeout=5) as ser_ard:

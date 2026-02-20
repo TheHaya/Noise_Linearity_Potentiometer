@@ -2,12 +2,12 @@
 #include <dxl_servo.h>
 #include <calibrate.h>
 #include <elapsedMillis.h>
-
+#include <relay.h>
 
 const int32_t CHECK_END_START = -2000;
 const int32_t CHECK_END_END = 6000;
-const int32_t CALIBRATE_CURRENT_CCW = 1700;
-const int32_t CALIBRATE_CURRENT_CW = 2400;
+const int32_t CALIBRATE_CURRENT_CCW = 1850;
+const int32_t CALIBRATE_CURRENT_CW = 2250;
 const int32_t ZERO_TICK = 2050;
 const float MERCY_TOLERANCE_TICK = 15;
 const float CHECK_ENDS_TOL_DEG = 10;
@@ -30,17 +30,20 @@ float tar_volt = 10;
 
 // --------------- CALIBRATIONS
 float corr_measure(float current_volt){
-  cancelled = false;
+  elapsedMillis timer;
+  int t = 1500;
   Serial.println("VOLTR");
   delay(50);
-  if(cancelled == false){
-    for(;;){
-    String VCommand = Serial.readStringUntil('\n');
-    VCommand.trim();
+  
+  while(timer < t){
+    if(cancelled) break;
+    if(Serial.available()){
+      String VCommand = Serial.readStringUntil('\n');
+      VCommand.trim();
       if(VCommand.startsWith("ISTV:")){
         current_volt = VCommand.substring(5).toFloat();
-        break;
-      }
+        break; 
+      } 
     }
   }
   return current_volt;
@@ -130,10 +133,18 @@ float correction_movement(float &current_volt, float goal_volt,
   
 void check_beginning(){
   safety_pos_volt = corr_measure(safety_pos_volt);
-  if(fabsf(safety_pos_volt - tar_volt) < 1){
+  if(fabsf(safety_pos_volt - tar_volt) < 0.1*tar_volt || safety_pos_volt < 0.1*tar_volt){
     Serial.println("SAFETY");
     cancelled = true;
   }
+}
+
+bool abort_if_cancelled(){
+  if(!cancelled) return false;
+  Serial.println("CANCEL");
+  all_relays_off();
+  return true;
+  
 }
 
 void calibrate_currents(){

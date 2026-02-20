@@ -32,3 +32,5 @@ void calibrate_currents();
 void check_ends(bool uses_dmm=false);
 float correction_movement(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, int timeout=18000);
+void check_beginning();
+bool abort_if_cancelled();

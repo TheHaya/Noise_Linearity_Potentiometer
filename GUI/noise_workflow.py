@@ -122,6 +122,8 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
         except Exception as e:
             print("Netzteil kein Port")
 
+        ser_PSU.write(b"OUTP OFF\n")
+        time.sleep(0.2)
         ser_PSU.write(b"VOLT 5\n")
         time.sleep(0.2)
         ser_PSU.write(b"CURR 0.004\n")
@@ -130,7 +132,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
         time.sleep(0.2)
         ser_PSU.write(b"CURR:LIM 0.120\n")
         time.sleep(0.2)
-        ser_PSU.close()
+        ser_PSU.write(b"OUTP ON\n")
         time.sleep(0.2)
         ser_arduino.write(f"SETW:{ges_w}\n".encode())
         time.sleep(0.2)

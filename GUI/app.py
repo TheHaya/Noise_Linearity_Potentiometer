@@ -14,6 +14,7 @@ import linear_workflow
 import mech_ends_workflow
 import elec_deg_workflow
 from tester import tests
+import side_functions
 
 # --------------- APP VARIABLES 
 # ARDUINO_PORTS = ["COM3", "COM5", "COM9"]
@@ -440,7 +441,7 @@ def open_zero_window():
         stop_event.set()
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
-    threading.Thread(target=go_zero, args=(stop_event, on_up_wait_results), daemon=True).start()
+    threading.Thread(target=side_functions.go_zero, args=(stop_event, on_up_wait_results), daemon=True).start()
 
 def open_nocheck_window():
     global nocheck_win
@@ -513,7 +514,7 @@ msg = tk.Message(left_frame, width=200, bg="#CCCCCC", fg="#C00000", font='Arial 
 ttk.Label(right_frame, text="Sollspannung in V").grid(row=1, column=0, sticky="w", pady=(40, 0), padx=(10,0))
 txt_volt = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
 txt_volt.grid(row=2, column=0, pady=(0, 0), padx=(20,0))
-txt_volt.insert(0, "5,0")
+txt_volt.insert(0, "10,0")
 txt_volt.configure(state=text_rw_state)
 txt_volt.focus_set()
 
@@ -658,12 +659,12 @@ lbl_elec.grid(row=10, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12
 #ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=10, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
-
+ttk.Button(left_frame, text="Position 0", command=open_zero_window, width=18).grid(row=11, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
 ttk.Button(right_frame, text="Messen", command=measurement_chk,width=12).grid(row=8, column=3, pady=(20, 5), padx=(20,0))
-ttk.Button(right_frame, text="Netzteil Test", command=tests,width=12).grid(row=9, column=3, pady=(20, 5), padx=(20,0))
+# ttk.Button(right_frame, text="Netzteil Test", command=tests,width=12).grid(row=9, column=3, pady=(20, 5), padx=(20,0))
 # ttk.Button(left_frame, text="Position 0", command=open_zero_window).grid(row=8, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Links", command=go_left).grid(row=6, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Rechts", command=go_Right).grid(row=7, column=1, pady=(4, 5), padx=(0,0), ipadx=40)

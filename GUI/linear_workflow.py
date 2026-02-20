@@ -39,6 +39,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
         except Exception as e:
             print("Netzteil kein Port")
 
+        ser_PSU.write(b"OUTP OFF\n")
+        time.sleep(0.2)
         ser_PSU.write(b"VOLT 10\n")
         time.sleep(0.2)
         ser_PSU.write(b"CURR 0.004\n")
@@ -46,6 +48,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
         ser_PSU.write(b"VOLT:LIM 12\n")
         time.sleep(0.2)
         ser_PSU.write(b"CURR:LIM 0.120\n")
+        time.sleep(0.2)
+        ser_PSU.write(b"OUTP ON\n")
         time.sleep(0.2)
         N = 13 #Anz Messpunkte wegen leere Zellen
         global daten
