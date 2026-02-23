@@ -1,12 +1,10 @@
 import tkinter as tk
-from tkinter import font
 from tkinter import ttk
 from PIL import ImageTk, Image
 import sv_ttk
-import threading, json, time
+import threading, json
 
 
-from pico_runner import config_pico
 from export import save_to_pdf, save_to_excel
 from ring import build_ring, mark_deadzone
 import noise_workflow
@@ -15,6 +13,7 @@ import mech_ends_workflow
 import elec_deg_workflow
 from tester import tests
 import side_functions
+import pico_runner
 
 # --------------- APP VARIABLES 
 # ARDUINO_PORTS = ["COM3", "COM5", "COM9"]
@@ -28,6 +27,9 @@ pico_angle = []
 # --------------- GUI VARIABLES
 noise_win = None
 linear_win = None
+zero_win = None
+cancelled_win = None
+
 AMLogo = Image.open('AMLogo.jpg')
 scale = 0.8
 w, h = AMLogo.size
@@ -78,7 +80,7 @@ def insert_preset(p):
     if comment == "":
         msg.grid_remove()
     else:
-        msg.grid(row=8, column=0,pady=(0, 40), padx=(20, 0))
+        msg.grid(row=8, column=0,pady=(10, 10), padx=(20, 0))
 
 dropdown = {"win": None, "listbox": None}
 MAX_SUGGESTIONS = 10
@@ -249,17 +251,13 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
         try:
             visible_total = sum(1 for m in modes if m[4] is True)
             visible_i = 0
-
             for (workflow, workflow_args, title, needs_config, visible) in modes:
                 if stop_event.is_set():
                     break
-                
                 if visible:
                     visible_i += 1
                     root.after(0, lambda t=title, i=visible_i, n=visible_total:
                             status_label.configure(text=f"Messung {i}/{n}: {t}"))
-                
-                
                 if needs_config:
                     #workflow.config(root, txt_speed, ser_arduino)
                     workflow.config(root, txt_speed)
@@ -272,11 +270,10 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                         root.after(0, lambda v=val: mech_angle_var.set(
                             f"Mechanischer Winkel: {v:.2f}°"
                         ))
-                    #else:
-                    #    root.after(0, lambda: mech_angle_var.set(
-                    #        "Mechanischer Winkel: --"
-                    #    ))
-                
+                    else:
+                        root.after(0, lambda: mech_angle_var.set(
+                            "Mechanischer Winkel: --"
+                        ))
                 if workflow is elec_deg_workflow:
                     val = getattr(elec_deg_workflow, "total_elec", None)
                     if isinstance(val, (int, float)):
@@ -287,6 +284,10 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     #    root.after(0, lambda: elec_angle_var.set(
                     #        "Elektrischer Winkel: --"
                     #    ))
+                if pico_runner.out_volt is True and modes:
+                    open_noise_found_win()
+                    break
+
         except Exception as e:
             print("Fehler bei measurements:", e)
 
@@ -316,12 +317,14 @@ def measurement_chk():
     ends_checked = chk_ends_mode.get()
     modes.append((mech_ends_workflow, (), "Mech. Endwinkel", True, ends_checked))
 
-    if chk_elec_mode.get():
-        modes.append((elec_deg_workflow, (d12, d21, d22, d31), "Elektr. Winkel", True, True))
     if chk_noise_mode.get():
         pico_plot_time.clear()
         pico_plot_volt.clear()
+
         modes.append((noise_workflow, (pico_plot_volt, pico_plot_time), "Rauschprüfung", True, True))
+    if chk_elec_mode.get():
+        modes.append((elec_deg_workflow, (d12, d21, d22, d31), "Elektr. Winkel", True, True))
+    
     if chk_linear_mode.get():
         modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True, True))
 
@@ -351,10 +354,10 @@ def export_excel():
 def advanced_chk():
     if advanced_mode.get():
         text_rw_state = 'normal'
-        set_goto_visible(True)
+        advanced_visible(True)
     else:
         text_rw_state = 'readonly'
-        set_goto_visible(False)
+        advanced_visible(False)
 
     for fields in (txt_volt, txt_angle, txt_speed, txt_d11, txt_d12, txt_d21, txt_d22, txt_d31, txt_d32):
         fields.configure(state=text_rw_state)
@@ -391,19 +394,85 @@ def instant_deadzone_ring():
     mark_deadzone(deadzone_angles)
 
 def goto_execute():
-    side_functions.goto(float(txt_go.get().strip()))
+    goto_speed = float(txt_speed.get().strip().replace(',', '.'))
+    goto_pos = float(txt_go.get().strip())
+    side_functions.goto(goto_pos, goto_speed)
 
-def set_goto_visible(visible: bool):
-    widgets = (lbl_go, txt_go, but_go)
+def advanced_visible(visible: bool):
+    widgets = (lbl_go, txt_go, but_go, advanced_warning)
     if visible:
+        open_advanced_window()
         for w in widgets:
             w.grid()
     else:
         for w in widgets:
             w.grid_remove()
 
+# --------------- NOISE DETECTED WARNING
+def open_noise_found_win():
+    global noise_found_win
+    noise_found_win = tk.Toplevel(root)
+    noise_found_win.title("Fehler")
+    noise_found_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
+    noise_found_win.grid_rowconfigure(0, weight=1)
+    noise_found_win.grid_rowconfigure(1, weight=1)
+    noise_found_win.grid_columnconfigure(0, weight=1)
+    noise_found_win.resizable(False, False)
+    noise_found_win.transient(root)
+    noise_found_win.grab_set()
+
+    ttk.Label(noise_found_win, text="Rauschen gefunden.\nRestliche Messungen werden abgebrochen.").grid(row=0, column=0)
+    ok_button = ttk.Button(noise_found_win, text="OK", command=noise_found_win.destroy)
+    ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
+    ok_button.focus_set()  
+    noise_found_win.bind("<Return>", lambda event: ok_button.invoke())
+
+
+# --------------- NO CHECKBOXES WARNING
+def open_nocheck_window():
+    global nocheck_win
+    nocheck_win = tk.Toplevel(root)
+    nocheck_win.title("Fehler")
+    nocheck_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
+    nocheck_win.grid_rowconfigure(0, weight=1)
+    nocheck_win.grid_rowconfigure(1, weight=1)
+    nocheck_win.grid_columnconfigure(0, weight=1)
+    nocheck_win.resizable(False, False)
+    nocheck_win.transient(root)
+    nocheck_win.grab_set()
+
+    ttk.Label(nocheck_win, text="Bitte eine Messung ankreuzen.").grid(row=0, column=0)
+    ok_button = ttk.Button(nocheck_win, text="OK", command=nocheck_win.destroy)
+    ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
+    ok_button.focus_set()  
+    nocheck_win.bind("<Return>", lambda event: ok_button.invoke())
+
+
+# --------------- ADVANCED MODE WARNING
+def open_advanced_window():
+    global advanced_win
+    advanced_win = tk.Toplevel(root)
+    advanced_win.title("Fehler")
+    advanced_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
+    advanced_win.grid_rowconfigure(0, weight=1)
+    advanced_win.grid_rowconfigure(1, weight=1)
+    advanced_win.grid_columnconfigure(0, weight=1)
+    advanced_win.resizable(False, False)
+    advanced_win.transient(root)
+    advanced_win.grab_set()
+
+    adv_win_warning = ttk.Label(advanced_win, text="Erweiteter Modus wurde aktiviert.\nWerte sind veränderbar und Positionsanfahrt freigeschaltet.")
+    adv_win_warning.grid(row=0, column=0)
+    adv_win_warning.config(justify='center')
+    ok_button = ttk.Button(advanced_win, text="OK", command=advanced_win.destroy)
+    ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
+    ok_button.focus_set()  
+    advanced_win.bind("<Return>", lambda event: ok_button.invoke())
+
+
 # --------------- OPEN ZERO WINDOW
 def open_zero_window():
+    meas_speed = float(txt_speed.get().strip().replace(',', '.'))
     def on_up_wait_results():
         wait_win.destroy()
 
@@ -416,29 +485,31 @@ def open_zero_window():
             cancelled_win.grid_rowconfigure(0, weight=1)
             cancelled_win.grid_rowconfigure(1, weight=1)
             cancelled_win.grid_columnconfigure(0, weight=1)
-            
+            cancelled_win.resizable(False, False)
+
             ttk.Label(cancelled_win, text="Vorgang wurde abgebrochen.").grid(row=0, column=0)
             ok_button = ttk.Button(cancelled_win, text="OK", command=cancelled_win.destroy)
             ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
             ok_button.focus_set()  
             cancelled_win.bind("<Return>", lambda event: ok_button.invoke())
         else:
-            global noise_win
-            if noise_win is not None and noise_win.winfo_exists():
-                noise_win.destroy()
+            global zero_win
+            if zero_win is not None and zero_win.winfo_exists():
+                zero_win.destroy()
 
-            noise_win = tk.Toplevel(root)
-            noise_win.title("Fertig")
-            noise_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
-            noise_win.grid_rowconfigure(0, weight=1)
-            noise_win.grid_rowconfigure(1, weight=1)
-            noise_win.grid_columnconfigure(0, weight=1)
+            zero_win = tk.Toplevel(root)
+            zero_win.title("Fertig")
+            zero_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
+            zero_win.grid_rowconfigure(0, weight=1)
+            zero_win.grid_rowconfigure(1, weight=1)
+            zero_win.grid_columnconfigure(0, weight=1)
+            zero_win.resizable(False, False)
             
-            ttk.Label(noise_win, text="Position ist auf 0.").grid(row=0, column=0)
-            ok_button = ttk.Button(noise_win, text="OK", command=noise_win.destroy)
+            ttk.Label(zero_win, text="Position ist auf 0.").grid(row=0, column=0)
+            ok_button = ttk.Button(zero_win, text="OK", command=zero_win.destroy)
             ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
             ok_button.focus_set()  
-            noise_win.bind("<Return>", lambda event: ok_button.invoke())
+            zero_win.bind("<Return>", lambda event: ok_button.invoke())
         
     wait_win = tk.Toplevel(root)
     wait_win.title("Position nullen")
@@ -453,22 +524,7 @@ def open_zero_window():
         stop_event.set()
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
-    threading.Thread(target=side_functions.go_zero, args=(stop_event, on_up_wait_results), daemon=True).start()
-
-def open_nocheck_window():
-    global nocheck_win
-    nocheck_win = tk.Toplevel(root)
-    nocheck_win.title("Fehler")
-    nocheck_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
-    nocheck_win.grid_rowconfigure(0, weight=1)
-    nocheck_win.grid_rowconfigure(1, weight=1)
-    nocheck_win.grid_columnconfigure(0, weight=1)
-    
-    ttk.Label(nocheck_win, text="Bitte eine Messung ankreuzen.").grid(row=0, column=0)
-    ok_button = ttk.Button(nocheck_win, text="OK", command=nocheck_win.destroy)
-    ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
-    ok_button.focus_set()  
-    nocheck_win.bind("<Return>", lambda event: ok_button.invoke())
+    threading.Thread(target=side_functions.go_zero, args=(meas_speed, stop_event, on_up_wait_results), daemon=True).start()
     
 
 # --------------- GUI
@@ -649,9 +705,9 @@ chk_linear_mode = tk.BooleanVar(value=False)
 chk_meas_ends = ttk.Checkbutton(right_frame, text="Mech. Enden", variable=chk_ends_mode)
 chk_meas_ends.grid(row=7, column=0, sticky="w", pady=(60, 0), padx=(20, 0))
 chk_elec_deg = ttk.Checkbutton(right_frame, text="Elektr. Winkel", variable=chk_elec_mode)
-chk_elec_deg.grid(row=7, column=1, sticky="w", pady=(60, 0), padx=(20, 0))
+chk_elec_deg.grid(row=7, column=2, sticky="w", pady=(60, 0), padx=(20, 0))
 chk_noise = ttk.Checkbutton(right_frame, text="Rauschen", variable=chk_noise_mode)
-chk_noise.grid(row=7, column=2, sticky="w", pady=(60, 0), padx=(20, 0))
+chk_noise.grid(row=7, column=1, sticky="w", pady=(60, 0), padx=(20, 0))
 chk_linearity = ttk.Checkbutton(right_frame, text="Linearität", variable=chk_linear_mode)
 chk_linearity.grid(row=7, column=3, sticky="w", pady=(60, 0), padx=(20, 0))
 
@@ -668,6 +724,10 @@ lbl_go.grid(row=8, column=2, pady=(20,0))
 txt_go = ttk.Entry(right_frame, width=5, validate="key", validatecommand=vcmd)
 txt_go.grid(row=9, column=2)
 
+advanced_warning = tk.Message( width=350, bg="#FF0000", fg="#E3E3E3", font='Arial 16 bold')
+advanced_warning.grid(row=0, column=1, pady=(10, 10), padx=(200,0))
+advanced_warning.config(text="ACHTUNG:\nERWEITERTER MODUS AKTIVIERT")
+
 #ttk.Button(left_frame, text="Abbrechen", command=on_up_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
 #ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
@@ -676,7 +736,7 @@ ttk.Button(left_frame, text="Position 0", command=open_zero_window, width=18).gr
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
-ttk.Button(right_frame, text="Messen", command=measurement_chk,width=12).grid(row=8, column=3, pady=(20, 5), padx=(20,0))
+ttk.Button(right_frame, text="Messen", command=measurement_chk,width=12).grid(row=8, column=3, pady=(20, 5), padx=(10,0))
 # ttk.Button(right_frame, text="Netzteil Test", command=tests,width=12).grid(row=9, column=3, pady=(20, 5), padx=(20,0))
 # ttk.Button(left_frame, text="Position 0", command=open_zero_window).grid(row=8, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 # ttk.Button(left_frame, text="0.1 Links", command=go_left).grid(row=6, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
@@ -690,7 +750,7 @@ root.bind("<Escape>", lambda event: on_up_window())
 
 # --------------- MAIN
 build_ring(ring_area)
-set_goto_visible(False)
+advanced_visible(False)
 instant_deadzone_ring()
 sv_ttk.set_theme("dark")
 root.mainloop()

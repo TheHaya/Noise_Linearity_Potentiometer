@@ -1,31 +1,99 @@
-import serial, time, sys, threading
+import serial, time, sys, re
 import serial.tools.list_ports
 
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
-ARDUINO_PORT1 = "COM3"
-ARDUINO_PORT2 = "COM5"
-ARDUINO_PORT3 = "COM18"
-
+ARDUINO_PORT = "COM18"
+MULTI_PORT = "COM17"
+PSU_PORT = "COM15"
 
 # --------------- SERIAL MIT SERVO
-def open_first_available(baud=115200, timeout=2, ports=(ARDUINO_PORT1, ARDUINO_PORT2, ARDUINO_PORT3)):
-    last = None
-    print(serial_ports())
-    for p in ports:
-        try:
-            ser = serial.Serial(p, baudrate=baud, timeout=timeout)
-            print(f"[SERIAL] Verbunden: {p}")
-            time.sleep(1)
-            return ser
-        except Exception as e:
-            last = e
-    raise RuntimeError(f"Kein Port aus {ports} verfügbar: {last}")
+def connect_ard(baud=115200, timeout=2, port=ARDUINO_PORT):
+    serial_ports()
+    try:
+        ser_ard = serial.Serial(port, baudrate=baud, timeout=timeout)
+        print(f"[SERIAL] Mikrocontroller verbunden: {ARDUINO_PORT}")
+        time.sleep(0.5)
+        return ser_ard
+    except Exception as e:
+        print("Mikrocontroller kein Port")
+
+def connect_multi(baud=9600, timeout=2, port=MULTI_PORT):
+    try:
+        ser_multi = serial.Serial(port, baudrate=baud, timeout=timeout)
+        print(f"[SERIAL] Multimeter verbunden: {MULTI_PORT}")
+        time.sleep(0.5)
+        return ser_multi
+    except Exception as e:
+        print("Multimeter kein Port")
+
+def connect_psu(baud=115200, timeout=2, port=PSU_PORT):
+    try:
+        ser_psu = serial.Serial(port, baudrate=baud, timeout=timeout)
+        print(f"[SERIAL] Netzteil verbunden: {PSU_PORT}")
+        time.sleep(0.5)
+        return ser_psu
+    except Exception as e:
+        print("Netzteil kein Port")
+
+def set_psu_parameters(ser_PSU, v_lim, c_lim, v_set, c_set):
+    ser_PSU.write(b"OUTP OFF\n")
+    time.sleep(0.2)
+    ser_PSU.write(f"VOLT:LIM {v_lim}\n".encode())
+    time.sleep(0.2)
+    ser_PSU.write(f"CURR:LIM {c_lim}\n".encode())
+    time.sleep(0.2)
+    ser_PSU.write(f"VOLT {v_set}\n".encode())
+    time.sleep(0.2)
+    ser_PSU.write(f"CURR {c_set}\n".encode())
+    time.sleep(0.2)
+    ser_PSU.write(b"OUTP ON\n")
+    time.sleep(0.2)
+    return
+
+
+def set_part_parameters(ser_arduino, part_voltage, part_angle, part_speed):
+    ser_arduino.write(f"SETV:{part_voltage}\n".encode())
+    time.sleep(0.2)
+    ser_arduino.write(f"SETW:{part_angle}\n".encode())
+    time.sleep(0.2)
+    ser_arduino.write(f"SETS:{part_speed}\n".encode())
+    time.sleep(0.2)
+    print("speed ist", part_speed)
+    print("Sende: GO") #debug
+
+
+def RegexMultimeter(output):
+    match = re.search(r"[-+]?\d\.\d+(?:[Ee][-+]\d+)", output)
+    #match = re.search("[+\-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?", output)
+    if match:
+        return match.group(0)
+    return None
+
+
+def get_multi_voltage(ser_arduino, ser_Multi):
+    ser_Multi.reset_input_buffer()
+    ser_Multi.reset_output_buffer()
+    ser_Multi.write(b':MEAS:VOLT:DC?\n')
+    #print("geschrieben")
+    time.sleep(0.05)
+    #print("sleep 0.2 sek")
+    response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
+    #print("geantwortet")
+    if(RegexMultimeter(response)):
+        #print("check1")
+        voltage  = float(RegexMultimeter(response))
+        #print("check2")
+        print(voltage)
+        ser_arduino.write(f"ISTV:{voltage}\n".encode())
+        #print("check3")
+    else:
+        print("Problem bei Response")
+        None
 
 def serial_ports():
     if sys.platform.startswith('win'):
         ports = list(serial.tools.list_ports.comports())
-        #ports = ['COM%s' % (i + 1) for i in range(256)]
     else:
         raise EnvironmentError('Unsupported platform')
 
@@ -33,9 +101,6 @@ def serial_ports():
     for p in ports:
         try:
             print(p)
-            #s = serial.Serial(port)
-            #s.close()
-            #result.append(port)
             
         except (OSError, serial.SerialException):
             pass

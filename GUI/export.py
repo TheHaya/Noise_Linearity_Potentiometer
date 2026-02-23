@@ -40,6 +40,8 @@ def save_to_pdf(txt, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt):
     fig.savefig((txt.get()+".pdf"), format="pdf")  # Vektor-PDF
     plt.close(fig)
 
+    print(f"{txt.get()}.pdf gespeichert.")
+
 
 # --------------- EXCEL EXPORT FUNCTIONS
 def save_to_excel(txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, lin_min, error_lin_idx):
@@ -134,3 +136,5 @@ def save_to_excel(txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, l
                 ws.write_number(start + 1, 7, lin_min, format_error_percent)
             else:
                 ws.write_number(start + 1, 7, lin_min, format_percent)
+
+    print(f"RMTest-{txt.get()}.xlsx gespeichert.")

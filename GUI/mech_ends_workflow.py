@@ -1,8 +1,6 @@
-import time, serial
-from serial_client import open_first_available
-import pico_runner
-from ring import mark_ends, mark_noise_segments, set_circle_text
-from elec_deg_workflow import RegexMultimeter
+import time
+import serial_client as sc
+
 
 # --------------- MECH ENDS VARIABLES
 root = None
@@ -24,39 +22,12 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None):
     
 def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=None):
     try:
-        ser_arduino = open_first_available(baud=115200, timeout=5)
-        try:
-            ser_Multi = serial.Serial(MULTI_PORT, baudrate=9600, timeout = 0.5)
-            print(f"[SERIAL] Verbunden: {MULTI_PORT}")
-        except Exception as e:
-            print("Multimeter kein Port")
-
-        try:
-            ser_PSU = serial.Serial(PSU_PORT, baudrate=115200, timeout = 0.5)
-            print(f"[SERIAL] Verbunden: {PSU_PORT}")
-        except Exception as e:
-            print("Netzteil kein Port")
-
-        ser_PSU.write(b"OUTP OFF\n")
-        time.sleep(0.2)
-        ser_PSU.write(b"VOLT 10\n")
-        time.sleep(0.2)
-        ser_PSU.write(b"CURR 0.004\n")
-        time.sleep(0.2)
-        ser_PSU.write(b"VOLT:LIM 12\n")
-        time.sleep(0.2)
-        ser_PSU.write(b"CURR:LIM 0.120\n")
-        time.sleep(0.2)
-        ser_PSU.write(b"OUTP ON\n")
-        time.sleep(0.2)
-        ser_arduino.write(f"SETV:{ges_v}\n".encode())
-        time.sleep(0.2)
-        ser_arduino.write(f"SETW:{ges_w}\n".encode())
-        time.sleep(0.2)
-        ser_arduino.write(f"SETS:{ges_s}\n".encode())
-        time.sleep(0.2)
-        print("speed ist", ges_s)
-        print("Sende: GO") #debug
+        ser_arduino = sc.connect_ard()
+        ser_Multi = sc.connect_multi()
+        ser_PSU = sc.connect_psu()
+        sc.set_psu_parameters(ser_PSU, 12, 0.12, 10, 0.004)
+        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s)
+        
         ser_arduino.write(b"INIT_GO\n")
 
         ser_arduino.timeout = 0.1
@@ -65,6 +36,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
                 ser_arduino.write(b"STOP\n")
                 time.sleep(0.5)
                 ser_arduino.flush()
+                ser_arduino.close()
+                ser_Multi.close()
+                ser_PSU.close()
                 time.sleep(0.2)
                 break
 
@@ -72,25 +46,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
             #print("Empfangen:", line) #debug
     
             if line == 'VOLTR':
-                ser_Multi.reset_input_buffer()
-                ser_Multi.reset_output_buffer()
-                ser_Multi.write(b':MEAS:VOLT:DC?\n')
-                #print("geschrieben")
-                time.sleep(0.05)
-                #print("sleep 0.2 sek")
-                response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
-                #print("geantwortet")
-                if(RegexMultimeter(response)):
-                    #print("check1")
-                    voltage  = float(RegexMultimeter(response))
-                    #print("check2")
-                    print(voltage)
-                    ser_arduino.write(f"ISTV:{voltage}\n".encode())
-                    #print("check3")
-                else:
-                    print("Problem bei Response")
-                    None
+                sc.get_multi_voltage(ser_arduino, ser_Multi)
                 continue
+
             if line.startswith("ANGLE"):
                 global total_mech
                 total_mech = float(line[5::])
@@ -118,6 +76,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
             #elif line == 'ENDS_FINISH':
             #    break
             elif line == 'SAFETY':
+                print("Schleifer zu nah an mechanischem Anschlag")
                 break
             elif line == 'CANCEL':
                 break

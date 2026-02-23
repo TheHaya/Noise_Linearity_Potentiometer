@@ -1,5 +1,5 @@
-import time, serial
-from serial_client import open_first_available
+import time
+import serial_client as sc
 import pico_runner
 from ring import mark_ends, mark_noise_segments, set_circle_text
 import mech_ends_workflow as mech
@@ -83,7 +83,6 @@ def calc_rel_angle(time_arr, turn_arr, angle_arr):
             turn_arr.append(6)
             angle_arr.append(360-((time_arr[i]-time2-turn3)/(turn3)*360))
 
-
     print(turn1)
     print(time1)
     print(time2-turn2)
@@ -113,33 +112,14 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
         pico_angle = []
         global pico_volt
         pico_volt = []
+        global noise_found
+        noise_found = False
+        
+        ser_arduino = sc.connect_ard()
+        ser_PSU = sc.connect_psu()
+        sc.set_psu_parameters(ser_PSU, 6, 0.12, 5, 0.004)
+        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s)
 
-        ser_arduino = open_first_available(baud=115200, timeout=5)
-
-        try:
-            ser_PSU = serial.Serial(PSU_PORT, baudrate=115200, timeout = 0.5)
-            print(f"[SERIAL] Verbunden: {PSU_PORT}")
-        except Exception as e:
-            print("Netzteil kein Port")
-
-        ser_PSU.write(b"OUTP OFF\n")
-        time.sleep(0.2)
-        ser_PSU.write(b"VOLT 5\n")
-        time.sleep(0.2)
-        ser_PSU.write(b"CURR 0.004\n")
-        time.sleep(0.2)
-        ser_PSU.write(b"VOLT:LIM 6\n")
-        time.sleep(0.2)
-        ser_PSU.write(b"CURR:LIM 0.120\n")
-        time.sleep(0.2)
-        ser_PSU.write(b"OUTP ON\n")
-        time.sleep(0.2)
-        ser_arduino.write(f"SETW:{ges_w}\n".encode())
-        time.sleep(0.2)
-        ser_arduino.write(f"SETS:{ges_s}\n".encode())
-        time.sleep(0.2)
-        print("speed ist", ges_s)
-        print("Sende: GO") #debug
         ser_arduino.write(b"NOISE_GO\n")
 
         ser_arduino.timeout = 0.1
@@ -148,6 +128,8 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
                 ser_arduino.write(b"STOP\n")
                 time.sleep(0.5)
                 ser_arduino.flush()
+                ser_arduino.close()
+                ser_PSU.close()
                 time.sleep(0.2)
                 break
 

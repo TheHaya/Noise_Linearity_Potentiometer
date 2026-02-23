@@ -115,7 +115,7 @@ def set_circle_text(pico_angle):
 
     if not pico_angle:
         iid = ring_canvas.create_text(
-                canv_x, canv_y, text="In Ordnung", fill="#00ff33",
+                canv_x, canv_y, text="Rauschen:\nIn Ordnung", fill="#00ff33",
                 font=text_font, anchor="center")
     else:
         iid = ring_canvas.create_text(

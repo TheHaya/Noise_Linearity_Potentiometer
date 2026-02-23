@@ -10,7 +10,7 @@ start_time = 0.0
 txt_speed_getter = None
 calc_duration_f = None
 total_ticks_getter = None
-
+out_volt = False
 
 # --------------- PICO FUNCTIONS
 def config_pico(txt_s, calc_d, total_t):
@@ -20,8 +20,8 @@ def config_pico(txt_s, calc_d, total_t):
     total_ticks_getter = total_t
 
 def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr, stop_event=None):
-    global start_time, picoEXE, delay_compensation
-    out_volt = False
+    global start_time, picoEXE, delay_compensation, out_volt
+    
     out_found = False
     plot_volt = False
     plot_time = False

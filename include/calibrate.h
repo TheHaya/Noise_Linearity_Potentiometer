@@ -10,7 +10,7 @@ extern const int32_t CALIBRATE_CURRENT_CW;
 extern const int32_t ZERO_TICK;
 extern const float MERCY_TOLERANCE_TICK;
 extern const float CHECK_ENDS_TOL_DEG;
-
+extern const float SAFETY_VOLT;
 
 // --------------- CALIBRATE VARIABLES
 extern int32_t stopped_tick;
@@ -29,7 +29,7 @@ extern float tar_volt;
 
 float corr_measure(float current_volt);
 void calibrate_currents();
-void check_ends(bool uses_dmm=false);
+void check_ends(bool uses_dmm=true);
 float correction_movement(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, int timeout=18000);
 void check_beginning();

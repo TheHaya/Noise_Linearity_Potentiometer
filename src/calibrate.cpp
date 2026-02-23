@@ -13,6 +13,7 @@ const float MERCY_TOLERANCE_TICK = 15;
 const float CHECK_ENDS_TOL_DEG = 10;
 const int32_t STEP = 20;
 const int32_t PUSHBACK = 600;
+const float SAFETY_VOLT = 10;
 
 int32_t start_tick, end_tick;
 int32_t sim_mercy_start, sim_mercy_end;
@@ -31,7 +32,7 @@ float tar_volt = 10;
 // --------------- CALIBRATIONS
 float corr_measure(float current_volt){
   elapsedMillis timer;
-  int t = 1500;
+  int t = 10000;
   Serial.println("VOLTR");
   delay(50);
   
@@ -131,13 +132,6 @@ float correction_movement(float &current_volt, float goal_volt,
   return NAN;
 }
   
-void check_beginning(){
-  safety_pos_volt = corr_measure(safety_pos_volt);
-  if(fabsf(safety_pos_volt - tar_volt) < 0.1*tar_volt || safety_pos_volt < 0.1*tar_volt){
-    Serial.println("SAFETY");
-    cancelled = true;
-  }
-}
 
 bool abort_if_cancelled(){
   if(!cancelled) return false;
@@ -210,6 +204,15 @@ void calibrate_currents(){
   reached_goal(2334, 2 ,1);
 }*/
 
+void check_beginning(){
+  const float LOW_SAFETY = SAFETY_VOLT*0.1;
+  const float HIGH_SAFETY = SAFETY_VOLT*0.9;
+  safety_pos_volt = corr_measure(safety_pos_volt);
+  if(safety_pos_volt <= LOW_SAFETY || safety_pos_volt >= HIGH_SAFETY){
+    Serial.println("SAFETY");
+    cancelled = true;
+  }
+}
 
 // --------------- MECHANICAL ENDS
 void check_ends(bool uses_dmm){

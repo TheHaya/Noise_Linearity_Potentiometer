@@ -74,7 +74,7 @@ void loop(){
       apply_relay_mode(INIT_RELAY_MODE);
       check_beginning();        if(abort_if_cancelled()) return;
       calibrate_currents();     if(abort_if_cancelled()) return;
-      check_ends(false);        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
+      check_ends();        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
       
       drive_to(ZERO_TICK, user_rpm);
       reached_goal(ZERO_TICK, 2);
