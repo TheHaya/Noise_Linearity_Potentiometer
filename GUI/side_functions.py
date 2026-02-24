@@ -5,7 +5,7 @@ import serial_client as sc
 # --------------- GO_ZERO VARIABLES
 root = None
 txt_speed = None
-
+cur_pos = 0
 
 # --------------- GO_ZERO FUNCTION
 def go_zero(ges_s=None, stop_event=None, on_finish=None):
@@ -42,6 +42,7 @@ def go_zero(ges_s=None, stop_event=None, on_finish=None):
         on_finish()
 
 def goto(txt_goto=None, ges_s=None):
+    timeout = time.monotonic() + 5
     try:
         ser_arduino = sc.connect_ard()
         ser_arduino.reset_input_buffer() 
@@ -54,7 +55,7 @@ def goto(txt_goto=None, ges_s=None):
         time.sleep(0.2)
         ser_arduino.write(b"GOTO\n")
         time.sleep(0.2)
-        while True:
+        while time.monotonic() < timeout:
             line = ser_arduino.readline().decode('utf-8').strip()
             if line == 'GOTO_READY':
                 print("GOTO_READY empfangen.")
@@ -67,3 +68,24 @@ def goto(txt_goto=None, ges_s=None):
     #     root.after(0, on_finish)
     # else:
     #     on_finish()
+
+def show_pos():
+    timeout = time.monotonic() + 5
+    try:
+        ser_arduino = sc.connect_ard()
+        ser_arduino.reset_input_buffer() 
+        ser_arduino.reset_output_buffer()
+        time.sleep(1)
+        ser_arduino.write(b"WHERE\n")
+        time.sleep(0.2)
+        print("WHERE geschrieben")
+        while time.monotonic() < timeout:
+            line = ser_arduino.readline().decode('utf-8').strip()
+            if line.startswith("WHERE_POS"):
+                global cur_pos
+                cur_pos = float(line[9::])
+                print(f"WHERE_POS empfangen. Position ist: {cur_pos}")
+                break
+        ser_arduino.close()
+    except Exception as e:
+        print("Fehler bei Serial: ", e)

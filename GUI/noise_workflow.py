@@ -126,8 +126,9 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
         while True:
             if stop_event.is_set():
                 ser_arduino.write(b"STOP\n")
-                time.sleep(0.5)
+                time.sleep(0.2)
                 ser_arduino.flush()
+                ser_PSU.write(b"OUTP OFF\n")
                 ser_arduino.close()
                 ser_PSU.close()
                 time.sleep(0.2)

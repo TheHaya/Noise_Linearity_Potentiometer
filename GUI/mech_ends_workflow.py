@@ -27,15 +27,18 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
         ser_PSU = sc.connect_psu()
         sc.set_psu_parameters(ser_PSU, 12, 0.12, 10, 0.004)
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s)
-        
+        global safety_cancel
+        safety_cancel = False
+
         ser_arduino.write(b"INIT_GO\n")
 
         ser_arduino.timeout = 0.1
         while True:
             if stop_event.is_set():
                 ser_arduino.write(b"STOP\n")
-                time.sleep(0.5)
+                time.sleep(0.2)
                 ser_arduino.flush()
+                ser_PSU.write(b"OUTP OFF\n")
                 ser_arduino.close()
                 ser_Multi.close()
                 ser_PSU.close()
@@ -76,6 +79,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
             #elif line == 'ENDS_FINISH':
             #    break
             elif line == 'SAFETY':
+                safety_cancel = True
+                ser_PSU.write(b"OUTP OFF\n")
                 print("Schleifer zu nah an mechanischem Anschlag")
                 break
             elif line == 'CANCEL':

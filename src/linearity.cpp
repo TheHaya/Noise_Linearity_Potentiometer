@@ -190,7 +190,7 @@ void linearity_movement(){
   }
 
   // --------------- AUSGABE ELEG_DEG
-  
+
 
   // --------------- ERROR MITTELANZAPFUNG
   if(fabsf((cw_links + ccw_rechts) - (d21_deg + d22_deg)) > 1.5){
@@ -260,6 +260,8 @@ void calc_summary(){
   aktiv_cw = (cw_rechts - cw_links);
   ges_aktiv = aktiv_ccw + aktiv_cw;
 
+  Serial.print("TOTAL_ELEC");
+  Serial.println(ges_aktiv);
   Serial.print("SUMMARY;");
   Serial.print("Totzone:");   
   Serial.print(totzone, 1);

@@ -99,14 +99,12 @@ def rank_presets(query: str, ids: list[str]) -> list[str]:
     matches.sort()
     return matches[:MAX_SUGGESTIONS]
 
-
 def on_up_dropdown():
     if dropdown["win"] is not None and dropdown["win"].winfo_exists():
         dropdown["win"].destroy()
     dropdown["win"] = None
     dropdown["listbox"] = None
    
-
 def open_dropdown(anchor_entry: ttk.Entry):
     if dropdown["win"] is not None and dropdown["win"].winfo_exists():
         return
@@ -124,7 +122,7 @@ def open_dropdown(anchor_entry: ttk.Entry):
     borderwidth=0,
     highlightthickness=1,
     relief="flat",
-)
+    )
 
     lb.configure(
         fg="white",
@@ -187,13 +185,11 @@ def _update_dropdown(anchor_entry: ttk.Entry, query_var: tk.StringVar, preset_id
     if q_raw != q:
         query_var.set(q)
         return
-
     if not q:
         on_up_dropdown()
         return
 
     suggestions = rank_presets(q, preset_ids)
-
     if not suggestions:
         on_up_dropdown()
         return
@@ -203,11 +199,9 @@ def _update_dropdown(anchor_entry: ttk.Entry, query_var: tk.StringVar, preset_id
     lb.delete(0, tk.END)
     for s in suggestions:
         lb.insert(tk.END, s)
-
     lb.selection_clear(0, tk.END)
     lb.selection_set(0)
     lb.activate(0)
-
     n = len(suggestions)
     lb.configure(height=min(n, MAX_SUGGESTIONS)) 
     position_dropdown(anchor_entry, n) 
@@ -229,13 +223,13 @@ def on_up_window():
 def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     wait_win = tk.Toplevel(root)
     wait_win.title("Datenmessung")
-    wait_win.geometry(f"{scr_wid//8}x{scr_hei//8}+{scr_wid//2}+{scr_hei//2}")
+    wait_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
     wait_win.transient(root)
     wait_win.grab_set()
     wait_win.resizable(False, False)
     
     status_label = ttk.Label(wait_win, text="Bitte warten...")
-    status_label.pack(pady=30)
+    status_label.pack(pady=(0,20), expand=True)
     stop_event = threading.Event()   
 
     mech_angle_var.set("Mechanischer Winkel: --")
@@ -252,19 +246,29 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
             visible_total = sum(1 for m in modes if m[4] is True)
             visible_i = 0
             for (workflow, workflow_args, title, needs_config, visible) in modes:
-                if stop_event.is_set():
-                    break
+                
                 if visible:
                     visible_i += 1
                     root.after(0, lambda t=title, i=visible_i, n=visible_total:
-                            status_label.configure(text=f"Messung {i}/{n}: {t}"))
+                            status_label.configure(text=f"Messung {i}/{n}:\n\n{t}", justify='center'))
                 if needs_config:
                     #workflow.config(root, txt_speed, ser_arduino)
                     workflow.config(root, txt_speed)
 
                 workflow.measurement(meas_volt, meas_angle, meas_speed, *workflow_args ,stop_event, lambda: None)
                 
-                if workflow is mech_ends_workflow:
+                if mech_ends_workflow.safety_cancel is True:
+                    root.after(0, open_safety_win)
+                    stop_event.set()
+                    break
+                if stop_event.is_set():
+                    open_cancelled_window()
+                    break
+                if pico_runner.out_volt is True and modes:
+                    stop_event.set()
+                    root.after(0, open_noise_found_win)
+                    break
+                if workflow is mech_ends_workflow or end_lin_checked is True:
                     val = getattr(mech_ends_workflow, "total_mech", None)
                     if isinstance(val, (int, float)):
                         root.after(0, lambda v=val: mech_angle_var.set(
@@ -284,9 +288,8 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     #    root.after(0, lambda: elec_angle_var.set(
                     #        "Elektrischer Winkel: --"
                     #    ))
-                if pico_runner.out_volt is True and modes:
-                    open_noise_found_win()
-                    break
+                
+                
 
         except Exception as e:
             print("Fehler bei measurements:", e)
@@ -298,6 +301,10 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     threading.Thread(target=worker, daemon=True).start()
 
 def measurement_chk():
+    global end_lin_checked
+    end_lin_checked = False
+    mech_ends_workflow.safety_cancel = False
+    pico_runner.out_volt = False
     try:
         meas_volt = float(txt_volt.get().strip().replace(',', '.'))
         meas_angle = float(txt_angle.get().strip().replace(',', '.'))
@@ -322,11 +329,18 @@ def measurement_chk():
         pico_plot_volt.clear()
 
         modes.append((noise_workflow, (pico_plot_volt, pico_plot_time), "Rauschprüfung", True, True))
-    if chk_elec_mode.get():
+    
+    
+    if chk_linear_mode.get() and chk_elec_mode.get():
+        end_lin_checked = True
+        modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Elektr. Winkel\n+\nLinearitätsprüfung", True, True))
+    
+    elif chk_elec_mode.get():
         modes.append((elec_deg_workflow, (d12, d21, d22, d31), "Elektr. Winkel", True, True))
     
-    if chk_linear_mode.get():
+    elif chk_linear_mode.get():
         modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True, True))
+    
 
     if len(modes) == 1 and ends_checked is False:
         open_nocheck_window()
@@ -393,13 +407,20 @@ def instant_deadzone_ring():
     
     mark_deadzone(deadzone_angles)
 
+def show_current_position():
+    side_functions.show_pos()
+    cur_pos_var.set(f"Position Tick: {side_functions.cur_pos}")
+
+
 def goto_execute():
     goto_speed = float(txt_speed.get().strip().replace(',', '.'))
     goto_pos = float(txt_go.get().strip())
-    side_functions.goto(goto_pos, goto_speed)
+    def worker():
+        side_functions.goto(goto_pos, goto_speed)
+    threading.Thread(target=worker(), daemon=True).start()
 
 def advanced_visible(visible: bool):
-    widgets = (lbl_go, txt_go, but_go, advanced_warning)
+    widgets = (but_go, advanced_warning, txt_go, but_cur_pos, lbl_cur_pos)
     if visible:
         open_advanced_window()
         for w in widgets:
@@ -408,12 +429,32 @@ def advanced_visible(visible: bool):
         for w in widgets:
             w.grid_remove()
 
+
+# --------------- SAFETY WARNING WIPER TOO CLOSE
+def open_safety_win():
+    global safety_cancel_win
+    safety_cancel_win = tk.Toplevel(root)
+    safety_cancel_win.title("Fehler")
+    safety_cancel_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
+    safety_cancel_win.grid_rowconfigure(0, weight=1)
+    safety_cancel_win.grid_rowconfigure(1, weight=1)
+    safety_cancel_win.grid_columnconfigure(0, weight=1)
+    safety_cancel_win.resizable(False, False)
+    safety_cancel_win.transient(root)
+    safety_cancel_win.grab_set()
+
+    ttk.Label(safety_cancel_win, text="Schleifer zu nah am Anschlag.\nBitte Richtung Mitte positionieren.").grid(row=0, column=0, pady=(20,0))
+    ok_button = ttk.Button(safety_cancel_win, text="OK", command=safety_cancel_win.destroy)
+    ok_button.grid(row=1, column=0, pady=(0, 0), ipadx=20)
+    ok_button.focus_set()  
+    safety_cancel_win.bind("<Return>", lambda event: ok_button.invoke())
+
 # --------------- NOISE DETECTED WARNING
 def open_noise_found_win():
     global noise_found_win
     noise_found_win = tk.Toplevel(root)
     noise_found_win.title("Fehler")
-    noise_found_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
+    noise_found_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
     noise_found_win.grid_rowconfigure(0, weight=1)
     noise_found_win.grid_rowconfigure(1, weight=1)
     noise_found_win.grid_columnconfigure(0, weight=1)
@@ -421,9 +462,9 @@ def open_noise_found_win():
     noise_found_win.transient(root)
     noise_found_win.grab_set()
 
-    ttk.Label(noise_found_win, text="Rauschen gefunden.\nRestliche Messungen werden abgebrochen.").grid(row=0, column=0)
+    ttk.Label(noise_found_win, text="Rauschen gefunden.\nRestliche Messungen werden abgebrochen.").grid(row=0, column=0, pady=(20,0))
     ok_button = ttk.Button(noise_found_win, text="OK", command=noise_found_win.destroy)
-    ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
+    ok_button.grid(row=1, column=0, pady=(0, 0), ipadx=20)
     ok_button.focus_set()  
     noise_found_win.bind("<Return>", lambda event: ok_button.invoke())
 
@@ -433,7 +474,7 @@ def open_nocheck_window():
     global nocheck_win
     nocheck_win = tk.Toplevel(root)
     nocheck_win.title("Fehler")
-    nocheck_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
+    nocheck_win.geometry(f"{small_wid}x{small_hei}+{scr_wid//2}+{scr_hei//2}")
     nocheck_win.grid_rowconfigure(0, weight=1)
     nocheck_win.grid_rowconfigure(1, weight=1)
     nocheck_win.grid_columnconfigure(0, weight=1)
@@ -441,9 +482,9 @@ def open_nocheck_window():
     nocheck_win.transient(root)
     nocheck_win.grab_set()
 
-    ttk.Label(nocheck_win, text="Bitte eine Messung ankreuzen.").grid(row=0, column=0)
+    ttk.Label(nocheck_win, text="Bitte eine Messung ankreuzen.").grid(row=0, column=0, pady=(20,0))
     ok_button = ttk.Button(nocheck_win, text="OK", command=nocheck_win.destroy)
-    ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
+    ok_button.grid(row=1, column=0, pady=(0, 0), ipadx=20)
     ok_button.focus_set()  
     nocheck_win.bind("<Return>", lambda event: ok_button.invoke())
 
@@ -453,7 +494,7 @@ def open_advanced_window():
     global advanced_win
     advanced_win = tk.Toplevel(root)
     advanced_win.title("Fehler")
-    advanced_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
+    advanced_win.geometry(f"{420}x{180}+{scr_wid//2}+{scr_hei//2}")
     advanced_win.grid_rowconfigure(0, weight=1)
     advanced_win.grid_rowconfigure(1, weight=1)
     advanced_win.grid_columnconfigure(0, weight=1)
@@ -461,11 +502,12 @@ def open_advanced_window():
     advanced_win.transient(root)
     advanced_win.grab_set()
 
-    adv_win_warning = ttk.Label(advanced_win, text="Erweiteter Modus wurde aktiviert.\nWerte sind veränderbar und Positionsanfahrt freigeschaltet.")
+    adv_win_warning = ttk.Label(advanced_win, text="Erweiteter Modus wurde aktiviert.\n- Parameter sind veränderbar.\n" \
+    "- Positionsanfahrt freigeschaltet. (Ticks)\n-  Positionsanzeige freigeschaltet. (Ticks)")
     adv_win_warning.grid(row=0, column=0)
     adv_win_warning.config(justify='center')
     ok_button = ttk.Button(advanced_win, text="OK", command=advanced_win.destroy)
-    ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
+    ok_button.grid(row=1, column=0, ipadx=20)
     ok_button.focus_set()  
     advanced_win.bind("<Return>", lambda event: ok_button.invoke())
 
@@ -477,21 +519,7 @@ def open_zero_window():
         wait_win.destroy()
 
         if stop_event.is_set():
-            global cancelled_win
-            
-            cancelled_win = tk.Toplevel(root)
-            cancelled_win.title("Abbruch")
-            cancelled_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
-            cancelled_win.grid_rowconfigure(0, weight=1)
-            cancelled_win.grid_rowconfigure(1, weight=1)
-            cancelled_win.grid_columnconfigure(0, weight=1)
-            cancelled_win.resizable(False, False)
-
-            ttk.Label(cancelled_win, text="Vorgang wurde abgebrochen.").grid(row=0, column=0)
-            ok_button = ttk.Button(cancelled_win, text="OK", command=cancelled_win.destroy)
-            ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
-            ok_button.focus_set()  
-            cancelled_win.bind("<Return>", lambda event: ok_button.invoke())
+            open_cancelled_window()
         else:
             global zero_win
             if zero_win is not None and zero_win.winfo_exists():
@@ -499,25 +527,25 @@ def open_zero_window():
 
             zero_win = tk.Toplevel(root)
             zero_win.title("Fertig")
-            zero_win.geometry(f"{scr_wid//4}x{scr_hei//4}+{scr_wid//2}+{scr_hei//2}")
+            zero_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
             zero_win.grid_rowconfigure(0, weight=1)
             zero_win.grid_rowconfigure(1, weight=1)
             zero_win.grid_columnconfigure(0, weight=1)
             zero_win.resizable(False, False)
             
-            ttk.Label(zero_win, text="Position ist auf 0.").grid(row=0, column=0)
+            ttk.Label(zero_win, text="Position ist auf 0.").grid(row=0, column=0, pady=(20,0))
             ok_button = ttk.Button(zero_win, text="OK", command=zero_win.destroy)
-            ok_button.grid(row=1, column=0, pady=(0, 20), ipadx=20)
-            ok_button.focus_set()  
+            ok_button.grid(row=1, column=0, pady=(0, 0), ipadx=20)
+            ok_button.focus_set()
             zero_win.bind("<Return>", lambda event: ok_button.invoke())
         
     wait_win = tk.Toplevel(root)
     wait_win.title("Position nullen")
-    wait_win.geometry(f"{scr_wid//8}x{scr_hei//8}+{scr_wid//2}+{scr_hei//2}")
+    wait_win.geometry(f"{small_wid}x{small_hei}+{scr_wid//2}+{scr_hei//2}")
     wait_win.transient(root)
     wait_win.grab_set()
     wait_win.resizable(False, False)
-    ttk.Label(wait_win, text="Bitte warten...").pack(pady=30)
+    ttk.Label(wait_win, text="Bitte warten...").pack(expand=True, pady=(0, 30))
 
     stop_event = threading.Event()    
     def cancel_on_up():
@@ -527,12 +555,32 @@ def open_zero_window():
     threading.Thread(target=side_functions.go_zero, args=(meas_speed, stop_event, on_up_wait_results), daemon=True).start()
     
 
+def open_cancelled_window():
+    global cancelled_win 
+    cancelled_win = tk.Toplevel(root)
+    cancelled_win.title("Abbruch")
+    cancelled_win.geometry(f"{small_wid}x{small_hei}+{scr_wid//2}+{scr_hei//2}")
+    cancelled_win.grid_rowconfigure(0, weight=1)
+    cancelled_win.grid_rowconfigure(1, weight=1)
+    cancelled_win.grid_columnconfigure(0, weight=1)
+    cancelled_win.resizable(False, False)
+
+    ttk.Label(cancelled_win, text="Vorgang wurde abgebrochen.").grid(row=0, column=0, pady=(20,0))
+    ok_button = ttk.Button(cancelled_win, text="OK", command=cancelled_win.destroy)
+    ok_button.grid(row=1, column=0, ipadx=20)
+    ok_button.focus_set()  
+    cancelled_win.bind("<Return>", lambda event: ok_button.invoke())
+
+
 # --------------- GUI
 root = tk.Tk()
 scr_wid = root.winfo_screenwidth()
 scr_hei = root.winfo_screenheight()
-root.minsize(width=1200, height=800)
-root.geometry("1200x800")
+small_wid = 300
+small_hei = 170
+
+root.minsize(width=1280, height=800)
+root.geometry("1280x800")
 #root.geometry(f"{scr_wid - scr_wid//5}x{scr_hei - scr_hei//5}+0+0")
 root.title("Rauschprüfung")
 root.resizable(True, True)
@@ -719,8 +767,12 @@ elec_angle_var = tk.StringVar(value="Elektrischer Winkel: --")
 lbl_elec = ttk.Label(right_frame, textvariable=elec_angle_var, font="Verdana 12 bold")
 lbl_elec.grid(row=10, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
 
-lbl_go = ttk.Label(right_frame, text="Anfahrt:")
-lbl_go.grid(row=8, column=2, pady=(20,0))
+cur_pos_var = tk.StringVar(value="Position Tick: --")
+lbl_cur_pos = ttk.Label(right_frame, textvariable=cur_pos_var, font="Verdana 12 bold")
+lbl_cur_pos.grid(row=8, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
+
+# lbl_go = ttk.Label(right_frame, text="Anfahrt:")
+# lbl_go.grid(row=8, column=2, pady=(20,0))
 txt_go = ttk.Entry(right_frame, width=5, validate="key", validatecommand=vcmd)
 txt_go.grid(row=9, column=2)
 
@@ -736,13 +788,9 @@ ttk.Button(left_frame, text="Position 0", command=open_zero_window, width=18).gr
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
-ttk.Button(right_frame, text="Messen", command=measurement_chk,width=12).grid(row=8, column=3, pady=(20, 5), padx=(10,0))
-# ttk.Button(right_frame, text="Netzteil Test", command=tests,width=12).grid(row=9, column=3, pady=(20, 5), padx=(20,0))
-# ttk.Button(left_frame, text="Position 0", command=open_zero_window).grid(row=8, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
-# ttk.Button(left_frame, text="0.1 Links", command=go_left).grid(row=6, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
-# ttk.Button(left_frame, text="0.1 Rechts", command=go_Right).grid(row=7, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
-# ttk.Button(left_frame, text="Conn Serial", command=ser_Connect).grid(row=5, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
-# ttk.Button(left_frame, text="Curr Position", command=curr_Pos).grid(row=8, column=1, pady=(4, 5), padx=(0,0), ipadx=40)
+ttk.Button(right_frame, text="Messen", command=measurement_chk, width=12).grid(row=8, column=3, pady=(20, 5), padx=(10,0))
+but_cur_pos = ttk.Button(right_frame, text="Curr Position", command=show_current_position)
+but_cur_pos.grid(row=8, column=2, pady=(12, 5), padx=(10,0))
 but_go = ttk.Button(right_frame, text="Go To", command=goto_execute)
 but_go.grid(row=10, column=2, pady=(5, 5))
 

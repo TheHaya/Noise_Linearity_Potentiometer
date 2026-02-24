@@ -33,6 +33,7 @@ float tar_volt = 10;
 float corr_measure(float current_volt){
   elapsedMillis timer;
   int t = 10000;
+  Serial.setTimeout(50);
   Serial.println("VOLTR");
   delay(50);
   
@@ -54,7 +55,7 @@ float corr_measure(float current_volt){
 // dead_direction 0 -> deadzone links von position //////--- ;;; 1 -> rechts von position ---//////
 float correction_movement(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, int timeout){
-  const float V_TOL = 0.002f;        
+  const float V_TOL = 0.0005f;        
   const int32_t TICK_TOL = 1;
   elapsedMillis error_timer;
   int32_t low, high;

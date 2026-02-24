@@ -93,7 +93,7 @@ void loop(){
       // }
     }
     if(command == "NOISE_START"){
-      noise_movement();
+      noise_movement(); 
       if(cancelled == true){
         Serial.println("CANCEL");
         // cancelled = false;
@@ -161,5 +161,9 @@ void loop(){
     if(command == "GOTO"){
       go_to();
     } 
+
+    if(command == "WHERE"){
+      show_cur_pos();
+    }
   }
 }

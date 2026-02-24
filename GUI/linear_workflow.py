@@ -62,8 +62,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
         while True:
             if stop_event.is_set():
                 ser_arduino.write(b"STOP\n")
-                time.sleep(0.5)
+                time.sleep(0.2)
                 ser_arduino.flush()
+                ser_PSU.write(b"OUTP OFF\n")
                 ser_arduino.close()
                 ser_Multi.close()
                 ser_PSU.close()
@@ -75,6 +76,11 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
             if line == 'VOLTR':
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 continue
+            elif line.startswith('TOTAL_ELEC'):
+                global total_elec
+                total_elec = float(line[10::])
+                print("Gesamt Elektr. Winkel:")
+                print(total_elec)
             elif line.startswith("SUMMARY;"):
                 try:
                     parts = line.split(";")[1:]
