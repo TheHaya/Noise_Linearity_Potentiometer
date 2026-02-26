@@ -2,7 +2,7 @@
 #include <noise.h>
 #include <calibrate.h>
 #include <dxl_servo.h>
-
+#include <relay.h>
 
 // --------------- NOISE MOVEMENT
 void noise_movement(){
@@ -19,6 +19,7 @@ void noise_movement(){
     drive_to(sim_mercy_end, sim_rpm);
     reached_goal(sim_mercy_end, i);
   }
+  all_relays_off();
   Serial.println("FINISH");
 }
 

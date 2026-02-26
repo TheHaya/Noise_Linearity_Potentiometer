@@ -3,7 +3,7 @@
 #include <dxl_servo.h>
 #include <calibrate.h>
 #include <linearity.h>
-
+#include <relay.h>
 
 // --------------- VARIABLES
 const size_t PRINT_ARRAY_SIZE = 13;
@@ -209,6 +209,7 @@ void linearity_movement(){
     Serial.print(";DiffMid-Winkel:");
     Serial.println(print_real_diff_mid[i],1);
   }
+  all_relays_off();
 }
 
 // ----------------- LINEARITÄT

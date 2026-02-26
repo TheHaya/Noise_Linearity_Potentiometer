@@ -33,7 +33,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
         time.sleep(0.2)
         ser_arduino.write(f"dead31:{d31}\n".encode())
         time.sleep(0.2)
-        print("Sende: GO") #debug
+        print("ELEC_DEG Sende: GO") #debug
         #print(d11, d12, d21, d22, d31, d32)
         ser_arduino.write(b"ELEC_DEG_GO\n")
 
@@ -70,6 +70,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
             elif line == 'CANCEL':
                 break
             
+        ser_PSU.write(b"OUTP OFF\n")
         ser_arduino.close()
         ser_Multi.close()
         ser_PSU.close()

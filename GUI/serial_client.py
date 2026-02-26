@@ -10,13 +10,15 @@ PSU_PORT = "COM15"
 # --------------- SERIAL MIT SERVO
 def connect_ard(baud=115200, timeout=2, port=ARDUINO_PORT):
     serial_ports()
-    try:
-        ser_ard = serial.Serial(port, baudrate=baud, timeout=timeout)
-        print(f"[SERIAL] Mikrocontroller verbunden: {ARDUINO_PORT}")
-        time.sleep(0.5)
-        return ser_ard
-    except Exception as e:
-        print("Mikrocontroller kein Port")
+    err_time = time.monotonic() + 15
+    while time.monotonic() < err_time:
+        try:
+            ser_ard = serial.Serial(port, baudrate=baud, timeout=timeout)
+            print(f"[SERIAL] Mikrocontroller verbunden: {port}")
+            time.sleep(0.5)
+            return ser_ard
+        except Exception as e:
+            print("Mikrocontroller kein Port")
 
 def connect_multi(baud=9600, timeout=2, port=MULTI_PORT):
     try:
@@ -60,7 +62,6 @@ def set_part_parameters(ser_arduino, part_voltage, part_angle, part_speed):
     ser_arduino.write(f"SETS:{part_speed}\n".encode())
     time.sleep(0.2)
     print("speed ist", part_speed)
-    print("Sende: GO") #debug
 
 
 def RegexMultimeter(output):

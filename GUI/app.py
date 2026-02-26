@@ -243,6 +243,8 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     def worker():
         #ser_arduino.busy = True    
         try:
+            global measurements_finished
+            measurements_finished = False
             visible_total = sum(1 for m in modes if m[4] is True)
             visible_i = 0
             for (workflow, workflow_args, title, needs_config, visible) in modes:
@@ -288,14 +290,13 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     #    root.after(0, lambda: elec_angle_var.set(
                     #        "Elektrischer Winkel: --"
                     #    ))
-                
-                
+        
+            measurements_finished = True
 
         except Exception as e:
             print("Fehler bei measurements:", e)
 
-        #ser_arduino.busy = False
-
+        root.after(0, autosave_chk)
         root.after(0, wait_win.destroy)
     
     threading.Thread(target=worker, daemon=True).start()
@@ -378,9 +379,9 @@ def advanced_chk():
         
 def autosave_chk():
     if autosave_var.get():
-        if linear_win:
+        if measurements_finished and chk_linear_mode.get() is True and not pico_runner.out_volt:
             export_excel()
-        if noise_win():
+        if measurements_finished and chk_noise_mode.get() is True:
             export_pdf()
 
 def update_deadzone_ring(*_):
@@ -417,7 +418,7 @@ def goto_execute():
     goto_pos = float(txt_go.get().strip())
     def worker():
         side_functions.goto(goto_pos, goto_speed)
-    threading.Thread(target=worker(), daemon=True).start()
+    threading.Thread(target=worker, daemon=True).start()
 
 def advanced_visible(visible: bool):
     widgets = (but_go, advanced_warning, txt_go, but_cur_pos, lbl_cur_pos)

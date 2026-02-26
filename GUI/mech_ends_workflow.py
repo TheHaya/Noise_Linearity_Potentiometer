@@ -15,7 +15,7 @@ total_ticks = 0
 # --------------- MECH ENDS FUNCTIONS
 
 def config(app_root, txt_speed_entry, ser_arduino_app=None):
-    global root, txt_speed, ser_arduino
+    global root, txt_speed
     root = app_root
     txt_speed = txt_speed_entry
     #ser_arduino = ser_arduino_app
@@ -30,6 +30,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
         global safety_cancel
         safety_cancel = False
 
+        print("MECH_ENDS Sende: GO")
         ser_arduino.write(b"INIT_GO\n")
 
         ser_arduino.timeout = 0.1
@@ -85,6 +86,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
                 break
             elif line == 'CANCEL':
                 break
+
+        ser_PSU.write(b"OUTP OFF\n")
 
         ser_arduino.close()
         ser_Multi.close()

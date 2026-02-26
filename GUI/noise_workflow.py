@@ -120,6 +120,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
         sc.set_psu_parameters(ser_PSU, 6, 0.12, 5, 0.004)
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s)
 
+        print("NOISE Sende: GO")
         ser_arduino.write(b"NOISE_GO\n")
 
         ser_arduino.timeout = 0.1
@@ -160,7 +161,8 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
                 break
             elif line == 'CANCEL':
                 break
-           
+        
+        ser_PSU.write(b"OUTP OFF\n")
         ser_arduino.close()
         ser_PSU.close()
 

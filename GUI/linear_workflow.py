@@ -54,11 +54,11 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
         time.sleep(0.2)
         ser_arduino.write(f"dead32:{d32}\n".encode())
         time.sleep(0.2)
-        print("Sende: GO") #debug
+        print("LINEAR Sende: GO") #debug
         #print(d11, d12, d21, d22, d31, d32)
         ser_arduino.write(b"LINEAR_GO\n")
 
-        ser_arduino.timeout = 0.1
+        #ser_arduino.timeout = 0.1
         while True:
             if stop_event.is_set():
                 ser_arduino.write(b"STOP\n")
@@ -139,6 +139,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
             elif line == 'CANCEL':
                 break
             
+        ser_PSU.write(b"OUTP OFF\n")
         ser_arduino.close()
         ser_Multi.close()
         ser_PSU.close()

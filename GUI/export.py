@@ -29,18 +29,20 @@ def save_to_pdf(txt, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt):
     i = np.argsort(pdf_time)
     pdf_time = pdf_time[i]
     pdf_volt = pdf_volt[i]
-
-    fig = plt.figure(figsize=(11, 6.5), dpi=550)  # Größe beliebig anpassen
+    title = txt.get()
+    if title == "":
+        title = "-"
+    fig = plt.figure(figsize=(11, 6.5), dpi=550)
     plt.plot(pdf_time, pdf_volt, linewidth=0.1)
-    plt.title(("Rauschkurve "+ txt.get()))
+    plt.title(("Rauschkurve "+ title))
     plt.xlabel("Zeit")
     plt.ylabel("Spannung")
     plt.grid(True, linestyle="--", linewidth=0.6, alpha=0.6)
     plt.tight_layout()
-    fig.savefig((txt.get()+".pdf"), format="pdf")  # Vektor-PDF
+    fig.savefig((title+".pdf"), format="pdf")
     plt.close(fig)
 
-    print(f"{txt.get()}.pdf gespeichert.")
+    print(f"{title}.pdf gespeichert.")
 
 
 # --------------- EXCEL EXPORT FUNCTIONS
@@ -98,7 +100,6 @@ def save_to_excel(txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, l
 
         start = len(df) + 2  # 1 für Header + 1 Leerzeile
 
-        # Fallbacks, falls nichts kam
         totzone   = summary_vals.get("Totzone")
         activeCW  = summary_vals.get("AktivCW")
         activeCCW = summary_vals.get("AktivCCW")

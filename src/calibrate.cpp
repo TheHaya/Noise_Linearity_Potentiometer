@@ -257,4 +257,5 @@ void check_ends(bool uses_dmm){
      dxl.ledOn(1);
     delay(100);
   }
+  all_relays_off();
 }

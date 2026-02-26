@@ -89,3 +89,4 @@ def show_pos():
         ser_arduino.close()
     except Exception as e:
         print("Fehler bei Serial: ", e)
+

@@ -3,7 +3,7 @@
 #include <calibrate.h>
 #include <linearity.h>
 #include <elec_deg.h>
-
+#include <relay.h>
 
 // --------------- VARIABLES
 const size_t ELEC_ARRAY_SIZE = 4;
@@ -65,4 +65,5 @@ void elec_deg_movement(){
     total_elec_deg = (print_elec_deg[1]-print_elec_deg[0]) + (print_elec_deg[2]-print_elec_deg[3]);
     Serial.print("TOTAL_ELEC");
     Serial.println(total_elec_deg);
+    all_relays_off();
 }
