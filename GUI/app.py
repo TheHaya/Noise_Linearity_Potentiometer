@@ -3,7 +3,8 @@ from tkinter import ttk
 from PIL import ImageTk, Image
 import sv_ttk
 import threading, json
-
+import sys
+from pathlib import Path
 
 from export import save_to_pdf, save_to_excel
 from ring import build_ring, mark_deadzone
@@ -17,6 +18,10 @@ import pico_runner
 
 # --------------- APP VARIABLES 
 # ARDUINO_PORTS = ["COM3", "COM5", "COM9"]
+if getattr(sys, "frozen", False):
+    BASE_DIR = Path(sys._MEIPASS)
+else:
+    BASE_DIR = Path(__file__).resolve().parent
 pico_plot_time = []
 pico_plot_volt = []
 pico_time = []
@@ -30,7 +35,7 @@ linear_win = None
 zero_win = None
 cancelled_win = None
 
-AMLogo = Image.open('AMLogo.jpg')
+AMLogo = Image.open(BASE_DIR / "AMLogo.jpg")
 scale = 0.8
 w, h = AMLogo.size
 smallLogo = AMLogo.resize((int(w*scale), int(h*scale)))
@@ -40,7 +45,7 @@ debounce_id = {"id": None}
 output_ends = False
 
 # --------------- PRESETS LADEN
-preset_path = "preset_Teile.json"
+preset_path = BASE_DIR / "preset_Teile.json"
 def load_presets():
     try:
         with open (preset_path, "r", encoding="utf-8") as p:
