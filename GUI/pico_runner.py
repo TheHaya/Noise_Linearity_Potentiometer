@@ -45,7 +45,7 @@ def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr,
                 break
         
         line = line.strip()
-        print(line)
+
         if line.startswith("PICO_START"):
             print("Sende: PICO_START") #debug
             ser_Ard.write(b"NOISE_START\n")
