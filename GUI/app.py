@@ -3,11 +3,10 @@ from tkinter import ttk
 from PIL import ImageTk, Image
 import sv_ttk
 import threading, json
-import sys
-from pathlib import Path
+
 
 from export import save_to_pdf, save_to_excel
-from ring import build_ring, mark_deadzone
+import ring
 import noise_workflow
 import linear_workflow
 import mech_ends_workflow
@@ -15,13 +14,10 @@ import elec_deg_workflow
 from tester import tests
 import side_functions
 import pico_runner
+import serial_client as sc
 
 # --------------- APP VARIABLES 
 # ARDUINO_PORTS = ["COM3", "COM5", "COM9"]
-if getattr(sys, "frozen", False):
-    BASE_DIR = Path(sys._MEIPASS)
-else:
-    BASE_DIR = Path(__file__).resolve().parent
 pico_plot_time = []
 pico_plot_volt = []
 pico_time = []
@@ -35,7 +31,7 @@ linear_win = None
 zero_win = None
 cancelled_win = None
 
-AMLogo = Image.open(BASE_DIR / "AMLogo.jpg")
+AMLogo = Image.open('AMLogo.jpg')
 scale = 0.8
 w, h = AMLogo.size
 smallLogo = AMLogo.resize((int(w*scale), int(h*scale)))
@@ -45,7 +41,7 @@ debounce_id = {"id": None}
 output_ends = False
 
 # --------------- PRESETS LADEN
-preset_path = BASE_DIR / "preset_Teile.json"
+preset_path = "preset_Teile.json"
 def load_presets():
     try:
         with open (preset_path, "r", encoding="utf-8") as p:
@@ -250,17 +246,25 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
         try:
             global measurements_finished
             measurements_finished = False
+            global measurements_noise_found
+            measurements_noise_found = False
             visible_total = sum(1 for m in modes if m[4] is True)
             visible_i = 0
+            
+            ser_ard = sc.connect_ard()
+            ser_multi = sc.connect_multi()
+            ser_psu = sc.connect_psu()
+
+            ring.clear_noise_marks()
+
             for (workflow, workflow_args, title, needs_config, visible) in modes:
-                
                 if visible:
                     visible_i += 1
                     root.after(0, lambda t=title, i=visible_i, n=visible_total:
                             status_label.configure(text=f"Messung {i}/{n}:\n\n{t}", justify='center'))
                 if needs_config:
                     #workflow.config(root, txt_speed, ser_arduino)
-                    workflow.config(root, txt_speed)
+                    workflow.config(root, txt_speed, ser_ard, ser_psu, ser_multi)
 
                 workflow.measurement(meas_volt, meas_angle, meas_speed, *workflow_args ,stop_event, lambda: None)
                 
@@ -269,10 +273,11 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     stop_event.set()
                     break
                 if stop_event.is_set():
-                    open_cancelled_window()
+                    root.after(0, open_cancelled_window)
                     break
                 if pico_runner.out_volt is True and modes:
                     stop_event.set()
+                    measurements_noise_found = True
                     root.after(0, open_noise_found_win)
                     break
                 if workflow is mech_ends_workflow or end_lin_checked is True:
@@ -295,12 +300,23 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     #    root.after(0, lambda: elec_angle_var.set(
                     #        "Elektrischer Winkel: --"
                     #    ))
-        
-            measurements_finished = True
-
+            if not stop_event.is_set() or measurements_noise_found:
+                measurements_finished = True
+            ring.set_circle_text(pico_angle, noise_checked)
+            
         except Exception as e:
             print("Fehler bei measurements:", e)
 
+
+        if ser_ard: 
+            ser_ard.close()
+            print("[SERIAL] Arduino close")
+        if ser_multi: 
+            ser_multi.close()
+            print("[SERIAL] Multimeter close")
+        if ser_psu: 
+            ser_psu.close()
+            print("[SERIAL] PSU close")
         root.after(0, autosave_chk)
         root.after(0, wait_win.destroy)
     
@@ -329,23 +345,29 @@ def measurement_chk():
     modes = []
     ends_checked = chk_ends_mode.get()
     modes.append((mech_ends_workflow, (), "Mech. Endwinkel", True, ends_checked))
+    if ends_checked: print("[CHECKBOX] Mech. Ends")
 
-    if chk_noise_mode.get():
+    global noise_checked
+    noise_checked = chk_noise_mode.get()
+    if noise_checked:
         pico_plot_time.clear()
         pico_plot_volt.clear()
-
         modes.append((noise_workflow, (pico_plot_volt, pico_plot_time), "Rauschprüfung", True, True))
+        print("[CHECKBOX] Rauschen")
     
     
     if chk_linear_mode.get() and chk_elec_mode.get():
         end_lin_checked = True
         modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Elektr. Winkel\n+\nLinearitätsprüfung", True, True))
-    
+        print("[CHECKBOX] Linearität und Elektr. Winkel")
+
     elif chk_elec_mode.get():
         modes.append((elec_deg_workflow, (d12, d21, d22, d31), "Elektr. Winkel", True, True))
+        print("[CHECKBOX] Elektr. Winkel")
     
     elif chk_linear_mode.get():
         modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True, True))
+        print("[CHECKBOX] Linearität")
     
 
     if len(modes) == 1 and ends_checked is False:
@@ -411,7 +433,7 @@ def instant_deadzone_ring():
         if angles is not None:
             deadzone_angles.append(angles)
     
-    mark_deadzone(deadzone_angles)
+    ring.mark_deadzone(deadzone_angles)
 
 def show_current_position():
     side_functions.show_pos()
@@ -508,8 +530,8 @@ def open_advanced_window():
     advanced_win.transient(root)
     advanced_win.grab_set()
 
-    adv_win_warning = ttk.Label(advanced_win, text="Erweiteter Modus wurde aktiviert.\n- Parameter sind veränderbar.\n" \
-    "- Positionsanfahrt freigeschaltet. (Ticks)\n-  Positionsanzeige freigeschaltet. (Ticks)")
+    adv_win_warning = ttk.Label(advanced_win, text="Erweiteter Modus wurde aktiviert:\n- Parameter sind veränderbar.\n" \
+    "- Positionsanfahrt freigeschaltet. (Ticks)\n- Positionsanzeige freigeschaltet. (Ticks)")
     adv_win_warning.grid(row=0, column=0)
     adv_win_warning.config(justify='center')
     ok_button = ttk.Button(advanced_win, text="OK", command=advanced_win.destroy)
@@ -525,7 +547,7 @@ def open_zero_window():
         wait_win.destroy()
 
         if stop_event.is_set():
-            open_cancelled_window()
+            root.after(0, open_cancelled_window)
         else:
             global zero_win
             if zero_win is not None and zero_win.winfo_exists():
@@ -637,7 +659,6 @@ txt_volt = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd
 txt_volt.grid(row=2, column=0, pady=(0, 0), padx=(20,0))
 txt_volt.insert(0, "10,0")
 txt_volt.configure(state=text_rw_state)
-txt_volt.focus_set()
 
 ttk.Label(right_frame, text="Gesamtwinkel in °").grid(row=3, column=0, sticky="w", pady=(40, 0), padx=(10,0))
 txt_angle = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
@@ -697,10 +718,10 @@ for var in (d11_var, d12_var, d21_var, d22_var, d31_var, d32_var):
     var.trace_add("write", update_deadzone_ring)
 
 ttk.Label(left_frame, text="Teilenummer:").grid(row=0, column=0, sticky="w", pady=(10, 0), padx=(20,0))
-
 search_var = tk.StringVar()
 preset_entry = ttk.Entry(left_frame, textvariable=search_var, width=16)
 preset_entry.grid(row=1, column=0, sticky="w", padx=(20,0))
+preset_entry.focus_set()
 preset_ids = list(presets.keys())
 
 search_var.trace_add("write", lambda *_: _update_dropdown(preset_entry, search_var, preset_ids))
@@ -742,9 +763,6 @@ preset_entry.bind("<Down>", on_down)
 preset_entry.bind("<Up>", on_up)
 preset_entry.bind("<Escape>", lambda e: (on_up_dropdown(), "break"))
 
-# Maus-Klick auf Liste übernimmt
-# (muss nach dem ersten Öffnen wirken -> wir binden beim Öffnen in open_dropdown nicht,
-#  daher binden wir global per "after" sobald offen, oder du setzt es in open_dropdown)
 def bind_listbox_click():
     if dropdown["listbox"] is not None:
         dropdown["listbox"].bind("<ButtonRelease-1>", lambda e: select_from_list(preset_entry))
@@ -786,14 +804,13 @@ advanced_warning = tk.Message( width=350, bg="#FF0000", fg="#E3E3E3", font='Aria
 advanced_warning.grid(row=0, column=1, pady=(10, 10), padx=(200,0))
 advanced_warning.config(text="ACHTUNG:\nERWEITERTER MODUS AKTIVIERT")
 
-#ttk.Button(left_frame, text="Abbrechen", command=on_up_window).grid(row=7, column=0, pady=(4, 5), padx=(0,0), ipadx=40)
-#ttk.Button(left_frame, text="Messen", command=open_noise_win).grid(row=6, column=0, pady=(80, 5), padx=(0,0), ipadx=40)
 ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=10, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
 ttk.Button(left_frame, text="Position 0", command=open_zero_window, width=18).grid(row=11, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
+#ttk.Button(right_frame, text="Netzteil Test", command=tests,width=12).grid(row=9, column=3, pady=(20, 5), padx=(20,0))
 ttk.Button(right_frame, text="Messen", command=measurement_chk, width=12).grid(row=8, column=3, pady=(20, 5), padx=(10,0))
 but_cur_pos = ttk.Button(right_frame, text="Curr Position", command=show_current_position)
 but_cur_pos.grid(row=8, column=2, pady=(12, 5), padx=(10,0))
@@ -803,7 +820,7 @@ but_go.grid(row=10, column=2, pady=(5, 5))
 root.bind("<Escape>", lambda event: on_up_window())
 
 # --------------- MAIN
-build_ring(ring_area)
+ring.build_ring(ring_area)
 advanced_visible(False)
 instant_deadzone_ring()
 sv_ttk.set_theme("dark")

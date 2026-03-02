@@ -21,14 +21,16 @@ def config_pico(txt_s, calc_d, total_t):
 
 def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr, stop_event=None):
     global start_time, picoEXE, delay_compensation, out_volt
-    
+
+    out_volt = False
     out_found = False
     plot_volt = False
     plot_time = False
+
     txt_geschw = float(txt_speed_getter().strip().replace(',', '.'))
     pico_time = calc_duration_f(txt_geschw)
-    print(f"Dauer ca. {pico_time}")
-    print(f"Winkellänge {total_ticks_getter()*(360/4096)}")
+    print(f"Pico Dauer ca. {pico_time}")
+    print(f"Winkellänge: {total_ticks_getter()*(360/4096)}")
     pico_timeStr = str(pico_time+delay_compensation)
     p = subprocess.Popen(
         [picoEXE, f"--time={pico_timeStr}"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -44,7 +46,6 @@ def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr,
         
         line = line.strip()
         print(line)
-
         if line.startswith("PICO_START"):
             print("Sende: PICO_START") #debug
             ser_Ard.write(b"NOISE_START\n")

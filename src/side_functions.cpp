@@ -2,8 +2,11 @@
 #include <dxl_servo.h>
 #include <calibrate.h>
 
+// --------------- VARIABLES
 int32_t user_go_to;
 
+
+// --------------- FUNCTIONS
 void go_zero(){
   drive_to(ZERO_TICK, user_rpm);
   reached_goal(ZERO_TICK, 2, 1);

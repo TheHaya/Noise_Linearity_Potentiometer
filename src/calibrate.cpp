@@ -4,6 +4,8 @@
 #include <elapsedMillis.h>
 #include <relay.h>
 
+
+// --------------- CONSTANTS
 const int32_t CHECK_END_START = -2000;
 const int32_t CHECK_END_END = 6000;
 const int32_t CALIBRATE_CURRENT_CCW = 1850;
@@ -14,22 +16,50 @@ const float CHECK_ENDS_TOL_DEG = 10;
 const int32_t STEP = 20;
 const int32_t PUSHBACK = 600;
 const float SAFETY_VOLT = 10;
+const float SLOW_RPM = 5;
 
+// --------------- VARIABLES
 int32_t start_tick, end_tick;
 int32_t sim_mercy_start, sim_mercy_end;
 
 float ist_start_volt, ist_end_volt, ist_mid_volt;
-float slow_rpm = 5;
 float user_rpm, rpm1, rpm2, rpm3;
-float real_time1 = 0, real_time2 = 0, real_time3 = 0;
-float theo_time1 = 0, theo_time2 = 0, theo_time3 = 0;
+float real_time1, real_time2, real_time3;
+float theo_time1, theo_time2, theo_time3;
 float target_deg_total;
 float delay1, delay2, delay3;
 float safety_pos_volt;
-float tar_volt = 10;
+float tar_volt;
 
 
 // --------------- CALIBRATIONS
+void calibrate_init(){
+start_tick = 0;
+end_tick = 0;
+sim_mercy_start = 0;
+sim_mercy_end = 0;
+ist_start_volt = 0;
+ist_end_volt = 0;
+ist_mid_volt = 0;
+
+rpm1 = 0;
+rpm2 = 0;
+rpm3 = 0;
+
+real_time1 = 0;
+real_time2 = 0;
+real_time3 = 0;
+theo_time1 = 0;
+theo_time2 = 0;
+theo_time3 = 0;
+delay1 = 0;
+delay2 = 0;
+delay3 = 0;
+safety_pos_volt = 0;
+//user_rpm = 0;
+//target_deg_total = 0;
+//tar_volt = 10;
+}
 float corr_measure(float current_volt){
   elapsedMillis timer;
   int t = 10000;
@@ -53,9 +83,10 @@ float corr_measure(float current_volt){
 
 
 // dead_direction 0 -> deadzone links von position //////--- ;;; 1 -> rechts von position ---//////
+// dead_half 0 -> linke Hälfte, 1 -> rechte Hälfte
 float correction_movement(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, int timeout){
-  const float V_TOL = 0.0005f;        
+  const float V_TOL = 0.001f;        
   const int32_t TICK_TOL = 1;
   elapsedMillis error_timer;
   int32_t low, high;
@@ -128,6 +159,9 @@ float correction_movement(float &current_volt, float goal_volt,
     } else if(dead_direction == 1){
       edge_deg = tick_to_deg(high);
     }*/
+    if((dead_half == 0 && dead_direction == 0) || (dead_half == 1 && dead_direction == 1)){
+      return tick_to_deg(low);
+    }
     return tick_to_deg(high);
   }
   return NAN;
@@ -154,12 +188,12 @@ void calibrate_currents(){
   drive_to(-204800, 280);
   reached_goal(-204800, 2, 1);
   */
-  drive_to(CALIBRATE_CURRENT_CW, slow_rpm);
+  drive_to(CALIBRATE_CURRENT_CW, SLOW_RPM);
   reached_goal(CALIBRATE_CURRENT_CW, 0, 1);
 
-  drive_to(CALIBRATE_CURRENT_CCW, slow_rpm);
+  drive_to(CALIBRATE_CURRENT_CCW, SLOW_RPM);
   reached_goal(CALIBRATE_CURRENT_CCW, 0, 1);
-  drive_to(CALIBRATE_CURRENT_CW, slow_rpm);
+  drive_to(CALIBRATE_CURRENT_CW, SLOW_RPM);
   reached_goal(CALIBRATE_CURRENT_CW, 0, 1);
 
   for(int i = 1; i <= 3; i++){
@@ -216,18 +250,17 @@ void check_beginning(){
 }
 
 // --------------- MECHANICAL ENDS
-void check_ends(bool uses_dmm){
+void check_ends(){
   //int32_t check_mercy_start = deg_to_tick(360 - target_deg_total + CHECK_ENDS_TOL_DEG);
   //int32_t check_mercy_end = start_tick + deg_to_tick(target_deg_total - CHECK_ENDS_TOL_DEG);
-  
-  if(uses_dmm){ist_mid_volt = corr_measure(ist_mid_volt);}
+  ist_mid_volt = corr_measure(ist_mid_volt);
 
   //drive_to(check_mercy_start, rpm3);
   //reached_goal(check_mercy_start, 3);
-  drive_to(CHECK_END_START, slow_rpm);
+  drive_to(CHECK_END_START, SLOW_RPM);
   if(reached_goal(CHECK_END_START, 0) == false){
     start_tick = stopped_tick;
-    if(uses_dmm){ist_start_volt = corr_measure(ist_start_volt);}
+    ist_start_volt = corr_measure(ist_start_volt);
   }
   for(int i = 0; i < 5; i++){
     dxl.ledOff(1);
@@ -237,10 +270,10 @@ void check_ends(bool uses_dmm){
   } 
   //drive_to(check_mercy_end, rpm2);
   ///reached_goal(check_mercy_end, 2);
-  drive_to(CHECK_END_END, slow_rpm);
+  drive_to(CHECK_END_END, SLOW_RPM);
   if(reached_goal(CHECK_END_END, 0) == false){
     end_tick = stopped_tick;
-    if(uses_dmm){ist_end_volt = corr_measure(ist_end_volt);}
+    ist_end_volt = corr_measure(ist_end_volt);
   }
   
   sim_mercy_start = start_tick + MERCY_TOLERANCE_TICK;

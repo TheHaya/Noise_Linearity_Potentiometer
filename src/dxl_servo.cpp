@@ -16,25 +16,25 @@ const uint32_t DXL_BAUD = 1000000;
 Dynamixel2Arduino dxl(DXL_SERIAL, DXL_DIR_PIN);
 
 
-// --------------- VARIABLES
+// --------------- CONSTANTS
 const float DEG_PER_TICK = 360.0f / 4096.0f;
 const float TICK_PER_DEG = 4096.0f / 360.0f;
 const float RPM_PER_VEL = 0.229;
+const float START_CURRENT = 800;
+const float CUR_TOLERANCE = 7;
+const float CUR_TOLERANCE_SLOW = 2;
+const int POLL_TIMER = 1;
 using namespace ControlTableItem;
 
-const int POLL_TIMER = 1;
-
+// --------------- VARIABLES
 int32_t stopped_tick;
-float start_current = 800;
 float cal_cur0, cal_cur1, cal_cur2, cal_cur3;
-float cur_tolerance = 7;
-float cur_tolerance_slow = 1;
 bool cancelled;
 int32_t cur_pos;
 float cur_cur;
 
 
-
+// --------------- HELPER FUNCTIONS
 int32_t deg_to_tick(float deg){
   return deg * TICK_PER_DEG;
 }
@@ -60,10 +60,13 @@ uint32_t rpm_to_time(int32_t goal_tick, float rpm){
 
 void dxl_init(){
   cancelled = false;
+  stopped_tick = 0;
   cal_cur0 = 0;
   cal_cur1 = 0;
   cal_cur2 = 0;
   cal_cur3 = 0;
+  cur_pos = 0;
+  cur_cur = 0;
 }
 
 
@@ -82,7 +85,7 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
   elapsedMillis polling;
   elapsedMillis t;
 
-  while(cancelled == false){
+  while(cancelled == false && t < 20000){  // MUSS GEÄNDERT WERDEN WENN POTI > 360°
     if(polling > POLL_TIMER){
       cur_pos = get_tick_position();
       cur_cur = fabsf(dxl.getPresentCurrent(DID, UNIT_MILLI_AMPERE));
@@ -98,22 +101,22 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
       }
       if(measure_mode == 0){
         switch(measure_spd){
-          case 0: if(cur_cur > cal_cur0 + cur_tolerance_slow){
+          case 0: if(cur_cur > cal_cur0 + CUR_TOLERANCE_SLOW){
             stopped_tick = get_tick_position();
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
             return false;} 
             break;
-          case 1: if(cur_cur > cal_cur1 + cur_tolerance){
+          case 1: if(cur_cur > cal_cur1 + CUR_TOLERANCE){
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
             cancelled = true;
             return false;} 
             break;
-          case 2: if(cur_cur > cal_cur2 + cur_tolerance){
+          case 2: if(cur_cur > cal_cur2 + CUR_TOLERANCE){
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
             cancelled = true;
             return false;} 
             break;
-          case 3: if(cur_cur > cal_cur3 + cur_tolerance){
+          case 3: if(cur_cur > cal_cur3 + CUR_TOLERANCE){
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
             cancelled = true;
             return false;} 
@@ -130,7 +133,7 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
           case 3: if(cal_cur3 < cur_cur){cal_cur3 = cur_cur;} break;
           default: break;
         }
-        if(fabsf(cur_cur) >= start_current){
+        if(fabsf(cur_cur) >= START_CURRENT){
           dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
           return false;
         }

@@ -95,11 +95,13 @@ def calc_rel_angle(time_arr, turn_arr, angle_arr):
 
 
 # --------------- NOISE FUNCTIONS
-def config(app_root, txt_speed_entry, ser_arduino_app=None):
-    global root, txt_speed, ser_arduino
+def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, ser_multi_app=None):
+    global root, txt_speed, ser_arduino, ser_PSU, ser_Multi
     root = app_root
     txt_speed = txt_speed_entry
-    #ser_arduino = ser_arduino_app
+    ser_arduino = ser_arduino_app
+    ser_PSU = ser_psu_app
+    ser_Multi = ser_multi_app
 
 def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_plot_time=None, stop_event=None, on_finish=None):
     try:
@@ -115,56 +117,62 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
         global noise_found
         noise_found = False
         
-        ser_arduino = sc.connect_ard()
-        ser_PSU = sc.connect_psu()
+        #ser_arduino = sc.connect_ard()
+        # ser_PSU = sc.connect_psu()
         sc.set_psu_parameters(ser_PSU, 6, 0.12, 5, 0.004)
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s)
 
-        print("NOISE Sende: GO")
         ser_arduino.write(b"NOISE_GO\n")
+        print("NOISE Sende: GO")
 
         ser_arduino.timeout = 0.1
         while True:
             if stop_event.is_set():
                 ser_arduino.write(b"STOP\n")
+                print("STOP EMPFANGEN")
                 time.sleep(0.2)
                 ser_arduino.flush()
                 ser_PSU.write(b"OUTP OFF\n")
+                print("PSU: OUTPUT OFF")
                 ser_arduino.close()
+                print("SERIAL: Arduino close")
                 ser_PSU.close()
+                print("SERIAL: Netzteil close")
                 time.sleep(0.2)
                 break
 
             line = ser_arduino.readline().decode('utf-8').strip()
 
             if line == 'NOISE_READY':
+                print("Empfangen: NOISE_READY")
                 print("Config Pico")
                 pico_runner.config_pico(
                     txt_s=lambda: txt_speed.get(),
                     calc_d=calc_duration,
                     total_t=lambda: mech.total_ticks
                 )
-                print("start run_pico")
+                print("Run_Pico starten")
                 pico_runner.run_pico(ser_arduino, pico_time, pico_volt, pico_pdf_time, pico_plot_volt, pico_plot_time, stop_event)
 
-            elif line == 'FINISH':
+            elif line == 'NOISE_MOVE_FINISH':
                 finish_time = time.time()
                 total_duration = finish_time - pico_runner.start_time
-                print(f"FINISH empfangen, total Dauer: {total_duration}")
+                print(f"Empfangen: NOISE_MOVE_FINISH, total Dauer: {total_duration}")
                 calc_rel_angle(pico_time, pico_turn, pico_angle)
                 mark_ends(mech.total_ticks)
                 mark_noise_segments(pico_angle)
-                set_circle_text(pico_angle)
+                
+            elif line == 'NOISE_FINISH':
+                print("Empfangen: NOISE_FINISH")
                 break
 
-            elif line == 'NOISE_FINISH':
-                break
             elif line == 'CANCEL':
+                print("Empfangen: CANCEL")
                 break
         
         ser_PSU.write(b"OUTP OFF\n")
-        ser_arduino.close()
-        ser_PSU.close()
+        #ser_arduino.close()
+        #ser_PSU.close()
 
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug

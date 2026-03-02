@@ -20,13 +20,13 @@ extern const float DEG_PER_TICK;
 extern const float TICK_PER_DEG;
 extern const float RPM_PER_VEL;
 extern const int POLL_TIMER;
-
+extern const float START_CURRENT;
+extern const float CUR_TOLERANCE;
+extern const float CUR_TOLERANCE_SLOW;
 
 // --------------- SERVO VARIABLES
 extern int32_t stopped_tick;
-extern float start_current;
 extern float cal_cur0, cal_cur1, cal_cur2, cal_cur3;
-extern float cur_tolerance;
 extern bool cancelled;
 extern int32_t cur_pos;
 extern float cur_cur;
@@ -44,5 +44,5 @@ void dxl_init();
 
 // --------------- DRIVE FUNCTIONS
 void drive_to(int32_t tick, float rpm, uint8_t DYN_ID = 1);
-bool reached_goal(int32_t target_tick, uint8_t measure_spd = 0, uint8_t measure_mode = 0, 
+bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode = 0, 
                     uint8_t error_tick = 1, uint8_t DYN_ID = 1);

@@ -17,11 +17,13 @@ def RegexMultimeter(output):
         return match.group(0)
     return None
 
-def config(app_root, txt_speed_entry, ser_arduino_app=None):
-    global root, txt_speed, ser_arduino
+def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, ser_multi_app=None):
+    global root, txt_speed, ser_arduino, ser_PSU, ser_Multi
     root = app_root
     txt_speed = txt_speed_entry
-    #ser_arduino = ser_arduino_app
+    ser_arduino = ser_arduino_app
+    ser_PSU = ser_psu_app
+    ser_Multi = ser_multi_app
 
 def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None, 
                 d21=None, d22=None, d31=None, d32=None, stop_event=None, on_finish=None):
@@ -36,9 +38,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
         lin_min = None
         summary_vals = {}
 
-        ser_arduino = sc.connect_ard()
-        ser_Multi = sc.connect_multi()
-        ser_PSU = sc.connect_psu()
+        #ser_arduino = sc.connect_ard()
+        # ser_Multi = sc.connect_multi()
+        # ser_PSU = sc.connect_psu()
         sc.set_psu_parameters(ser_PSU, 12, 0.12, 10, 0.004)
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s)
 
@@ -62,12 +64,17 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
         while True:
             if stop_event.is_set():
                 ser_arduino.write(b"STOP\n")
+                print("STOP EMPFANGEN")
                 time.sleep(0.2)
                 ser_arduino.flush()
                 ser_PSU.write(b"OUTP OFF\n")
+                print("PSU: OUTPUT OFF")
                 ser_arduino.close()
+                print("SERIAL: Arduino close")
                 ser_Multi.close()
+                print("SERIAL: Multimeter close")
                 ser_PSU.close()
+                print("SERIAL: Netzteil close")
                 time.sleep(0.2)
                 break
 
@@ -77,11 +84,13 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 continue
             elif line.startswith('TOTAL_ELEC'):
+                print("Empfangen: TOTAL_ELEC")
                 global total_elec
                 total_elec = float(line[10::])
                 print("Gesamt Elektr. Winkel:")
                 print(total_elec)
             elif line.startswith("SUMMARY;"):
+                print("Empfangen: SUMMARY;")
                 try:
                     parts = line.split(";")[1:]
                     for p in parts:
@@ -92,6 +101,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
                     print("Fehler SUMMARY-Parse:", e)
                 continue
             elif line.startswith("RESULT;"):
+                print("Empfangen: RESULT;")
                 try:
                     parts = dict(p.split(":", 1) for p in line.split(";")[1:])
                     i = int(parts["idx"])
@@ -133,16 +143,21 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
                     print("Fehler beim Parsen:", e) #debug
                     continue
             elif line == 'LINEAR_READY':
+                print("Empfangen: LINEAR_READY")
                 ser_arduino.write(b"LINEAR_START\n")
             elif line == 'LINEAR_FINISH':
+                print("Empfangen: LINEAR_FINISH")
                 break
             elif line == 'CANCEL':
+                print("Empfangen: CANCEL")
                 break
             
         ser_PSU.write(b"OUTP OFF\n")
-        ser_arduino.close()
-        ser_Multi.close()
-        ser_PSU.close()
+        #ser_arduino.close()
+        # ser_Multi.close()
+        # print("[SERIAL] Multimeter close")
+        # ser_PSU.close()
+        # print("[SERIAL] Netzteil close")
                         
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug

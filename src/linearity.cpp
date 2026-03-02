@@ -5,8 +5,10 @@
 #include <linearity.h>
 #include <relay.h>
 
-// --------------- VARIABLES
+// --------------- CONSTANTS
 const size_t PRINT_ARRAY_SIZE = 13;
+
+// --------------- VARIABLES
 float print_ist_deg[PRINT_ARRAY_SIZE];
 float print_soll_deg[PRINT_ARRAY_SIZE];
 float print_soll_volt[PRINT_ARRAY_SIZE];
@@ -15,10 +17,8 @@ float print_real_diff_mid[PRINT_ARRAY_SIZE];
 float print_soll_volt_real[PRINT_ARRAY_SIZE];
 float print_linear_real[PRINT_ARRAY_SIZE];
 bool empty_cells[PRINT_ARRAY_SIZE];
-bool error_lin;
-bool error_mech;
-bool error_midDead;
 bool error_lin_index[PRINT_ARRAY_SIZE];
+bool error_lin, error_mech, error_midDead;
 
 int32_t real_tick_total, soll_tick_total;
 float d11_deg, d12_deg, d21_deg, d22_deg, d31_deg, d32_deg;
@@ -29,14 +29,49 @@ float lin_min, lin_max;
 
 
 void lin_init(){
-    error_lin = false;
-    error_mech = false;
-    error_midDead = false;
-    for (size_t i = 0; i < PRINT_ARRAY_SIZE; ++i) {
-      error_lin_index[i] = false;
-      lin_max = -100;
-      lin_min = 100;
-    }
+  real_tick_total = 0;
+  soll_tick_total = 0;
+  d11_tick = 0;
+  d12_tick = 0;
+  d21_tick = 0;
+  d22_tick = 0;
+  d31_tick = 0;
+  d32_tick = 0;
+
+  ccw_links = 0;
+  ccw_rechts = 0;
+  cw_links = 0;
+  cw_rechts = 0;
+  aktiv_ccw = 0;
+  aktiv_cw = 0;
+  ges_aktiv = 0;
+  real_mid_deg = 0;
+
+  lin_min = 100;
+  lin_max = -100;
+
+  error_lin = false;
+  error_mech = false;
+  error_midDead = false;
+  for (size_t i = 0; i < PRINT_ARRAY_SIZE; ++i) {
+    print_ist_deg[i] = 0;
+    print_soll_deg[i] = 0;
+    print_soll_volt[i] = 0;
+    print_ist_volt[i] = 0;
+    print_real_diff_mid[i] = 0;
+    print_soll_volt_real[i] = 0;
+    print_linear_real[i] = 0;
+    empty_cells[i] = false;
+    error_lin_index[i] = false;
+  }
+  
+  // Werden eh durch Serial initialisiert
+  // d11_deg = 0;
+  // d12_deg = 0;
+  // d21_deg = 0;
+  // d22_deg = 0;
+  // d31_deg = 0;
+  // d32_deg = 0;
 }
 
 

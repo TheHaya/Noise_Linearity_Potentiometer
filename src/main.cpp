@@ -13,17 +13,25 @@
 
 // --------------- CONSTANTS
 const int BUTTON = 19;
-
+const int BUT_TIMER = 200;
 
 // --------------- VARIABLES
-bool linear_checked = false;
+bool linear_checked;
 elapsedMillis but_millis;
-int but_timer = 200;
 bool but_up = HIGH;
 bool but_press;
-int counter_mode;
+
 
 // --------------- SETUP AND ASSIST FUNCTIONS
+void measurements_init(){
+  linear_checked = false;
+  dxl_init();
+  calibrate_init();
+  elec_deg_init();
+  lin_init();
+  relays_init();
+}
+
 void setup(){
   Serial.begin(115200);
   dxl.begin(DXL_BAUD);
@@ -46,7 +54,7 @@ void setup(){
 // --------------- LOOP
 void loop(){
   but_press = digitalRead(BUTTON);
-  if(but_press == LOW && but_up == HIGH && but_millis > but_timer){
+  if(but_press == LOW && but_up == HIGH && but_millis > BUT_TIMER){
     Serial.println("BUTTON");
     but_millis = 0;
   }
@@ -69,8 +77,7 @@ void loop(){
     if(command.startsWith("dead32:")){d32_deg = command.substring(7).toFloat();}
   
     if(command == "INIT_GO"){
-      linear_checked = false;
-      dxl_init();
+      measurements_init();
       apply_relay_mode(INIT_RELAY_MODE);
       check_beginning();        if(abort_if_cancelled()) return;
       calibrate_currents();     if(abort_if_cancelled()) return;
@@ -78,6 +85,7 @@ void loop(){
       
       drive_to(ZERO_TICK, user_rpm);
       reached_goal(ZERO_TICK, 2);
+      Serial.println("INIT_FINISH");
     }
 
     if(command == "NOISE_GO"){
@@ -86,16 +94,19 @@ void loop(){
       // if(cancelled == false){
       drive_to(sim_mercy_end, user_rpm/2);
       reached_goal(sim_mercy_end, 1); 
-      Serial.println("NOISE_READY");
-      // } else{
-        // Serial.println("CANCEL");
+      if(cancelled == false){
+        Serial.println("NOISE_READY");
+      } else{
+        Serial.println("CANCEL");
+        return;
         // cancelled = false;
-      // }
+      }
     }
     if(command == "NOISE_START"){
       noise_movement(); 
       if(cancelled == true){
         Serial.println("CANCEL");
+        return;
         // cancelled = false;
       }
       drive_to(ZERO_TICK, user_rpm);
@@ -111,17 +122,18 @@ void loop(){
         Serial.println("LINEAR_READY");
       } else{
         Serial.println("CANCEL");
+        return;
         // cancelled = false;
       }
     }
     if(command == "LINEAR_START"){
-      lin_init();
-      linearity_movement();
+      linearity_movement(); if(abort_if_cancelled()) return;
       calc_summary();
       calc_linearity();
       calc_errors();
       if(cancelled == true){
         Serial.println("CANCEL");
+        return;
         // cancelled = false;
       }
       drive_to(ZERO_TICK, user_rpm);
@@ -138,6 +150,7 @@ void loop(){
           Serial.println("ELEC_DEG_READY");
         } else{
           Serial.println("CANCEL");
+          return;
           // cancelled = false;
         }
       }
@@ -145,6 +158,7 @@ void loop(){
         elec_deg_movement();
         if(cancelled == true){
           Serial.println("CANCEL");
+          return;
           //cancelled = false;
         }
         drive_to(ZERO_TICK, user_rpm);

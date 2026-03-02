@@ -9,7 +9,6 @@ void noise_movement(){
   float sim_rpm;
   float rpm_intervall; 
 
-  
   for(int i = 1; i <= 3; i++){
     rpm_intervall = user_rpm/2;
     sim_rpm = rpm_intervall * i;
@@ -20,6 +19,6 @@ void noise_movement(){
     reached_goal(sim_mercy_end, i);
   }
   all_relays_off();
-  Serial.println("FINISH");
+  Serial.println("NOISE_MOVE_FINISH");
 }
 

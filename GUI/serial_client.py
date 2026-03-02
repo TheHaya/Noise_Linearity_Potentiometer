@@ -42,12 +42,16 @@ def set_psu_parameters(ser_PSU, v_lim, c_lim, v_set, c_set):
     ser_PSU.write(b"OUTP OFF\n")
     time.sleep(0.2)
     ser_PSU.write(f"VOLT:LIM {v_lim}\n".encode())
+    print(f"[PSU] Spannung Limit: {v_lim}")
     time.sleep(0.2)
     ser_PSU.write(f"CURR:LIM {c_lim}\n".encode())
+    print(f"[PSU] Strom Limit: {c_lim}")
     time.sleep(0.2)
     ser_PSU.write(f"VOLT {v_set}\n".encode())
+    print(f"[PSU] Spannung Ausgang: {v_set}")
     time.sleep(0.2)
     ser_PSU.write(f"CURR {c_set}\n".encode())
+    print(f"[PSU] Strom Ausgang: {c_set}")
     time.sleep(0.2)
     ser_PSU.write(b"OUTP ON\n")
     time.sleep(0.2)
@@ -56,13 +60,15 @@ def set_psu_parameters(ser_PSU, v_lim, c_lim, v_set, c_set):
 
 def set_part_parameters(ser_arduino, part_voltage, part_angle, part_speed):
     ser_arduino.write(f"SETV:{part_voltage}\n".encode())
+    print("[MCU] Spannung: ", part_voltage)
     time.sleep(0.2)
     ser_arduino.write(f"SETW:{part_angle}\n".encode())
+    print("[MCU] Gesamtwinkel: ", part_angle)
     time.sleep(0.2)
     ser_arduino.write(f"SETS:{part_speed}\n".encode())
+    print("[MCU] Speed: ", part_speed)
     time.sleep(0.2)
-    print("speed ist", part_speed)
-
+    
 
 def RegexMultimeter(output):
     match = re.search(r"[-+]?\d\.\d+(?:[Ee][-+]\d+)", output)
@@ -83,13 +89,13 @@ def get_multi_voltage(ser_arduino, ser_Multi):
     #print("geantwortet")
     if(RegexMultimeter(response)):
         #print("check1")
-        voltage  = float(RegexMultimeter(response))
+        voltage = float(RegexMultimeter(response))
         #print("check2")
-        print(voltage)
+        print(f"Erfasste Spannung: {voltage}")
         ser_arduino.write(f"ISTV:{voltage}\n".encode())
         #print("check3")
     else:
-        print("Problem bei Response")
+        print("Problem bei DMM Response")
         None
 
 def serial_ports():

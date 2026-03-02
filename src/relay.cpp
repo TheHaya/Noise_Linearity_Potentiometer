@@ -2,7 +2,7 @@
 #include <relay.h>
 
 
-// --------------- RELAY VARIABLES
+// --------------- RELAY CONSTANTS
 const int RELAY_AMOUNT = 16;
 const int RELAY_PINS[RELAY_AMOUNT] = {3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}; // Pins am Arduino
 
@@ -33,19 +33,22 @@ const uint16_t FIRST_HALF_RESISTANCE = RELAY_1 | RELAY_6;
 const uint16_t SECOND_HALF_RESISTANCE = RELAY_3 | RELAY_6;
 const uint16_t MIDDLE_RESISTANCE = RELAY_2 | RELAY_6;
 
+// --------------- RELAY CONSTANTS
 uint16_t current_mode = 0;
 
+
+// --------------- RELAY FUNCTIONS
 void relays_init(){
     for (int i = 0; i < RELAY_AMOUNT; i++) {
-    pinMode(RELAY_PINS[i], OUTPUT);
-    digitalWrite(RELAY_PINS[i], HIGH); // AUS (bei active-low Relaisboards)
-  }
-  current_mode = 0;
+        pinMode(RELAY_PINS[i], OUTPUT);
+        digitalWrite(RELAY_PINS[i], HIGH);
+    }
+    current_mode = 0;
+    all_relays_off();
 }
 
 void switch_relays(int idx, bool turn_on){
     uint8_t level = turn_on ? LOW : HIGH; 
-
     digitalWrite(RELAY_PINS[idx], level);
 }
 

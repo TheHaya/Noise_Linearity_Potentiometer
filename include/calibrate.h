@@ -11,13 +11,14 @@ extern const int32_t ZERO_TICK;
 extern const float MERCY_TOLERANCE_TICK;
 extern const float CHECK_ENDS_TOL_DEG;
 extern const float SAFETY_VOLT;
+extern const int BEGINNING_TIMER;
+extern const float SLOW_RPM;
 
 // --------------- CALIBRATE VARIABLES
 extern int32_t stopped_tick;
 extern int32_t start_tick, end_tick;
 extern int32_t sim_mercy_start, sim_mercy_end;
 
-extern float slow_rpm;
 extern float user_rpm, rpm1, rpm2, rpm3;
 extern float real_time1, real_time2, real_time3;
 extern float theo_time1, theo_time2, theo_time3;
@@ -27,9 +28,10 @@ extern float ist_start_volt, ist_end_volt, ist_mid_volt;
 extern float safety_pos_volt;
 extern float tar_volt;
 
+void calibrate_init();
 float corr_measure(float current_volt);
 void calibrate_currents();
-void check_ends(bool uses_dmm=true);
+void check_ends();
 float correction_movement(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, int timeout=18000);
 void check_beginning();

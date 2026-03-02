@@ -5,13 +5,22 @@
 #include <elec_deg.h>
 #include <relay.h>
 
-// --------------- VARIABLES
+// --------------- CONSTANTS
 const size_t ELEC_ARRAY_SIZE = 4;
+
+// --------------- VARIABLES
 float print_elec_deg[ELEC_ARRAY_SIZE];
 float print_elec_volt[ELEC_ARRAY_SIZE];
 
 
 // --------------- ELEC_DEG_FUNCTIONS
+void elec_deg_init(){
+    for(int i = 0; i < ELEC_ARRAY_SIZE; i++){
+        print_elec_deg[i] = 0;
+        print_elec_volt[i] = 0;
+    }
+}
+
 void elec_deg_movement(){
     float total_elec_deg = 0;
     soll_tick_total = deg_to_tick(target_deg_total); // ca. 330°

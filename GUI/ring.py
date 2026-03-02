@@ -9,9 +9,11 @@ ring_box = None
 noise_times = []
 deadzone_iids = [] 
 
+
 # --------------- GUI RING FUNCTIONS
 def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#1c1c1c"):
     global ring_canvas, ring_box
+    text_font = font.Font(family="Arial", size=20, weight="bold")
     ring_canvas = tk.Canvas(
         frame, width=ring_size+30, height=ring_size+30,
         bg=bg
@@ -22,6 +24,9 @@ def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#1c1c1c"):
     ring_box = (canv_x - radius, canv_y - radius, canv_x + radius, canv_y + radius)
     ring_canvas.create_arc(ring_box, start=0, extent=359.9,
                            style="arc", width=ring_thickness, outline="#969696")
+    ring_canvas.create_text(
+                canv_x, canv_y-25, text="Rauschen:", fill="#d8d8d8",
+                font=text_font, anchor="center")
     
     for deg in range(0, 360, 10):
         long_tick = (deg % 30 == 0)
@@ -107,18 +112,22 @@ def mark_noise_segments(angle_arr, ring_thickness = 4, color="#ff0000"):
                                      style="arc", width=ring_thickness+10, outline="#ff0000")
             noise_times.append(iid)
 
-def set_circle_text(pico_angle):
+def set_circle_text(pico_angle, noise_meas = False):
     x0, y0, x1, y1 = ring_box
     canv_x = (x0 + x1) / 2
     canv_y = (y0 + y1) / 2
     text_font = font.Font(family="Arial", size=20, weight="bold")
 
-    if not pico_angle:
+    if noise_meas is False:
         iid = ring_canvas.create_text(
-                canv_x, canv_y, text="Rauschen:\nIn Ordnung", fill="#00ff33",
+                canv_x, canv_y+30, text="Bereit", fill="#d7d7d7",
+                font=text_font, anchor="center")
+    elif not pico_angle:
+        iid = ring_canvas.create_text(
+                canv_x, canv_y+30, text="In Ordnung", fill="#00ff33",
                 font=text_font, anchor="center")
     else:
         iid = ring_canvas.create_text(
-                canv_x, canv_y, text="Fehler", fill="#ff0000",
+                canv_x, canv_y+30, text="Fehler", fill="#ff0000",
                 font=text_font, anchor="center")
     noise_times.append(iid)
