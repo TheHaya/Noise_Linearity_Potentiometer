@@ -20,7 +20,7 @@ Dynamixel2Arduino dxl(DXL_SERIAL, DXL_DIR_PIN);
 const float DEG_PER_TICK = 360.0f / 4096.0f;
 const float TICK_PER_DEG = 4096.0f / 360.0f;
 const float RPM_PER_VEL = 0.229;
-const float START_CURRENT = 800;
+const float START_CURRENT = 900;
 const float CUR_TOLERANCE = 7;
 const float CUR_TOLERANCE_SLOW = 2;
 const int POLL_TIMER = 1;
@@ -74,7 +74,6 @@ void dxl_init(){
 void drive_to(int32_t tick, float rpm, uint8_t DYN_ID){
   dxl.torqueOff(DYN_ID);
   dxl.writeControlTableItem(PROFILE_VELOCITY, DYN_ID, rpm_to_time(tick, rpm)); 
-  //dxl.writeControlTableItem(PROFILE_VELOCITY, DYN_ID, rpm);
   dxl.writeControlTableItem(PROFILE_ACCELERATION, DYN_ID, 0);
   dxl.torqueOn(DYN_ID);
   dxl.setGoalPosition(DYN_ID, tick, UNIT_RAW);
@@ -88,7 +87,7 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
   while(cancelled == false && t < 20000){  // MUSS GEÄNDERT WERDEN WENN POTI > 360°
     if(polling > POLL_TIMER){
       cur_pos = get_tick_position();
-      cur_cur = fabsf(dxl.getPresentCurrent(DID, UNIT_MILLI_AMPERE));
+      cur_cur = fabsf(dxl.getPresentCurrent(DID, UNIT_RAW));
 
       if (Serial.available()) {
         String stop_command = Serial.readStringUntil('\n');
@@ -136,6 +135,7 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
         if(fabsf(cur_cur) >= START_CURRENT){
           dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
           return false;
+          break;
         }
       }
 
@@ -144,15 +144,18 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
           dxl.setGoalPosition(DID, get_tick_position() + 1, UNIT_RAW);
         } 
         return true;
+        break;
       }
       else if ((fabsf(cur_pos - target_tick) <= error_tick) && cur_pos - target_tick > 0) {
         for(int i = 0; i<5 ; i++){
           dxl.setGoalPosition(DID, get_tick_position() - 1, UNIT_RAW);
         } 
         return true;
+        break;
       }
       else if (cur_pos == target_tick){
         return true;
+        break;
       }
       polling = 0;
     }

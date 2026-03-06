@@ -83,14 +83,14 @@ float lerp_dead(int32_t x, int32_t d1, int32_t d2){
   }
 }
 
-float dead_soll_volt_deg(float deg, float tar_volt,
+float dead_soll_volt_deg(float deg, float tar_volt_real,
                       float d12_deg, float d21_deg, float d22_deg, float d31_deg) {
-  const float HALF = tar_volt * 0.5f;
+  const float HALF = tar_volt_real * 0.5f;
   if (deg <= d12_deg) return 0.0f;
   if (deg <= d21_deg) return HALF * (deg - d12_deg) / (d21_deg - d12_deg);
   if (deg <= d22_deg) return HALF;
   if (deg <= d31_deg) return HALF + HALF * (deg - d22_deg) / (d31_deg - d22_deg);
-  return tar_volt;
+  return tar_volt_real;
 }
 
 void linearity_movement(){
@@ -175,7 +175,7 @@ void linearity_movement(){
     }
 
     // SOLL-SPANNUNG
-    print_soll_volt[i] = dead_soll_volt_deg(soll_Deg[i], tar_volt, d12_deg, d21_deg, d22_deg, d31_deg);
+    print_soll_volt[i] = dead_soll_volt_deg(soll_Deg[i], ist_end_volt, d12_deg, d21_deg, d22_deg, d31_deg);
 
     // IST-SPANNUNG
     if(rel_tick == mercy_end){
@@ -249,7 +249,7 @@ void linearity_movement(){
 
 // ----------------- LINEARITÄT
 void calc_linearity(){
-  const float REAL_VOLT_PER_DEG = tar_volt/ges_aktiv;
+  const float REAL_VOLT_PER_DEG = ist_end_volt/ges_aktiv;
   const float MID_SOLL_VOLT_REAL = aktiv_ccw*REAL_VOLT_PER_DEG;
 
   for(size_t i = 0; i<PRINT_ARRAY_SIZE ; i++){
@@ -264,7 +264,7 @@ void calc_linearity(){
     print_soll_volt_real[i] = print_real_diff_mid[i] * REAL_VOLT_PER_DEG + MID_SOLL_VOLT_REAL;
     
     // LINEARITÄT
-    print_linear_real[i] = (print_ist_volt[i] - print_soll_volt_real[i])/tar_volt;
+    print_linear_real[i] = (print_ist_volt[i] - print_soll_volt_real[i])/ist_end_volt;
     if(fabsf(print_linear_real[i]) > 0.005) {
       error_lin = true;
       error_lin_index[i] = true;

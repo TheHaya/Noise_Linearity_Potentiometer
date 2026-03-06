@@ -56,6 +56,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
             line = ser_arduino.readline().decode('utf-8').strip()
             #print("Empfangen:", line) #debug
     
+            if line == 'CHECK_PSU':
+                sc.set_correct_voltage(ser_Multi, ser_PSU, 10)
+
             if line == 'VOLTR':
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 continue

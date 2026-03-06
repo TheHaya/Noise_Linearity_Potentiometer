@@ -14,8 +14,10 @@ void go_zero(){
 }
 
 void go_to(){
-  drive_to(user_go_to, user_rpm);
-  reached_goal(user_go_to, 2, 1);
+  // drive_to(user_go_to, user_rpm);
+  // reached_goal(user_go_to, 2, 1);
+  drive_to(user_go_to, SLOW_RPM);
+  reached_goal(user_go_to, 0, 1);
   Serial.println("GOTO_READY");
 }
 

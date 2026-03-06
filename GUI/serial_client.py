@@ -3,7 +3,7 @@ import serial.tools.list_ports
 
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
-ARDUINO_PORT = "COM18"
+ARDUINO_PORT = "COM20"
 MULTI_PORT = "COM17"
 PSU_PORT = "COM15"
 
@@ -93,6 +93,33 @@ def get_multi_voltage(ser_arduino, ser_Multi):
         #print("check2")
         print(f"Erfasste Spannung: {voltage}")
         ser_arduino.write(f"ISTV:{voltage}\n".encode())
+        #print("check3")
+    else:
+        print("Problem bei DMM Response")
+        None
+
+def set_correct_voltage(ser_Multi, ser_PSU, sollspannung):
+    ser_Multi.reset_input_buffer()
+    ser_Multi.reset_output_buffer()
+    ser_Multi.write(b':MEAS:VOLT:DC?\n')
+
+    #print("geschrieben")
+    time.sleep(0.05)
+    #print("sleep 0.2 sek")
+    response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
+    #print("geantwortet")
+    if(RegexMultimeter(response)):
+        #print("check1")
+        voltage = float(RegexMultimeter(response, 4))
+        voltage_round = round(voltage)
+        #print("check2")
+        print(f"Erfasste Spannung: {voltage}")
+        if round(voltage_round) < sollspannung:
+            regulate_voltage = 10 + sollspannung - voltage_round
+            ser_PSU.write(f"VOLT {regulate_voltage}\n".encode())
+            print(f"[PSU] Spannung Ausgang: {regulate_voltage}")
+            time.sleep(0.2)
+
         #print("check3")
     else:
         print("Problem bei DMM Response")

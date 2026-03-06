@@ -8,8 +8,8 @@
 // --------------- CONSTANTS
 const int32_t CHECK_END_START = -2000;
 const int32_t CHECK_END_END = 6000;
-const int32_t CALIBRATE_CURRENT_CCW = 1850;
-const int32_t CALIBRATE_CURRENT_CW = 2250;
+const int32_t CALIBRATE_CURRENT_CCW = 1750;
+const int32_t CALIBRATE_CURRENT_CW = 2350;
 const int32_t ZERO_TICK = 2050;
 const float MERCY_TOLERANCE_TICK = 15;
 const float CHECK_ENDS_TOL_DEG = 10;
@@ -55,7 +55,7 @@ theo_time3 = 0;
 delay1 = 0;
 delay2 = 0;
 delay3 = 0;
-safety_pos_volt = 0;
+//safety_pos_volt = 0;
 //user_rpm = 0;
 //target_deg_total = 0;
 //tar_volt = 10;
@@ -171,7 +171,7 @@ float correction_movement(float &current_volt, float goal_volt,
 bool abort_if_cancelled(){
   if(!cancelled) return false;
   Serial.println("CANCEL");
-  all_relays_off();
+  //all_relays_off();
   return true;
   
 }
@@ -195,6 +195,7 @@ void calibrate_currents(){
   reached_goal(CALIBRATE_CURRENT_CCW, 0, 1);
   drive_to(CALIBRATE_CURRENT_CW, SLOW_RPM);
   reached_goal(CALIBRATE_CURRENT_CW, 0, 1);
+
 
   for(int i = 1; i <= 3; i++){
     float rpm_intervall = user_rpm/2;
@@ -239,6 +240,7 @@ void calibrate_currents(){
   reached_goal(2334, 2 ,1);
 }*/
 
+
 void check_beginning(){
   const float LOW_SAFETY = SAFETY_VOLT*0.1;
   const float HIGH_SAFETY = SAFETY_VOLT*0.9;
@@ -253,29 +255,35 @@ void check_beginning(){
 void check_ends(){
   //int32_t check_mercy_start = deg_to_tick(360 - target_deg_total + CHECK_ENDS_TOL_DEG);
   //int32_t check_mercy_end = start_tick + deg_to_tick(target_deg_total - CHECK_ENDS_TOL_DEG);
-  ist_mid_volt = corr_measure(ist_mid_volt);
+
 
   //drive_to(check_mercy_start, rpm3);
   //reached_goal(check_mercy_start, 3);
+  
+  //drive_to(check_mercy_end, rpm2);
+  ///reached_goal(check_mercy_end, 2);
+
+  ist_mid_volt = corr_measure(ist_mid_volt);
+
   drive_to(CHECK_END_START, SLOW_RPM);
   if(reached_goal(CHECK_END_START, 0) == false){
     start_tick = stopped_tick;
     ist_start_volt = corr_measure(ist_start_volt);
   }
+
   for(int i = 0; i < 5; i++){
-    dxl.ledOff(1);
-    delay(100);
-     dxl.ledOn(1);
-    delay(100);
+  dxl.ledOff(1);
+  delay(100);
+    dxl.ledOn(1);
+  delay(100);
   } 
-  //drive_to(check_mercy_end, rpm2);
-  ///reached_goal(check_mercy_end, 2);
+
   drive_to(CHECK_END_END, SLOW_RPM);
   if(reached_goal(CHECK_END_END, 0) == false){
     end_tick = stopped_tick;
     ist_end_volt = corr_measure(ist_end_volt);
   }
-  
+
   sim_mercy_start = start_tick + MERCY_TOLERANCE_TICK;
   sim_mercy_end = end_tick - MERCY_TOLERANCE_TICK;
   uint32_t total_distance = abs(end_tick - start_tick);
@@ -290,5 +298,6 @@ void check_ends(){
      dxl.ledOn(1);
     delay(100);
   }
-  all_relays_off();
+  //all_relays_off();
+
 }
