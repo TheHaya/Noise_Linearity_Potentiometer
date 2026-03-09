@@ -1,4 +1,5 @@
 from itertools import cycle
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from linear_workflow import daten
@@ -40,7 +41,14 @@ def save_to_pdf(txt, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt):
         plt.ylabel("Spannung")
         plt.grid(True, linestyle="--", linewidth=0.6, alpha=0.6)
         plt.tight_layout()
-        fig.savefig((title+".pdf"), format="pdf")
+        dupe = 0
+        if os.path.exists('{}.pdf'.format(title)):
+            dupe += 1
+            while os.path.exists('{} ({:d}).pdf'.format(title, dupe)):
+                dupe += 1
+            fig.savefig('{} ({:d}).pdf'.format(title, i))
+        else:
+            fig.savefig('{}.pdf'.format(title))
         plt.close(fig)
         print(f"{title}.pdf gespeichert.")
 
@@ -49,7 +57,8 @@ def save_to_pdf(txt, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt):
 
 
 # --------------- EXCEL EXPORT FUNCTIONS
-def save_to_excel(txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, lin_min, error_lin_idx):
+def save_to_excel(txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, lin_min,
+                  tol_d_p, tol_d_n, tol_cw_p, tol_cw_n, tol_ccw_p, tol_ccw_n, tol_lin_p, tol_lin_n):
     try:
         rows = []
         for(sollwinkel, sollspannung, istspannung, istwinkel, 
@@ -77,7 +86,17 @@ def save_to_excel(txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, l
         df["Soll-Spannung Real [V]"] = [round_sollReal(v) for v in linear_sollV[:L]]
         df["Linearität"] = [round_linear(v) for v in linear_lin[:L]]
 
-        with pd.ExcelWriter("RMTest-"+txt.get()+".xlsx", engine="xlsxwriter") as writer:
+        title = txt.get()
+        dupe = 0
+        if os.path.exists('RMTest-{}.xlsx'.format(title)):
+            dupe += 1
+            while os.path.exists('RMTest-{} ({:d}).xlsx'.format(title, dupe)):
+                dupe += 1
+            filename = "RMTest-"+title+f" ({dupe}).xlsx"
+        else:
+            filename = "RMTest-"+title+".xlsx"
+
+        with pd.ExcelWriter(filename, engine="xlsxwriter") as writer:
             sheet = "Messung"
             df.to_excel(writer, index=False, sheet_name=sheet)
             wb = writer.book
@@ -89,6 +108,7 @@ def save_to_excel(txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, l
             format_volt3 = wb.add_format({'num_format': '0.000','align': 'center'})
             format_header = wb.add_format({'text_wrap': True, 'align': 'center', 'valign': 'vcenter', 'bold': True})
             format_error_percent = wb.add_format({'num_format': '0.00%', 'align': 'center', 'bg_color': "#F86A5A"})
+            format_error_degree = wb.add_format({'num_format': '0.0°', 'align': 'center', 'bg_color': "#F86A5A"})
 
             ws.set_row(0, 35, format_header)
             ws.set_column('A:A', 44)
@@ -110,16 +130,22 @@ def save_to_excel(txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, l
             activeSum = summary_vals.get("AktivSumme")
 
             ws.write(start + 0, 0, "Totzone")
-            if totzone is not None:
+            if totzone is not None and totzone < tol_d_p and totzone > tol_d_n:
                 ws.write_number(start + 0, 1, totzone, format_degree)
+            else:
+                ws.write_number(start + 0, 1, totzone, format_error_degree)
 
             ws.write(start + 1, 0, "Winkel Aktiver Bereich CW (Drehrichtung-)(11)")
-            if activeCW is not None:
+            if activeCW is not None and activeCW < tol_cw_p and activeCW > tol_cw_n:
                 ws.write_number(start + 1, 1, activeCW, format_degree)
+            else:
+                ws.write_number(start + 1, 1, activeCW, format_error_degree)
 
             ws.write(start + 2, 0, "Winkel Aktiver Bereich CCW (Drehrichtung+)(13)")
-            if activeCCW is not None:
+            if activeCCW is not None and activeCCW < tol_ccw_p and activeCCW > tol_ccw_n:
                 ws.write_number(start + 2, 1, activeCCW, format_degree)
+            else:
+                ws.write_number(start + 2, 1, activeCCW, format_error_degree)
 
             ws.write_blank(start + 3, 0, None)
             ws.write_blank(start + 3, 1, None)
@@ -130,14 +156,16 @@ def save_to_excel(txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, l
 
             ws.write(start + 0, 6, "Lin Max")
             if lin_max is not None:
-                if error_lin_idx:
+                #if error_lin_idx:
+                if lin_max > tol_lin_p:
                     ws.write_number(start + 0, 7, lin_max, format_error_percent)
                 else:
                     ws.write_number(start + 0, 7, lin_max, format_percent)
 
             ws.write(start + 1, 6, "Lin Min")
             if lin_min is not None:
-                if error_lin_idx:
+                #if error_lin_idx:
+                if lin_min < tol_lin_n:
                     ws.write_number(start + 1, 7, lin_min, format_error_percent)
                 else:
                     ws.write_number(start + 1, 7, lin_min, format_percent)

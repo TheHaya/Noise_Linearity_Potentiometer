@@ -80,7 +80,7 @@ void loop(){
     if(command == "INIT_GO"){
       measurements_init();
       //apply_relay_mode(INIT_RELAY_MODE);
-      check_beginning();        if(abort_if_cancelled()) return;
+      check_beginning(target_deg_total);        if(abort_if_cancelled()) return;
       calibrate_currents();     if(abort_if_cancelled()) return;
       check_ends();        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
       

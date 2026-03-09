@@ -2,8 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import ImageTk, Image
 import sv_ttk
-import threading, json
-
+import threading, json, os, sys
 
 from export import save_to_pdf, save_to_excel
 import ring
@@ -15,6 +14,11 @@ from tester import tests
 import side_functions
 import pico_runner
 import serial_client as sc
+
+# --------------- PYINSTALLER FUNCTIONS
+def resource_path(rel_path: str) -> str:
+    base = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    return os.path.join(base, rel_path)
 
 # --------------- APP VARIABLES 
 # ARDUINO_PORTS = ["COM3", "COM5", "COM9"]
@@ -31,7 +35,7 @@ linear_win = None
 zero_win = None
 cancelled_win = None
 
-AMLogo = Image.open('AMLogo.jpg')
+AMLogo = Image.open(resource_path("AMLogo.jpg"))
 scale = 0.8
 w, h = AMLogo.size
 smallLogo = AMLogo.resize((int(w*scale), int(h*scale)))
@@ -41,7 +45,22 @@ debounce_id = {"id": None}
 output_ends = False
 
 # --------------- PRESETS LADEN
-preset_path = "preset_Teile.json"
+tol_total_mech_deg_pos = None
+tol_total_mech_deg_neg = None
+tol_total_elec_deg_pos = None
+tol_total_elec_deg_neg = None
+tol_deadzone_pos = None
+tol_deadzone_neg = None
+tol_active_cw_pos = None
+tol_active_cw_neg = None
+tol_active_ccw_pos = None
+tol_active_ccw_neg = None
+tol_linearity_pos = None
+tol_linearity_neg = None
+tol_resistance_pos = None
+tol_resistance_neg = None
+
+preset_path = resource_path("preset_Teile.json")
 def load_presets():
     try:
         with open (preset_path, "r", encoding="utf-8") as p:
@@ -75,6 +94,27 @@ def insert_preset(p):
     set_entry(txt_d22, p["d22"])
     set_entry(txt_d31, p["d31"])
     set_entry(txt_d32, p["d32"])
+
+    tol_total_mech_deg_pos = p.get("tol_drehwinkel_mech_pos")
+    tol_total_mech_deg_neg = p.get("tol_drehwinkel_mech_neg")
+    tol_total_elec_deg_pos = p.get("tol_drehwinkel_elec_pos")
+    tol_total_elec_deg_neg = p.get("tol_drehwinkel_elec_neg")
+    tol_deadzone_pos = p.get("tol_mittelanzapfung_pos")
+    tol_deadzone_neg = p.get("tol_mittelanzapfung_neg")
+    tol_active_cw_pos = p.get("tol_active_cw_pos")
+    tol_active_cw_neg = p.get("tol_active_cw_neg")
+    tol_active_ccw_pos = p.get("tol_active_ccw_pos")
+    tol_active_ccw_neg = p.get("tol_active_ccw_neg")
+    tol_linearity_pos = p.get("tol_linear_pos")
+    tol_linearity_neg = p.get("tol_linear_neg")
+    tol_resistance_pos = p.get("tol_widerstand_pos")
+    tol_resistance_neg = p.get("tol_widerstand_neg")
+
+    global all_lin_tols, all_mech_tols, all_elec_tols
+    all_mech_tols = (tol_total_mech_deg_pos, tol_total_elec_deg_neg)
+    all_elec_tols = (tol_total_elec_deg_pos, tol_total_elec_deg_neg)
+    all_lin_tols = (tol_deadzone_pos, tol_deadzone_neg, tol_active_cw_pos, tol_active_cw_neg, 
+                    tol_active_ccw_pos, tol_active_ccw_neg, tol_linearity_pos, tol_linearity_neg)
     comment = (p.get("comment") or "").strip()
     msg.configure(text=comment)
 
@@ -275,7 +315,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                 if stop_event.is_set():
                     root.after(0, open_cancelled_window)
                     break
-                if pico_runner.out_volt is True and modes:
+                if pico_runner.out_volt is True and any(wf in (elec_deg_workflow, linear_workflow) for (wf, *_rest) in modes):
                     stop_event.set()
                     measurements_noise_found = True
                     root.after(0, open_noise_found_win)
@@ -390,7 +430,7 @@ def export_excel():
         linear_workflow.result["summary_vals"],
         linear_workflow.result["lin_max"],
         linear_workflow.result["lin_min"],
-        linear_workflow.result["error_lin_idx"],
+        *all_lin_tols
     )
 
 def advanced_chk():
@@ -433,7 +473,7 @@ def instant_deadzone_ring():
         if angles is not None:
             deadzone_angles.append(angles)
     
-    ring.mark_deadzone(deadzone_angles)
+    ring.mark_deadzone(float(txt_angle.get().strip().replace(',', '.')), deadzone_angles)
 
 def show_current_position():
     side_functions.show_pos()
@@ -714,6 +754,10 @@ txt_d32.grid(row=6, column=2, pady=(0, 0), padx=(30,0))
 txt_d32.insert(0, "330,0")
 txt_d32.configure(state=text_rw_state)
 
+
+ttk.Label(ring_area, text="Totzone 3 Rechts in °").grid(row=1, column=0, sticky="w", pady=(40, 0), padx=(18,0))
+
+
 for var in (d11_var, d12_var, d21_var, d22_var, d31_var, d32_var):
     var.trace_add("write", update_deadzone_ring)
 
@@ -821,6 +865,7 @@ root.bind("<Escape>", lambda event: on_up_window())
 
 # --------------- MAIN
 ring.build_ring(ring_area)
+ring.init_circle_text()
 advanced_visible(False)
 instant_deadzone_ring()
 sv_ttk.set_theme("dark")

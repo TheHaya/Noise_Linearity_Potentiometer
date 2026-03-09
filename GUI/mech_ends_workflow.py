@@ -70,6 +70,22 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
                 total_ticks = round(total_mech*(4096/360))
                 print(f"Gesamtwinkel ist: {total_mech}")
             
+            elif line.startswith("CUR0"):
+                cal_cur0 = float(line[4::])
+                print(f"Max. Strom RPM0: {cal_cur0}")
+                
+            elif line.startswith("CUR1"):
+                cal_cur1 = float(line[4::])
+                print(f"Max. Strom RPM1: {cal_cur1}")
+                
+            elif line.startswith("CUR2"):
+                cal_cur2 = float(line[4::])
+                print(f"Max. Strom RPM2: {cal_cur2}")
+
+            elif line.startswith("CUR3"):
+                cal_cur3 = float(line[4::])
+                print(f"Max. Strom RPM3: {cal_cur3}")
+
             elif line.startswith("DELAY1"):
                 global delay_time1
                 delay_time1 = float(line[6::])

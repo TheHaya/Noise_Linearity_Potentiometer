@@ -15,10 +15,10 @@ def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#1c1c1c"):
     global ring_canvas, ring_box
     text_font = font.Font(family="Arial", size=20, weight="bold")
     ring_canvas = tk.Canvas(
-        frame, width=ring_size+30, height=ring_size+30,
+        frame, width=ring_size+30, height=ring_size+300,
         bg=bg
     )
-    ring_canvas.pack()
+    ring_canvas.grid(row=0, column=0, sticky="n")
     canv_x = canv_y = ring_size // 2 + 15
     radius = (ring_size // 2) - 18
     ring_box = (canv_x - radius, canv_y - radius, canv_x + radius, canv_y + radius)
@@ -27,6 +27,10 @@ def build_ring(frame, ring_size = 300, ring_thickness = 4, bg="#1c1c1c"):
     ring_canvas.create_text(
                 canv_x, canv_y-25, text="Rauschen:", fill="#d8d8d8",
                 font=text_font, anchor="center")
+    ring_canvas.create_text(
+                canv_x, canv_y+250, text="Linearität:", fill="#d8d8d8",
+                font=text_font, anchor="center")
+    
     
     for deg in range(0, 360, 10):
         long_tick = (deg % 30 == 0)
@@ -44,13 +48,13 @@ def clear_deadzone_marks():
         ring_canvas.delete(iid)
     deadzone_iids.clear()
 
-def mark_deadzone(angles_deg, ring_size = 300, ring_thickness = 4):
+def mark_deadzone(total_deg, angles_deg, ring_size = 300, ring_thickness = 4):
     global ring_canvas, deadzone_iids
     if ring_canvas is None:
         return
 
     fix_direction = 90
-    fix_mech_angle = (360-330)/2
+    fix_mech_angle = (360-total_deg)/2
     L = 20
 
     clear_deadzone_marks()
@@ -112,6 +116,21 @@ def mark_noise_segments(angle_arr, ring_thickness = 4, color="#ff0000"):
                                      style="arc", width=ring_thickness+10, outline="#ff0000")
             noise_times.append(iid)
 
+def init_circle_text():
+    x0, y0, x1, y1 = ring_box
+    canv_x = (x0 + x1) / 2
+    canv_y = (y0 + y1) / 2
+    text_font = font.Font(family="Arial", size=20, weight="bold")
+    iid = ring_canvas.create_text(
+                canv_x, canv_y+30, text="Bereit", fill="#d7d7d7",
+                font=text_font, anchor="center")
+    noise_times.append(iid)
+    
+    iid = ring_canvas.create_text(
+                canv_x, canv_y+300, text="Bereit", fill="#d7d7d7",
+                font=text_font, anchor="center")
+    noise_times.append(iid)
+
 def set_circle_text(pico_angle, noise_meas = False):
     x0, y0, x1, y1 = ring_box
     canv_x = (x0 + x1) / 2
@@ -131,3 +150,26 @@ def set_circle_text(pico_angle, noise_meas = False):
                 canv_x, canv_y+30, text="Fehler", fill="#ff0000",
                 font=text_font, anchor="center")
     noise_times.append(iid)
+
+def set_linearity_text(linear_check: bool, good_part: bool):
+    x0, y0, x1, y1 = ring_box
+    canv_x = (x0 + x1) / 2
+    canv_y = (y0 + y1) / 2
+    text_font = font.Font(family="Arial", size=20, weight="bold")
+    if linear_check:
+        if good_part:
+            iid = ring_canvas.create_text(
+                canv_x, canv_y+305, text="In Ordnung", fill="#00ff33",
+                font=text_font, anchor="center")
+        else:
+            iid = ring_canvas.create_text(
+                canv_x, canv_y+305, text="Fehler", fill="#ff0000",
+                font=text_font, anchor="center")
+    else:
+        iid = ring_canvas.create_text(
+                canv_x, canv_y+305, text="Bereit", fill="#d7d7d7",
+                font=text_font, anchor="center")
+
+    
+    
+    

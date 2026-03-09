@@ -8,8 +8,8 @@
 // --------------- CONSTANTS
 const int32_t CHECK_END_START = -2000;
 const int32_t CHECK_END_END = 6000;
-const int32_t CALIBRATE_CURRENT_CCW = 1750;
-const int32_t CALIBRATE_CURRENT_CW = 2350;
+const int32_t CALIBRATE_CURRENT_CCW = 1650;
+const int32_t CALIBRATE_CURRENT_CW = 2450;
 const int32_t ZERO_TICK = 2050;
 const float MERCY_TOLERANCE_TICK = 15;
 const float CHECK_ENDS_TOL_DEG = 10;
@@ -19,7 +19,7 @@ const float SAFETY_VOLT = 10;
 const float SLOW_RPM = 5;
 
 // --------------- VARIABLES
-int32_t start_tick, end_tick;
+int32_t start_tick, end_tick, real_mid_tick;
 int32_t sim_mercy_start, sim_mercy_end;
 
 float ist_start_volt, ist_end_volt, ist_mid_volt;
@@ -36,6 +36,7 @@ float tar_volt;
 void calibrate_init(){
 start_tick = 0;
 end_tick = 0;
+real_mid_tick = 0;
 sim_mercy_start = 0;
 sim_mercy_end = 0;
 ist_start_volt = 0;
@@ -228,8 +229,16 @@ void calibrate_currents(){
   Serial.println(delay2);
   Serial.print("DELAY3");
   Serial.println(delay3);
-  drive_to(ZERO_TICK, rpm1);
-  reached_goal(ZERO_TICK, rpm1);
+  Serial.print("CUR0");
+  Serial.println(cal_cur0);
+  Serial.print("CUR1");
+  Serial.println(cal_cur1);
+  Serial.print("CUR2");
+  Serial.println(cal_cur2);
+  Serial.print("CUR3");
+  Serial.println(cal_cur3);
+  // drive_to(ZERO_TICK, rpm1);
+  // reached_goal(ZERO_TICK, rpm1);
 }
 
 /*
@@ -241,13 +250,22 @@ void calibrate_currents(){
 }*/
 
 
-void check_beginning(){
+void check_beginning(float total_deg){
   const float LOW_SAFETY = SAFETY_VOLT*0.1;
   const float HIGH_SAFETY = SAFETY_VOLT*0.9;
   safety_pos_volt = corr_measure(safety_pos_volt);
-  if(safety_pos_volt <= LOW_SAFETY || safety_pos_volt >= HIGH_SAFETY){
-    Serial.println("SAFETY");
-    cancelled = true;
+  if(safety_pos_volt <= LOW_SAFETY){
+    int32_t low_to_mid = get_tick_position() + deg_to_tick(total_deg)/2;
+    drive_to(low_to_mid, 1);
+    reached_goal(low_to_mid, 1, 1);
+    // Serial.println("SAFETY");
+    // cancelled = true;
+  } else if(safety_pos_volt >= HIGH_SAFETY){
+    int32_t high_to_mid = get_tick_position() - deg_to_tick(total_deg)/2;
+    drive_to(high_to_mid, 1);
+    reached_goal(high_to_mid, 1, 1);
+    // Serial.println("SAFETY");
+    // cancelled = true;
   }
 }
 
@@ -266,7 +284,7 @@ void check_ends(){
   ist_mid_volt = corr_measure(ist_mid_volt);
 
   drive_to(CHECK_END_START, SLOW_RPM);
-  if(reached_goal(CHECK_END_START, 0) == false){
+  if(reached_goal(CHECK_END_START, 0, 0, 15000) == false){
     start_tick = stopped_tick;
     ist_start_volt = corr_measure(ist_start_volt);
   }
@@ -279,7 +297,7 @@ void check_ends(){
   } 
 
   drive_to(CHECK_END_END, SLOW_RPM);
-  if(reached_goal(CHECK_END_END, 0) == false){
+  if(reached_goal(CHECK_END_END, 0, 0, 15000) == false){
     end_tick = stopped_tick;
     ist_end_volt = corr_measure(ist_end_volt);
   }
@@ -287,6 +305,7 @@ void check_ends(){
   sim_mercy_start = start_tick + MERCY_TOLERANCE_TICK;
   sim_mercy_end = end_tick - MERCY_TOLERANCE_TICK;
   uint32_t total_distance = abs(end_tick - start_tick);
+  real_mid_tick = total_distance / 2;
   uint32_t sim_distance = abs(sim_mercy_end - sim_mercy_start);
   Serial.print("TICKS");
   Serial.println(sim_distance);

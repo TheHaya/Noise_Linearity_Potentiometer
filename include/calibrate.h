@@ -15,8 +15,7 @@ extern const int BEGINNING_TIMER;
 extern const float SLOW_RPM;
 
 // --------------- CALIBRATE VARIABLES
-extern int32_t stopped_tick;
-extern int32_t start_tick, end_tick;
+extern int32_t start_tick, end_tick, real_mid_tick;
 extern int32_t sim_mercy_start, sim_mercy_end;
 
 extern float user_rpm, rpm1, rpm2, rpm3;
@@ -34,5 +33,5 @@ void calibrate_currents();
 void check_ends();
 float correction_movement(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, int timeout=18000);
-void check_beginning();
+void check_beginning(float total_deg);
 bool abort_if_cancelled();

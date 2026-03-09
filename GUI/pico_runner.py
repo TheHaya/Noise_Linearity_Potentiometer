@@ -1,9 +1,13 @@
-import time, subprocess
+import time, subprocess, sys, os
 
+# --------------- PYINSTALLER
+def resource_path(rel_path: str) -> str:
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, rel_path)
 
+picoEXE = resource_path("pico_demo.exe")
 
 # --------------- PICOSCOPE VARIABLES
-picoEXE = r"C:\Users\wonga\Documents\PlatformIO\Projects\Noise_Linearity_Potentiometer\Pico_Demo/pico_demo.exe"
 delay_compensation = 0.15   # damit Pico und Servo position synchron sind ohne Blockierung
 start_time = 0.0
 
