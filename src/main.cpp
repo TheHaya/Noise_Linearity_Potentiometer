@@ -128,10 +128,10 @@ void loop(){
       }
     }
     if(command == "LINEAR_START"){
-      linearity_movement(); if(abort_if_cancelled()) return;
-      calc_summary();
-      calc_linearity();
-      calc_errors();
+      linearity_movement2(); if(abort_if_cancelled()) return;
+      calc_summary2();
+      calc_linearity2();
+      calc_errors2();
       if(cancelled == true){
         Serial.println("CANCEL");
         return;

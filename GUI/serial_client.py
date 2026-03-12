@@ -6,6 +6,9 @@ ser_Arduino = None
 ARDUINO_PORT = "COM20"
 MULTI_PORT = "COM17"
 PSU_PORT = "COM15"
+# ARDUINO_PORT = "COM3"
+# MULTI_PORT = "COM4"
+# PSU_PORT = "COM5"
 
 # --------------- SERIAL MIT SERVO
 def connect_ard(baud=115200, timeout=2, port=ARDUINO_PORT):

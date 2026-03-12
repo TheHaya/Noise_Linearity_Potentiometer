@@ -34,7 +34,7 @@ def go_zero(ges_s=None, stop_event=None, on_finish=None):
                 break
         ser_arduino.close()
     except Exception as e:
-        print("Fehler bei Serial: ", e) #debug
+        print("Fehler bei Serial (GO ZERO): ", e) #debug
 
     if root is not None:
         root.after(0, on_finish)
@@ -62,7 +62,7 @@ def goto(txt_goto=None, ges_s=None):
                 break
         ser_arduino.close()
     except Exception as e:
-        print("Fehler bei Serial: ", e) #debug
+        print("Fehler bei Serial (GO TO): ", e) #debug
 
     # if root is not None:
     #     root.after(0, on_finish)
@@ -88,5 +88,25 @@ def show_pos():
                 break
         ser_arduino.close()
     except Exception as e:
-        print("Fehler bei Serial: ", e)
+        print("Fehler bei Serial (SHOW POS): ", e)
 
+def reset_arduino():
+    try:
+        
+        ser_arduino = sc.connect_ard()
+        ser_arduino.reset_input_buffer() 
+        ser_arduino.reset_output_buffer()
+        time.sleep(0.1)
+        ser_arduino.write(b"STOP\n")
+        time.sleep(0.1)
+        ser_arduino.dtr = False
+        time.sleep(0.1)
+        ser_arduino.dtr = True
+        time.sleep(0.1)
+        ser_arduino.rts = False
+        time.sleep(0.1)
+        ser_arduino.rts = True
+        ser_arduino.close()
+        print("Arduino reset ausgelöst.")
+    except Exception as e:
+        print("Fehler bei Serial (RESET_ARDUINO): ", e)

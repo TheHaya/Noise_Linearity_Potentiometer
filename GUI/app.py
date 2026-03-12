@@ -34,6 +34,8 @@ noise_win = None
 linear_win = None
 zero_win = None
 cancelled_win = None
+stop_event_global = threading.Event()
+ser_ard = None
 
 AMLogo = Image.open(resource_path("AMLogo.jpg"))
 scale = 0.8
@@ -111,7 +113,7 @@ def insert_preset(p):
     tol_resistance_neg = p.get("tol_widerstand_neg")
 
     global all_lin_tols, all_mech_tols, all_elec_tols
-    all_mech_tols = (tol_total_mech_deg_pos, tol_total_elec_deg_neg)
+    all_mech_tols = (tol_total_mech_deg_pos, tol_total_mech_deg_neg)
     all_elec_tols = (tol_total_elec_deg_pos, tol_total_elec_deg_neg)
     all_lin_tols = (tol_deadzone_pos, tol_deadzone_neg, tol_active_cw_pos, tol_active_cw_neg, 
                     tol_active_ccw_pos, tol_active_ccw_neg, tol_linearity_pos, tol_linearity_neg)
@@ -122,6 +124,7 @@ def insert_preset(p):
         msg.grid_remove()
     else:
         msg.grid(row=8, column=0,pady=(10, 10), padx=(20, 0))
+        msg.config(width=180)
 
 dropdown = {"win": None, "listbox": None}
 MAX_SUGGESTIONS = 10
@@ -258,8 +261,16 @@ def decimal_conversion(s: str):
     
 
 # --------------- GUI FUNCTIONS
-def on_up_window():
+def on_root_close():
+    stop_event_global.set()
+    try:
+        ser_ard.write(b"STOP\n")
+        ser_ard.flush()
+    except Exception:
+        pass
+
     root.destroy()
+
 
 def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     wait_win = tk.Toplevel(root)
@@ -271,7 +282,8 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     
     status_label = ttk.Label(wait_win, text="Bitte warten...")
     status_label.pack(pady=(0,20), expand=True)
-    stop_event = threading.Event()   
+    stop_event = stop_event_global
+    stop_event.clear()   
 
     mech_angle_var.set("Mechanischer Winkel: --")
     elec_angle_var.set("Elektrischer Winkel: --")
@@ -291,6 +303,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
             visible_total = sum(1 for m in modes if m[4] is True)
             visible_i = 0
             
+            global ser_ard
             ser_ard = sc.connect_ard()
             ser_multi = sc.connect_multi()
             ser_psu = sc.connect_psu()
@@ -320,7 +333,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     measurements_noise_found = True
                     root.after(0, open_noise_found_win)
                     break
-                if workflow is mech_ends_workflow or end_lin_checked is True:
+                if workflow is mech_ends_workflow and ends_checked:
                     val = getattr(mech_ends_workflow, "total_mech", None)
                     if isinstance(val, (int, float)):
                         root.after(0, lambda v=val: mech_angle_var.set(
@@ -330,7 +343,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                         root.after(0, lambda: mech_angle_var.set(
                             "Mechanischer Winkel: --"
                         ))
-                if workflow is elec_deg_workflow:
+                if workflow is elec_deg_workflow or end_lin_checked is True:
                     val = getattr(elec_deg_workflow, "total_elec", None)
                     if isinstance(val, (int, float)):
                         root.after(0, lambda v=val: elec_angle_var.set(
@@ -383,6 +396,7 @@ def measurement_chk():
     d32 = decimal_conversion(d32_var.get())
 
     modes = []
+    global ends_checked
     ends_checked = chk_ends_mode.get()
     modes.append((mech_ends_workflow, (), "Mech. Endwinkel", True, ends_checked))
     if ends_checked: print("[CHECKBOX] Mech. Ends")
@@ -497,6 +511,8 @@ def advanced_visible(visible: bool):
         for w in widgets:
             w.grid_remove()
 
+def reset_arduino(): 
+    side_functions.reset_arduino()
 
 # --------------- SAFETY WARNING WIPER TOO CLOSE
 def open_safety_win():
@@ -681,7 +697,7 @@ vcmd = (root.register(lambda P: (P.count(',') <= 1 and all(ch.isdigit() or ch ==
 
 ttk.Label(left_frame, text="Auftragsnummer:").grid(row=4, column=0, sticky="w", pady=(20, 0), padx=(20,0))
 txt9 = ttk.Entry(left_frame, width=20)
-txt9.grid(row=5, column=0, pady=(0, 10), padx=(20,0))
+txt9.grid(row=5, column=0, pady=(0, 10), padx=(13,0))
 
 autosave_var = tk.BooleanVar(value=True)
 chk_autosave = ttk.Checkbutton(left_frame, text="Automatisches Speichern", variable=autosave_var, command=autosave_chk)
@@ -856,13 +872,14 @@ ttk.Button(left_frame, text="Position 0", command=open_zero_window, width=18).gr
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Netzteil Test", command=tests,width=12).grid(row=9, column=3, pady=(20, 5), padx=(20,0))
 ttk.Button(right_frame, text="Messen", command=measurement_chk, width=12).grid(row=8, column=3, pady=(20, 5), padx=(10,0))
+ttk.Button(right_frame, text="Reset",  command=reset_arduino, width=12).grid(row=9, column=3, pady=(20, 5), padx=(10,0))
 but_cur_pos = ttk.Button(right_frame, text="Curr Position", command=show_current_position)
 but_cur_pos.grid(row=8, column=2, pady=(12, 5), padx=(10,0))
 but_go = ttk.Button(right_frame, text="Go To", command=goto_execute)
 but_go.grid(row=10, column=2, pady=(5, 5))
 
-root.bind("<Escape>", lambda event: on_up_window())
-
+root.bind("<Escape>", lambda event: on_root_close())
+root.protocol("WM_DELETE_WINDOW", on_root_close)
 # --------------- MAIN
 ring.build_ring(ring_area)
 ring.init_circle_text()
@@ -870,3 +887,4 @@ advanced_visible(False)
 instant_deadzone_ring()
 sv_ttk.set_theme("dark")
 root.mainloop()
+

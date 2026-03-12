@@ -20,9 +20,9 @@ Dynamixel2Arduino dxl(DXL_SERIAL, DXL_DIR_PIN);
 const float DEG_PER_TICK = 360.0f / 4096.0f;
 const float TICK_PER_DEG = 4096.0f / 360.0f;
 const float RPM_PER_VEL = 0.229;
-const float START_CURRENT = 2000;
-const float CUR_TOLERANCE = 10;
-const float CUR_TOLERANCE_SLOW = 5;
+const float START_CURRENT = 900;
+const float CUR_TOLERANCE = 300;
+const float CUR_TOLERANCE_SLOW = 20;
 const int POLL_TIMER = 1;
 using namespace ControlTableItem;
 
@@ -140,16 +140,16 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
       }
 
       if ((fabsf(cur_pos - target_tick) <= error_tick) && cur_pos - target_tick < 0) {
-        for(int i = 0; i<5 ; i++){
+        //for(int i = 0; i<5 ; i++){
           dxl.setGoalPosition(DID, get_tick_position() + 1, UNIT_RAW);
-        } 
+        //} 
         return true;
         break;
       }
       else if ((fabsf(cur_pos - target_tick) <= error_tick) && cur_pos - target_tick > 0) {
-        for(int i = 0; i<5 ; i++){
+        //for(int i = 0; i<5 ; i++){
           dxl.setGoalPosition(DID, get_tick_position() - 1, UNIT_RAW);
-        } 
+        //} 
         return true;
         break;
       }

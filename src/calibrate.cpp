@@ -8,13 +8,13 @@
 // --------------- CONSTANTS
 const int32_t CHECK_END_START = -2000;
 const int32_t CHECK_END_END = 6000;
-const int32_t CALIBRATE_CURRENT_CCW = 1650;
-const int32_t CALIBRATE_CURRENT_CW = 2450;
+const int32_t CALIBRATE_CURRENT_CCW = 1750;
+const int32_t CALIBRATE_CURRENT_CW = 2350;
 const int32_t ZERO_TICK = 2050;
 const float MERCY_TOLERANCE_TICK = 15;
 const float CHECK_ENDS_TOL_DEG = 10;
 const int32_t STEP = 20;
-const int32_t PUSHBACK = 600;
+const int32_t PUSHBACK = 200;
 const float SAFETY_VOLT = 10;
 const float SLOW_RPM = 5;
 
@@ -61,9 +61,10 @@ delay3 = 0;
 //target_deg_total = 0;
 //tar_volt = 10;
 }
-float corr_measure(float current_volt){
+float corr_measure(){
+  float current_volt;
   elapsedMillis timer;
-  int t = 10000;
+  int t = 8000;
   Serial.setTimeout(50);
   Serial.println("VOLTR");
   delay(50);
@@ -79,6 +80,8 @@ float corr_measure(float current_volt){
       } 
     }
   }
+  Serial.print("DEBUG_POS");
+  Serial.println(dxl.getPresentPosition(DID,UNIT_RAW));
   return current_volt;
 }
 
@@ -91,7 +94,7 @@ float correction_movement(float &current_volt, float goal_volt,
   const int32_t TICK_TOL = 1;
   elapsedMillis error_timer;
   int32_t low, high;
-  current_volt = corr_measure(current_volt);
+  current_volt = corr_measure();
   
   while(error_timer < timeout){
     while(!cancelled && fabsf(current_volt - goal_volt) <= V_TOL) {
@@ -99,18 +102,18 @@ float correction_movement(float &current_volt, float goal_volt,
       int32_t back = 0;
       if(dead_direction == 0){                // deadzone links von position
         t = get_tick_position() + STEP;
-        if(dead_half == 0){ back = t + PUSHBACK;}  // dead linke Hälfte
-      else { back = t - PUSHBACK;}                 // dead rechte Hälfte
+        //if(dead_half == 0){ back = t + PUSHBACK;}  // dead linke Hälfte
+      //else { back = t - PUSHBACK;}                 // dead rechte Hälfte
       } else if(dead_direction == 1){         // deadzone rechts von position
         t = get_tick_position() - STEP;
-        if(dead_half == 0){ back = t + PUSHBACK;} 
-        else { back = t - PUSHBACK;}
+        //if(dead_half == 0){ back = t + PUSHBACK;} 
+        //else { back = t - PUSHBACK;}
       }
       //drive_to(back, user_rpm);
       //reached_goal(back, 2);
       drive_to(t, user_rpm);
       reached_goal(t, 2);
-      current_volt = corr_measure(current_volt);
+      current_volt = corr_measure();
     }
 
     high = get_tick_position();
@@ -120,18 +123,18 @@ float correction_movement(float &current_volt, float goal_volt,
       int32_t back = 0;
       if(dead_direction == 0){                // deadzone links von position
         t = get_tick_position() - STEP;
-        if(dead_half == 0){ back = t + PUSHBACK;}  // dead linke Hälfte
-        else { back = t - PUSHBACK;}               // dead rechte Hälfte
+        //if(dead_half == 0){ back = t + PUSHBACK;}  // dead linke Hälfte
+        //else { back = t - PUSHBACK;}               // dead rechte Hälfte
       } else if(dead_direction == 1){         // deadzone rechts von position
         t = get_tick_position() + STEP;
-        if(dead_half == 0){ back = t + PUSHBACK;}
-        else { back = t - PUSHBACK;}
+        //if(dead_half == 0){ back = t + PUSHBACK;}
+        //else { back = t - PUSHBACK;}
       }
-      drive_to(back, user_rpm);
-      reached_goal(back, 2);
+      //drive_to(back, user_rpm);
+      //reached_goal(back, 2);
       drive_to(t, user_rpm);
       reached_goal(t, 2);
-      current_volt = corr_measure(current_volt);
+      current_volt = corr_measure();
     }
 
     low = get_tick_position();
@@ -146,7 +149,7 @@ float correction_movement(float &current_volt, float goal_volt,
       drive_to(mid, user_rpm);
       reached_goal(mid, 2);
 
-      current_volt = corr_measure(current_volt);
+      current_volt = corr_measure();
       if(fabsf(current_volt - goal_volt) > V_TOL) {
         high = mid;
       } else {
@@ -168,6 +171,89 @@ float correction_movement(float &current_volt, float goal_volt,
   return NAN;
 }
   
+
+float correction_movement_low(float &current_volt, float goal_volt, 
+                          int dead_direction, int dead_half, int timeout){
+  const float V_TOL = 0.0001f;        
+  const int32_t TICK_TOL = 1;
+  elapsedMillis error_timer;
+  int32_t low, high;
+  current_volt = corr_measure();
+  
+  while(error_timer < timeout){
+    while(!cancelled && fabsf(current_volt - goal_volt) <= V_TOL) {
+      int32_t t = 0;
+      int32_t back = 0;
+      if(dead_direction == 0){                // deadzone links von position
+        t = get_tick_position() + STEP;
+        //if(dead_half == 0){ back = t + PUSHBACK;}  // dead linke Hälfte
+      //else { back = t - PUSHBACK;}                 // dead rechte Hälfte
+      } else if(dead_direction == 1){         // deadzone rechts von position
+        t = get_tick_position() - STEP;
+        //if(dead_half == 0){ back = t + PUSHBACK;} 
+        //else { back = t - PUSHBACK;}
+      }
+      //drive_to(back, user_rpm);
+      //reached_goal(back, 2);
+      drive_to(t, user_rpm);
+      reached_goal(t, 2);
+      current_volt = corr_measure();
+    }
+
+    high = get_tick_position();
+
+    while(!cancelled && fabsf(current_volt - goal_volt) > V_TOL) {
+      int32_t t = 0;
+      int32_t back = 0;
+      if(dead_direction == 0){                // deadzone links von position
+        t = get_tick_position() - STEP;
+        //if(dead_half == 0){ back = t + PUSHBACK;}  // dead linke Hälfte
+        //else { back = t - PUSHBACK;}               // dead rechte Hälfte
+      } else if(dead_direction == 1){         // deadzone rechts von position
+        t = get_tick_position() + STEP;
+        //if(dead_half == 0){ back = t + PUSHBACK;}
+        //else { back = t - PUSHBACK;}
+      }
+      //drive_to(back, user_rpm);
+      //reached_goal(back, 2);
+      drive_to(t, user_rpm);
+      reached_goal(t, 2);
+      current_volt = corr_measure();
+    }
+
+    low = get_tick_position();
+
+    while(!cancelled && abs(high - low) > TICK_TOL) {
+      int32_t back = 0;
+      int32_t mid = (high + low) / 2;
+      if(dead_half == 0){back = mid + PUSHBACK;}  // dead linke Hälfte
+        else {back = mid - PUSHBACK;}             // dead rechte Hälfte   
+      drive_to(back, user_rpm);
+      reached_goal(back, 2);
+      drive_to(mid, user_rpm);
+      reached_goal(mid, 2);
+
+      current_volt = corr_measure();
+      if(fabsf(current_volt - goal_volt) > V_TOL) {
+        high = mid;
+      } else {
+        low = mid;
+      }
+    }
+    /*
+    float edge_deg = 0;
+    if(dead_direction == 0){
+      edge_deg = tick_to_deg(low);
+    } else if(dead_direction == 1){
+      edge_deg = tick_to_deg(high);
+    }*/
+    if((dead_half == 0 && dead_direction == 0) || (dead_half == 1 && dead_direction == 1)){
+      return tick_to_deg(low);
+    }
+    return tick_to_deg(high);
+  }
+  return NAN;
+}
 
 bool abort_if_cancelled(){
   if(!cancelled) return false;
@@ -191,11 +277,13 @@ void calibrate_currents(){
   */
   drive_to(CALIBRATE_CURRENT_CW, SLOW_RPM);
   reached_goal(CALIBRATE_CURRENT_CW, 0, 1);
-
+  
   drive_to(CALIBRATE_CURRENT_CCW, SLOW_RPM);
   reached_goal(CALIBRATE_CURRENT_CCW, 0, 1);
+  
   drive_to(CALIBRATE_CURRENT_CW, SLOW_RPM);
   reached_goal(CALIBRATE_CURRENT_CW, 0, 1);
+  
 
 
   for(int i = 1; i <= 3; i++){
@@ -204,8 +292,12 @@ void calibrate_currents(){
     elapsedMillis cur_millis;
     drive_to(CALIBRATE_CURRENT_CCW, cal_rpm);
     reached_goal(CALIBRATE_CURRENT_CCW, i, 1);
+    // if(!reached_goal(CALIBRATE_CURRENT_CCW, i, 1));
+
     drive_to(CALIBRATE_CURRENT_CW, cal_rpm);
     reached_goal(CALIBRATE_CURRENT_CW, i, 1);
+    // if(!reached_goal(CALIBRATE_CURRENT_CW, i, 1));
+
     switch(i){
       case 1: rpm1 = cal_rpm; real_time1 = cur_millis; 
               theo_time1 = rpm_to_time(CALIBRATE_CURRENT_CCW, cal_rpm); 
@@ -253,15 +345,15 @@ void calibrate_currents(){
 void check_beginning(float total_deg){
   const float LOW_SAFETY = SAFETY_VOLT*0.1;
   const float HIGH_SAFETY = SAFETY_VOLT*0.9;
-  safety_pos_volt = corr_measure(safety_pos_volt);
+  safety_pos_volt = corr_measure();
   if(safety_pos_volt <= LOW_SAFETY){
-    int32_t low_to_mid = get_tick_position() + deg_to_tick(total_deg)/2;
+    int32_t low_to_mid = get_tick_position() - deg_to_tick(total_deg)/2;
     drive_to(low_to_mid, 1);
     reached_goal(low_to_mid, 1, 1);
     // Serial.println("SAFETY");
     // cancelled = true;
   } else if(safety_pos_volt >= HIGH_SAFETY){
-    int32_t high_to_mid = get_tick_position() - deg_to_tick(total_deg)/2;
+    int32_t high_to_mid = get_tick_position() + deg_to_tick(total_deg)/2;
     drive_to(high_to_mid, 1);
     reached_goal(high_to_mid, 1, 1);
     // Serial.println("SAFETY");
@@ -281,14 +373,15 @@ void check_ends(){
   //drive_to(check_mercy_end, rpm2);
   ///reached_goal(check_mercy_end, 2);
 
-  ist_mid_volt = corr_measure(ist_mid_volt);
+  // ist_mid_volt = corr_measure(ist_mid_volt);
 
-  drive_to(CHECK_END_START, SLOW_RPM);
-  if(reached_goal(CHECK_END_START, 0, 0, 15000) == false){
-    start_tick = stopped_tick;
-    ist_start_volt = corr_measure(ist_start_volt);
+  drive_to(CHECK_END_END, SLOW_RPM);
+  if(reached_goal(CHECK_END_END, 0, 0, 15000) == false){
+    end_tick = stopped_tick;
+    ist_start_volt = corr_measure();
+    // ist_end_volt = corr_measure(ist_end_volt);
   }
-
+ 
   for(int i = 0; i < 5; i++){
   dxl.ledOff(1);
   delay(100);
@@ -296,10 +389,11 @@ void check_ends(){
   delay(100);
   } 
 
-  drive_to(CHECK_END_END, SLOW_RPM);
-  if(reached_goal(CHECK_END_END, 0, 0, 15000) == false){
-    end_tick = stopped_tick;
-    ist_end_volt = corr_measure(ist_end_volt);
+  drive_to(CHECK_END_START, SLOW_RPM);
+  if(reached_goal(CHECK_END_START, 0, 0, 15000) == false){
+    start_tick = stopped_tick;
+    ist_end_volt = corr_measure();
+    // ist_start_volt = corr_measure(ist_start_volt);
   }
 
   sim_mercy_start = start_tick + MERCY_TOLERANCE_TICK;

@@ -130,19 +130,19 @@ def save_to_excel(txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, l
             activeSum = summary_vals.get("AktivSumme")
 
             ws.write(start + 0, 0, "Totzone")
-            if totzone is not None and totzone < tol_d_p and totzone > tol_d_n:
+            if totzone <= tol_d_p and totzone >= tol_d_n:
                 ws.write_number(start + 0, 1, totzone, format_degree)
             else:
                 ws.write_number(start + 0, 1, totzone, format_error_degree)
 
             ws.write(start + 1, 0, "Winkel Aktiver Bereich CW (Drehrichtung-)(11)")
-            if activeCW is not None and activeCW < tol_cw_p and activeCW > tol_cw_n:
+            if activeCW <= tol_cw_p and activeCW >= tol_cw_n:
                 ws.write_number(start + 1, 1, activeCW, format_degree)
             else:
                 ws.write_number(start + 1, 1, activeCW, format_error_degree)
 
             ws.write(start + 2, 0, "Winkel Aktiver Bereich CCW (Drehrichtung+)(13)")
-            if activeCCW is not None and activeCCW < tol_ccw_p and activeCCW > tol_ccw_n:
+            if activeCCW <= tol_ccw_p and activeCCW >= tol_ccw_n:
                 ws.write_number(start + 2, 1, activeCCW, format_degree)
             else:
                 ws.write_number(start + 2, 1, activeCCW, format_error_degree)

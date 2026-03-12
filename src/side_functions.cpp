@@ -26,3 +26,8 @@ void show_cur_pos(){
   Serial.print("WHERE_POS");
   Serial.println(show_pos);
 }
+
+void do_reset(){
+  NVIC_SystemReset();
+  Serial.print("RESET_OK");
+}

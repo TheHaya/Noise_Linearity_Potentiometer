@@ -9,3 +9,4 @@ extern int32_t user_go_to;
 void go_to();
 void go_zero();
 void show_cur_pos();
+void do_reset();

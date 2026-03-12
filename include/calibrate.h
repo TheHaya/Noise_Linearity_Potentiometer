@@ -28,10 +28,12 @@ extern float safety_pos_volt;
 extern float tar_volt;
 
 void calibrate_init();
-float corr_measure(float current_volt);
+float corr_measure();
 void calibrate_currents();
 void check_ends();
 float correction_movement(float &current_volt, float goal_volt, 
-                          int dead_direction, int dead_half, int timeout=18000);
+                          int dead_direction, int dead_half, int timeout=30000);
+float correction_movement_low(float &current_volt, float goal_volt, 
+                          int dead_direction, int dead_half, int timeout=30000);
 void check_beginning(float total_deg);
 bool abort_if_cancelled();

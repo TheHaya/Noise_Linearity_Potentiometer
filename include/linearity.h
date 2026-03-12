@@ -34,6 +34,10 @@ float dead_soll_volt_deg(float deg, float tar_volt,
 //float correction_movement(float &current_volt, float goal_volt, 
 //                          int dead_direction = 0, int timeout = 8000);
 void linearity_movement();
+void linearity_movement2();
+void calc_summary2();
+void calc_linearity2();
+void calc_errors2();
 void calc_linearity();
 void calc_summary();
 void calc_errors();

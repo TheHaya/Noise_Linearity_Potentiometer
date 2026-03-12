@@ -83,6 +83,22 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
             if line == 'VOLTR':
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 continue
+            elif line.startswith('DEBUG_POS'):
+                debug_pos = float(line[9::])
+                print(f"Position für Debug: {debug_pos}")
+                print("_____")
+            elif line.startswith('DEAD_CCW1'):
+                dead_ccw1 = float(line[9::])
+                print(f"--Deadzone CCW links: {dead_ccw1}")
+            elif line.startswith('DEAD_CCW2'):
+                dead_ccw2 = float(line[9::])
+                print(f"--Deadzone CCW rechts: {dead_ccw2}")
+            elif line.startswith('DEAD_CW1'):
+                dead_cw1 = float(line[8::])
+                print(f"--Deadzone CW links: {dead_cw1}")
+            elif line.startswith('DEAD_CW2'):
+                dead_cw2 = float(line[8::])
+                print(f"--Deadzone CW rechts: {dead_cw2}")
             elif line.startswith('TOTAL_ELEC'):
                 print("Empfangen: TOTAL_ELEC")
                 global total_elec
