@@ -37,6 +37,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d12=None,
         print(f"Deadzones: {d12}, {d21}, {d22}, {d31}")
         print("ELEC_DEG Sende: GO") #debug
         #print(d11, d12, d21, d22, d31, d32)
+        ser_arduino.reset_input_buffer()
+        ser_arduino.reset_output_buffer()
+        ser_arduino.flush()
         ser_arduino.write(b"ELEC_DEG_GO\n")
 
         ser_arduino.timeout = 0.1

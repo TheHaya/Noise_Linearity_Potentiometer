@@ -29,7 +29,7 @@ void measurements_init(){
   calibrate_init();
   elec_deg_init();
   lin_init();
-  //relays_init();
+  relays_init();
 }
 
 void setup(){
@@ -46,8 +46,8 @@ void setup(){
   dxl.writeControlTableItem(PROFILE_ACCELERATION, DID, 500);
   dxl.torqueOn(DID);
   dxl.ledOn(DID);
-  //relays_init();
-  //all_relays_off();
+  relays_init();
+  all_relays_off();
   pinMode(BUTTON, INPUT_PULLUP);
 
 }
@@ -79,7 +79,7 @@ void loop(){
   
     if(command == "INIT_GO"){
       measurements_init();
-      //apply_relay_mode(INIT_RELAY_MODE);
+      apply_relay_mode(INIT_RELAY_MODE);
       check_beginning(target_deg_total);        if(abort_if_cancelled()) return;
       calibrate_currents();     if(abort_if_cancelled()) return;
       check_ends();        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
@@ -91,7 +91,7 @@ void loop(){
 
     if(command == "NOISE_GO"){
       if(abort_if_cancelled()) return;
-      //apply_relay_mode(NOISE_RELAY_MODE);
+      apply_relay_mode(NOISE_RELAY_MODE);
       // if(cancelled == false){
       drive_to(sim_mercy_end, user_rpm/2);
       reached_goal(sim_mercy_end, 1); 
@@ -118,7 +118,7 @@ void loop(){
 
     if(command == "LINEAR_GO"){
       linear_checked = true; if(abort_if_cancelled()) return;
-      //apply_relay_mode(LINEARITY_RELAY_MODE);
+      apply_relay_mode(LINEARITY_RELAY_MODE);
       if(cancelled == false){
         Serial.println("LINEAR_READY");
       } else{
@@ -146,7 +146,7 @@ void loop(){
     if(linear_checked == false){ // Falls elec_deg und linear beide angekreuzt wurden dann einfach elec_deg ignorieren
       if(command == "ELEC_DEG_GO"){
         if(abort_if_cancelled()) return;
-        //apply_relay_mode(ELEC_DEG_RELAY_MODE);
+        apply_relay_mode(ELEC_DEG_RELAY_MODE);
         if(cancelled == false){
           Serial.println("ELEC_DEG_READY");
         } else{

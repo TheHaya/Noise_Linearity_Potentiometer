@@ -89,8 +89,8 @@ def calc_rel_angle(time_arr, turn_arr, angle_arr):
     print(time2)
     print(time3-turn3)
     print(time3)
-    print(turn_arr)
-    print(angle_arr)
+    # print(turn_arr)
+    # print(angle_arr)
     return 
 
 
@@ -119,9 +119,12 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
         
         #ser_arduino = sc.connect_ard()
         # ser_PSU = sc.connect_psu()
-        sc.set_psu_parameters(ser_PSU, 6, 0.12, 5, 0.004)
+        sc.set_psu_parameters(ser_PSU, 6, 0.12, 5, 0.004) # für dp37
+        # sc.set_psu_parameters(ser_PSU, 2.5, 0.12, 2, 0.008) # für t18
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s)
-
+        ser_arduino.reset_input_buffer()
+        ser_arduino.reset_output_buffer()
+        ser_arduino.flush()
         ser_arduino.write(b"NOISE_GO\n")
         print("NOISE Sende: GO")
 
@@ -170,6 +173,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
                 print("Empfangen: CANCEL")
                 break
         
+        time.sleep(1)
         ser_PSU.write(b"OUTP OFF\n")
         #ser_arduino.close()
         #ser_PSU.close()

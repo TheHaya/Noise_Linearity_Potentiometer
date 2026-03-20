@@ -258,7 +258,7 @@ float correction_movement_low(float &current_volt, float goal_volt,
 bool abort_if_cancelled(){
   if(!cancelled) return false;
   Serial.println("CANCEL");
-  //all_relays_off();
+  all_relays_off();
   return true;
   
 }
@@ -411,6 +411,6 @@ void check_ends(){
      dxl.ledOn(1);
     delay(100);
   }
-  //all_relays_off();
+  all_relays_off();
 
 }

@@ -27,7 +27,7 @@ labels_iter = cycle(labels)
 def save_to_pdf(txt, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt):
     try:
         pdf_time = np.concatenate([pico_plot_time, pico_pdf_time])
-        pdf_volt = np.concatenate([pico_plot_volt + pico_volt])
+        pdf_volt = np.concatenate([pico_plot_volt, pico_volt])
         i = np.argsort(pdf_time)
         pdf_time = pdf_time[i]
         pdf_volt = pdf_volt[i]
@@ -46,9 +46,10 @@ def save_to_pdf(txt, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt):
             dupe += 1
             while os.path.exists('{} ({:d}).pdf'.format(title, dupe)):
                 dupe += 1
-            fig.savefig('{} ({:d}).pdf'.format(title, i))
+            fig.savefig('{} ({:d}).pdf'.format(title, dupe))
         else:
             fig.savefig('{}.pdf'.format(title))
+            
         plt.close(fig)
         print(f"{title}.pdf gespeichert.")
 

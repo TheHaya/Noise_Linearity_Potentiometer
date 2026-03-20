@@ -33,6 +33,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
         safety_cancel = False
 
         print("MECH_ENDS Sende: INIT_GO")
+        ser_arduino.reset_input_buffer()
+        ser_arduino.reset_output_buffer()
+        ser_arduino.flush()
         ser_arduino.write(b"INIT_GO\n")
 
         ser_arduino.timeout = 0.1

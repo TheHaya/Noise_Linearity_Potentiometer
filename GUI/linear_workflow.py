@@ -29,7 +29,15 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
                 d21=None, d22=None, d31=None, d32=None, stop_event=None, on_finish=None):
     try:
         N = 13 #Anz Messpunkte wegen leere Zellen
-        global daten
+        global daten, result
+        result = {
+            "daten": [],
+            "linear_sollV": [None] * N,
+            "linear_lin": [None] * N,
+            "summary_vals": {},
+            "lin_max": None,
+            "lin_min": None,
+            "error_lin_idx": set(),}
         daten = []
         linear_sollV = [None] * N
         linear_lin = [None] * N
@@ -58,6 +66,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
         time.sleep(0.2)
         print("LINEAR Sende: GO") #debug
         #print(d11, d12, d21, d22, d31, d32)
+        ser_arduino.reset_input_buffer()
+        ser_arduino.reset_output_buffer()
+        ser_arduino.flush()
         ser_arduino.write(b"LINEAR_GO\n")
 
         #ser_arduino.timeout = 0.1
@@ -166,6 +177,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
                 break
             elif line == 'CANCEL':
                 print("Empfangen: CANCEL")
+                if stop_event is not None:
+                    stop_event.set()
+                ser_arduino.reset_input_buffer()
                 break
             
         ser_PSU.write(b"OUTP OFF\n")
@@ -178,7 +192,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
     except Exception as e:
         print("Fehler bei Serial: ", e) #debug
 
-    global result
+    
     result = {
     "daten": daten,
     "linear_sollV": linear_sollV,
