@@ -8,8 +8,6 @@
 // --------------- CONSTANTS
 const int32_t CHECK_END_START = -2000;
 const int32_t CHECK_END_END = 6000;
-const int32_t CALIBRATE_CURRENT_CCW = 1750;
-const int32_t CALIBRATE_CURRENT_CW = 2350;
 const int32_t ZERO_TICK = 2050;
 const float MERCY_TOLERANCE_TICK = 15;
 const float CHECK_ENDS_TOL_DEG = 10;
@@ -21,6 +19,8 @@ const float SLOW_RPM = 5;
 // --------------- VARIABLES
 int32_t start_tick, end_tick, real_mid_tick;
 int32_t sim_mercy_start, sim_mercy_end;
+int32_t calibrate_current_ccw = 1750;
+int32_t calibrate_current_cw = 2350;
 
 float ist_start_volt, ist_end_volt, ist_mid_volt;
 float user_rpm, rpm1, rpm2, rpm3;
@@ -255,13 +255,7 @@ float correction_movement_low(float &current_volt, float goal_volt,
   return NAN;
 }
 
-bool abort_if_cancelled(){
-  if(!cancelled) return false;
-  Serial.println("CANCEL");
-  all_relays_off();
-  return true;
-  
-}
+
 
 void calibrate_currents(){
   /*dxl.torqueOff(DID);
@@ -275,14 +269,17 @@ void calibrate_currents(){
   drive_to(-204800, 280);
   reached_goal(-204800, 2, 1);
   */
-  drive_to(CALIBRATE_CURRENT_CW, SLOW_RPM);
-  reached_goal(CALIBRATE_CURRENT_CW, 0, 1);
+
+  calibrate_current_cw = get_tick_position() + 300;
+  calibrate_current_ccw = get_tick_position() - 300;
+  drive_to(calibrate_current_cw, SLOW_RPM);
+  reached_goal(calibrate_current_cw, 0, 1);
   
-  drive_to(CALIBRATE_CURRENT_CCW, SLOW_RPM);
-  reached_goal(CALIBRATE_CURRENT_CCW, 0, 1);
+  drive_to(calibrate_current_ccw, SLOW_RPM);
+  reached_goal(calibrate_current_ccw, 0, 1);
   
-  drive_to(CALIBRATE_CURRENT_CW, SLOW_RPM);
-  reached_goal(CALIBRATE_CURRENT_CW, 0, 1);
+  drive_to(calibrate_current_cw, SLOW_RPM);
+  reached_goal(calibrate_current_cw, 0, 1);
   
 
 
@@ -290,23 +287,23 @@ void calibrate_currents(){
     float rpm_intervall = user_rpm/2;
     float cal_rpm = rpm_intervall*i;
     elapsedMillis cur_millis;
-    drive_to(CALIBRATE_CURRENT_CCW, cal_rpm);
-    reached_goal(CALIBRATE_CURRENT_CCW, i, 1);
-    // if(!reached_goal(CALIBRATE_CURRENT_CCW, i, 1));
+    drive_to(calibrate_current_ccw, cal_rpm);
+    reached_goal(calibrate_current_ccw, i, 1);
+    // if(!reached_goal(calibrate_current_ccw, i, 1));
 
-    drive_to(CALIBRATE_CURRENT_CW, cal_rpm);
-    reached_goal(CALIBRATE_CURRENT_CW, i, 1);
-    // if(!reached_goal(CALIBRATE_CURRENT_CW, i, 1));
+    drive_to(calibrate_current_cw, cal_rpm);
+    reached_goal(calibrate_current_cw, i, 1);
+    // if(!reached_goal(calibrate_current_cw, i, 1));
 
     switch(i){
       case 1: rpm1 = cal_rpm; real_time1 = cur_millis; 
-              theo_time1 = rpm_to_time(CALIBRATE_CURRENT_CCW, cal_rpm); 
+              theo_time1 = rpm_to_time(calibrate_current_ccw, cal_rpm); 
               break;
       case 2: rpm2 = cal_rpm; real_time2 = cur_millis; 
-              theo_time2 = rpm_to_time(CALIBRATE_CURRENT_CCW, cal_rpm);
+              theo_time2 = rpm_to_time(calibrate_current_ccw, cal_rpm);
               break;
       case 3: rpm3 = cal_rpm; real_time3 = cur_millis; 
-              theo_time3 = rpm_to_time(CALIBRATE_CURRENT_CCW, cal_rpm); 
+              theo_time3 = rpm_to_time(calibrate_current_ccw, cal_rpm); 
               break;
       default: break;
     }
@@ -348,14 +345,14 @@ void check_beginning(float total_deg){
   safety_pos_volt = corr_measure();
   if(safety_pos_volt <= LOW_SAFETY){
     int32_t low_to_mid = get_tick_position() - deg_to_tick(total_deg)/2;
-    drive_to(low_to_mid, 1);
-    reached_goal(low_to_mid, 1, 1);
+    drive_to(low_to_mid, SLOW_RPM);
+    reached_goal(low_to_mid, 0, 1);
     // Serial.println("SAFETY");
     // cancelled = true;
   } else if(safety_pos_volt >= HIGH_SAFETY){
     int32_t high_to_mid = get_tick_position() + deg_to_tick(total_deg)/2;
-    drive_to(high_to_mid, 1);
-    reached_goal(high_to_mid, 1, 1);
+    drive_to(high_to_mid, SLOW_RPM);
+    reached_goal(high_to_mid, 0, 1);
     // Serial.println("SAFETY");
     // cancelled = true;
   }

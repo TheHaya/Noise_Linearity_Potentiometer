@@ -103,7 +103,7 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
     ser_PSU = ser_psu_app
     ser_Multi = ser_multi_app
 
-def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_plot_time=None, stop_event=None, on_finish=None):
+def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, pico_plot_volt=None, pico_plot_time=None, stop_event=None, on_finish=None):
     try:
         global pico_pdf_time
         pico_pdf_time = []
@@ -121,9 +121,9 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
         # ser_PSU = sc.connect_psu()
         sc.set_psu_parameters(ser_PSU, 6, 0.12, 5, 0.004) # für dp37
         # sc.set_psu_parameters(ser_PSU, 2.5, 0.12, 2, 0.008) # für t18
-        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s)
-        ser_arduino.reset_input_buffer()
-        ser_arduino.reset_output_buffer()
+        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
+        # ser_arduino.reset_input_buffer()
+        # ser_arduino.reset_output_buffer()
         ser_arduino.flush()
         ser_arduino.write(b"NOISE_GO\n")
         print("NOISE Sende: GO")
@@ -137,8 +137,8 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, pico_plot_volt=None, pico_
                 ser_arduino.flush()
                 ser_PSU.write(b"OUTP OFF\n")
                 print("PSU: OUTPUT OFF")
-                ser_arduino.close()
-                print("SERIAL: Arduino close")
+                # ser_arduino.close()
+                # print("SERIAL: Arduino close")
                 ser_PSU.close()
                 print("SERIAL: Netzteil close")
                 time.sleep(0.2)

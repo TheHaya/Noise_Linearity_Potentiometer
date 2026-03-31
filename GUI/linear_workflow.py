@@ -25,7 +25,7 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
     ser_PSU = ser_psu_app
     ser_Multi = ser_multi_app
 
-def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None, 
+def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, d11=None, d12=None, 
                 d21=None, d22=None, d31=None, d32=None, stop_event=None, on_finish=None):
     try:
         N = 13 #Anz Messpunkte wegen leere Zellen
@@ -50,7 +50,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
         # ser_Multi = sc.connect_multi()
         # ser_PSU = sc.connect_psu()
         sc.set_psu_parameters(ser_PSU, 12, 0.12, 10, 0.004)
-        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s)
+        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
 
         ser_arduino.write(f"dead11:{d11}\n".encode())
         time.sleep(0.2)
@@ -66,8 +66,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
         time.sleep(0.2)
         print("LINEAR Sende: GO") #debug
         #print(d11, d12, d21, d22, d31, d32)
-        ser_arduino.reset_input_buffer()
-        ser_arduino.reset_output_buffer()
+        # ser_arduino.reset_input_buffer()
+        # ser_arduino.reset_output_buffer()
         ser_arduino.flush()
         ser_arduino.write(b"LINEAR_GO\n")
 
@@ -80,8 +80,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, d11=None, d12=None,
                 ser_arduino.flush()
                 ser_PSU.write(b"OUTP OFF\n")
                 print("PSU: OUTPUT OFF")
-                ser_arduino.close()
-                print("SERIAL: Arduino close")
+                # ser_arduino.close()
+                # print("SERIAL: Arduino close")
                 ser_Multi.close()
                 print("SERIAL: Multimeter close")
                 ser_PSU.close()

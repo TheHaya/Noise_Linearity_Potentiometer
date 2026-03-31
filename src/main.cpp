@@ -14,6 +14,9 @@
 // --------------- CONSTANTS
 const int BUTTON = 19;
 const int BUT_TIMER = 200;
+const int LED_R = 16;
+const int LED_Y = 17;
+const int LED_G = 18;
 
 // --------------- VARIABLES
 bool linear_checked;
@@ -24,12 +27,25 @@ bool but_press;
 
 // --------------- SETUP AND ASSIST FUNCTIONS
 void measurements_init(){
+  digitalWrite(LED_R, HIGH);
+  digitalWrite(LED_Y, LOW);
+  digitalWrite(LED_G, LOW);
   linear_checked = false;
   dxl_init();
   calibrate_init();
   elec_deg_init();
   lin_init();
   relays_init();
+}
+
+bool abort_if_cancelled(){
+  if(!cancelled) return false;
+  Serial.println("CANCEL");
+  digitalWrite(LED_R, LOW);
+  digitalWrite(LED_Y, LOW);
+  digitalWrite(LED_G, HIGH);
+  all_relays_off();
+  return true;
 }
 
 void setup(){
@@ -49,7 +65,12 @@ void setup(){
   relays_init();
   all_relays_off();
   pinMode(BUTTON, INPUT_PULLUP);
-
+  pinMode(LED_R, OUTPUT);
+  pinMode(LED_Y, OUTPUT);
+  pinMode(LED_G, OUTPUT);
+  digitalWrite(LED_R, LOW);
+  digitalWrite(LED_Y, LOW);
+  digitalWrite(LED_G, HIGH);
 }
 
 // --------------- LOOP
@@ -69,6 +90,7 @@ void loop(){
     if(command.startsWith("SETV:")){tar_volt = command.substring(5).toFloat();}
     if(command.startsWith("SETW:")){target_deg_total = command.substring(5).toFloat();}
     if(command.startsWith("SETS:")){user_rpm = command.substring(5).toFloat();}
+    if(command.startsWith("REL_SW:")){relay_switch = command.substring(7).toInt();}
     if(command.startsWith("goto:")){user_go_to = command.substring(5).toFloat();}
     if(command.startsWith("dead11:")){d11_deg = command.substring(7).toFloat();}
     if(command.startsWith("dead12:")){d12_deg = command.substring(7).toFloat();}
@@ -80,12 +102,13 @@ void loop(){
     if(command == "INIT_GO"){
       measurements_init();
       apply_relay_mode(INIT_RELAY_MODE);
+      delay(1000);
       check_beginning(target_deg_total);        if(abort_if_cancelled()) return;
       calibrate_currents();     if(abort_if_cancelled()) return;
       check_ends();        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
       
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
+      // drive_to(ZERO_TICK, user_rpm);
+      // reached_goal(ZERO_TICK, 2);
       Serial.println("INIT_FINISH");
     }
 
@@ -110,9 +133,10 @@ void loop(){
         return;
         // cancelled = false;
       }
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
-      dxl.ledOff(DID);
+      // drive_to(ZERO_TICK, user_rpm);
+      // reached_goal(ZERO_TICK, 2);
+      // all_relays_off();
+      // dxl.ledOff(DID);
       Serial.println("NOISE_FINISH");
     }
 
@@ -137,9 +161,9 @@ void loop(){
         return;
         // cancelled = false;
       }
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
-      dxl.ledOff(DID);
+      // drive_to(ZERO_TICK, user_rpm);
+      // reached_goal(ZERO_TICK, 2);
+      // dxl.ledOff(DID);
       Serial.println("LINEAR_FINISH");
     }
 
@@ -162,23 +186,37 @@ void loop(){
           return;
           //cancelled = false;
         }
-        drive_to(ZERO_TICK, user_rpm);
-        reached_goal(ZERO_TICK, 2);
-        dxl.ledOff(DID);
+        // drive_to(ZERO_TICK, user_rpm);
+        // reached_goal(ZERO_TICK, 2);
+        // dxl.ledOff(DID);
         Serial.println("ELEC_DEG_FINISH");
       }
     }
 
+    if(command == "ALL_END"){
+      drive_to(ZERO_TICK, user_rpm);
+      reached_goal(ZERO_TICK, 2);
+      all_relays_off();
+      dxl.ledOff(DID);
+      digitalWrite(LED_R, LOW);
+      digitalWrite(LED_G, HIGH);
+    }
+
     if(command == "ZERO"){
+      measurements_init();
       go_zero();
     } 
 
     if(command == "GOTO"){
+      measurements_init();
       go_to();
     } 
 
     if(command == "WHERE"){
+      measurements_init();
       show_cur_pos();
     }
+
+  
   }
 }

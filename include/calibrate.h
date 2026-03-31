@@ -36,4 +36,4 @@ float correction_movement(float &current_volt, float goal_volt,
 float correction_movement_low(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, int timeout=30000);
 void check_beginning(float total_deg);
-bool abort_if_cancelled();
+// bool abort_if_cancelled();

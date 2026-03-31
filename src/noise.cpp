@@ -18,7 +18,6 @@ void noise_movement(){
     drive_to(sim_mercy_end, sim_rpm);
     reached_goal(sim_mercy_end, i);
   }
-  all_relays_off();
   Serial.println("NOISE_MOVE_FINISH");
 }
 

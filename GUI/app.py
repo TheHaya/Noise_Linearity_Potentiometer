@@ -4,16 +4,16 @@ from PIL import ImageTk, Image
 import sv_ttk
 import threading, json, os, sys
 
-from export import save_to_pdf, save_to_excel
-import ring
+import export
 import noise_workflow
 import linear_workflow
 import mech_ends_workflow
 import elec_deg_workflow
-from tester import tests
+import tester
 import side_functions
 import pico_runner
 import serial_client as sc
+import ring
 
 # --------------- PYINSTALLER FUNCTIONS
 def resource_path(rel_path: str) -> str:
@@ -61,6 +61,7 @@ tol_linearity_pos = None
 tol_linearity_neg = None
 tol_resistance_pos = None
 tol_resistance_neg = None
+relay_switch_pol = None
 
 preset_path = resource_path("preset_Teile.json")
 def load_presets():
@@ -111,7 +112,9 @@ def insert_preset(p):
     tol_linearity_neg = p.get("tol_linear_neg")
     tol_resistance_pos = p.get("tol_widerstand_pos")
     tol_resistance_neg = p.get("tol_widerstand_neg")
-
+    global relay_switch_pol
+    relay_switch_pol = p.get("relay_switch_polarity")
+    
     global all_lin_tols, all_mech_tols, all_elec_tols
     all_mech_tols = (tol_total_mech_deg_pos, tol_total_mech_deg_neg)
     all_elec_tols = (tol_total_elec_deg_pos, tol_total_elec_deg_neg)
@@ -304,7 +307,8 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
             visible_i = 0
             
             global ser_ard
-            ser_ard = sc.connect_ard()
+            if not ser_ard:
+                ser_ard = sc.connect_ard()
             ser_multi = sc.connect_multi()
             ser_psu = sc.connect_psu()
 
@@ -319,7 +323,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     #workflow.config(root, txt_speed, ser_arduino)
                     workflow.config(root, txt_speed, ser_ard, ser_psu, ser_multi)
 
-                workflow.measurement(meas_volt, meas_angle, meas_speed, *workflow_args ,stop_event, lambda: None)
+                workflow.measurement(meas_volt, meas_angle, meas_speed, relay_switch_pol, *workflow_args ,stop_event, lambda: None)
                 
                 if mech_ends_workflow.safety_cancel is True:
                     root.after(0, open_safety_win)
@@ -355,15 +359,16 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     #    ))
             if not stop_event.is_set() or measurements_noise_found:
                 measurements_finished = True
-            ring.set_circle_text(pico_angle, noise_checked)
+            if noise_checked:
+                ring.set_circle_text(noise_workflow.pico_angle, noise_checked)
             
         except Exception as e:
             print("Fehler bei measurements:", e)
 
-
-        if ser_ard: 
-            ser_ard.close()
-            print("[SERIAL] Arduino close")
+        ser_ard.write(b"ALL_END\n")
+        # if ser_ard: 
+        #     ser_ard.close()
+        #     print("[SERIAL] Arduino close")
         if ser_multi: 
             ser_multi.close()
             print("[SERIAL] Multimeter close")
@@ -433,10 +438,10 @@ def measurement_chk():
     start_measurements(modes, meas_volt, meas_angle, meas_speed)
 
 def export_pdf():
-    save_to_pdf(txt9, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt)
+    export.save_to_pdf(txt9, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt)
 
 def export_excel():
-    save_to_excel(
+    export.save_to_excel2(
         txt9,
         linear_workflow.result["daten"],
         linear_workflow.result["linear_sollV"],
@@ -490,7 +495,7 @@ def instant_deadzone_ring():
     ring.mark_deadzone(float(txt_angle.get().strip().replace(',', '.')), deadzone_angles)
 
 def show_current_position():
-    side_functions.show_pos()
+    side_functions.show_pos(ser_ard)
     cur_pos_var.set(f"Position Tick: {side_functions.cur_pos}")
 
 
@@ -498,7 +503,7 @@ def goto_execute():
     goto_speed = float(txt_speed.get().strip().replace(',', '.'))
     goto_pos = float(txt_go.get().strip())
     def worker():
-        side_functions.goto(goto_pos, goto_speed)
+        side_functions.goto(ser_ard, goto_pos, goto_speed)
     threading.Thread(target=worker, daemon=True).start()
 
 def advanced_visible(visible: bool):
@@ -510,9 +515,6 @@ def advanced_visible(visible: bool):
     else:
         for w in widgets:
             w.grid_remove()
-
-def reset_arduino(): 
-    side_functions.reset_arduino()
 
 # --------------- SAFETY WARNING WIPER TOO CLOSE
 def open_safety_win():
@@ -636,7 +638,7 @@ def open_zero_window():
         stop_event.set()
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
-    threading.Thread(target=side_functions.go_zero, args=(meas_speed, stop_event, on_up_wait_results), daemon=True).start()
+    threading.Thread(target=side_functions.go_zero, args=(ser_ard, meas_speed, stop_event, on_up_wait_results), daemon=True).start()
     
 
 def open_cancelled_window():
@@ -845,15 +847,15 @@ chk_linearity.grid(row=7, column=3, sticky="w", pady=(60, 0), padx=(20, 0))
 
 mech_angle_var = tk.StringVar(value="Mechanischer Winkel: --")
 lbl_mech = ttk.Label(right_frame, textvariable=mech_angle_var, font="Verdana 12 bold")
-lbl_mech.grid(row=9, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
+lbl_mech.grid(row=8, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
 
 elec_angle_var = tk.StringVar(value="Elektrischer Winkel: --")
 lbl_elec = ttk.Label(right_frame, textvariable=elec_angle_var, font="Verdana 12 bold")
-lbl_elec.grid(row=10, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
+lbl_elec.grid(row=9, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
 
 cur_pos_var = tk.StringVar(value="Position Tick: --")
 lbl_cur_pos = ttk.Label(right_frame, textvariable=cur_pos_var, font="Verdana 12 bold")
-lbl_cur_pos.grid(row=8, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
+lbl_cur_pos.grid(row=10, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
 
 # lbl_go = ttk.Label(right_frame, text="Anfahrt:")
 # lbl_go.grid(row=8, column=2, pady=(20,0))
@@ -866,13 +868,12 @@ advanced_warning.config(text="ACHTUNG:\nERWEITERTER MODUS AKTIVIERT")
 
 ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=10, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
-ttk.Button(left_frame, text="Position 0", command=open_zero_window, width=18).grid(row=11, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Netzteil Test", command=tests,width=12).grid(row=9, column=3, pady=(20, 5), padx=(20,0))
-ttk.Button(right_frame, text="Messen", command=measurement_chk, width=12).grid(row=8, column=3, pady=(20, 5), padx=(10,0))
-ttk.Button(right_frame, text="Reset",  command=reset_arduino, width=12).grid(row=9, column=3, pady=(20, 5), padx=(10,0))
+ttk.Button(right_frame, text="Messen", command=measurement_chk, width=12).grid(row=8, column=3, pady=(12, 5), padx=(10,0))
+ttk.Button(right_frame, text="Position 0",  command=open_zero_window, width=12).grid(row=9, column=3, pady=(12, 5), padx=(10,0))
 but_cur_pos = ttk.Button(right_frame, text="Curr Position", command=show_current_position)
 but_cur_pos.grid(row=8, column=2, pady=(12, 5), padx=(10,0))
 but_go = ttk.Button(right_frame, text="Go To", command=goto_execute)
@@ -881,6 +882,7 @@ but_go.grid(row=10, column=2, pady=(5, 5))
 root.bind("<Escape>", lambda event: on_root_close())
 root.protocol("WM_DELETE_WINDOW", on_root_close)
 # --------------- MAIN
+ser_ard = sc.connect_ard()
 ring.build_ring(ring_area)
 ring.init_circle_text()
 advanced_visible(False)

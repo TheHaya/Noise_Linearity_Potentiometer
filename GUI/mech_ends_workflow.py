@@ -22,19 +22,19 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
     ser_PSU = ser_psu_app
     ser_Multi = ser_multi_app
     
-def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=None):
+def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, stop_event=None, on_finish=None):
     try:
         #ser_arduino = sc.connect_ard()
         # ser_Multi = sc.connect_multi()
         # ser_PSU = sc.connect_psu()
         sc.set_psu_parameters(ser_PSU, 12, 0.12, 10, 0.004)
-        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s)
+        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
         global safety_cancel
         safety_cancel = False
 
         print("MECH_ENDS Sende: INIT_GO")
-        ser_arduino.reset_input_buffer()
-        ser_arduino.reset_output_buffer()
+        # ser_arduino.reset_input_buffer()
+        # ser_arduino.reset_output_buffer()
         ser_arduino.flush()
         ser_arduino.write(b"INIT_GO\n")
 
@@ -47,8 +47,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, stop_event=None, on_finish=N
                 ser_arduino.flush()
                 ser_PSU.write(b"OUTP OFF\n")
                 print("PSU: OUTPUT OFF")
-                ser_arduino.close()
-                print("SERIAL: Arduino close")
+                # ser_arduino.close()
+                # print("SERIAL: Arduino close")
                 ser_Multi.close()
                 print("SERIAL: Multimeter close")
                 ser_PSU.close()

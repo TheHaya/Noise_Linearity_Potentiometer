@@ -32,7 +32,7 @@ extern const uint16_t SECOND_HALF_RESISTANCE;
 extern const uint16_t MIDDLE_RESISTANCE;
 
 extern uint16_t current_mode;
-
+extern bool relay_switch;
 
 // --------------- RELAY FUNCTIONS
 void relays_init();

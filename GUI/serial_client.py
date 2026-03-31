@@ -61,16 +61,19 @@ def set_psu_parameters(ser_PSU, v_lim, c_lim, v_set, c_set):
     return
 
 
-def set_part_parameters(ser_arduino, part_voltage, part_angle, part_speed):
+def set_part_parameters(ser_arduino, part_voltage, part_angle, part_speed, rel_sw):
     ser_arduino.write(f"SETV:{part_voltage}\n".encode())
     print("[MCU] Spannung: ", part_voltage)
     time.sleep(0.2)
     ser_arduino.write(f"SETW:{part_angle}\n".encode())
-    print("[MCU] Gesamtwinkel: ", part_angle)
+    print("[MCU] Sollwinkel: ", part_angle)
     time.sleep(0.2)
     ser_arduino.write(f"SETS:{part_speed}\n".encode())
     print("[MCU] Speed: ", part_speed)
     time.sleep(0.2)
+    ser_arduino.write(f"REL_SW:{rel_sw}\n".encode())
+    time.sleep(0.2)
+    print("[PRESET] relay_switch_pol =", rel_sw)
     
 
 def RegexMultimeter(output):

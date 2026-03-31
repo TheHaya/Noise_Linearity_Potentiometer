@@ -1,6 +1,6 @@
 import time
 import serial_client as sc
-
+import export
 
 # --------------- GO_ZERO VARIABLES
 root = None
@@ -8,11 +8,11 @@ txt_speed = None
 cur_pos = 0
 
 # --------------- GO_ZERO FUNCTION
-def go_zero(ges_s=None, stop_event=None, on_finish=None):
+def go_zero(ser_arduino, ges_s=None, stop_event=None, on_finish=None):
     try:
-        ser_arduino = sc.connect_ard()
-        ser_arduino.reset_input_buffer() 
-        ser_arduino.reset_output_buffer()
+        # ser_arduino = sc.connect_ard()
+        # ser_arduino.reset_input_buffer() 
+        # ser_arduino.reset_output_buffer()
         time.sleep(1)
         ser_arduino.write(f"SETS:{ges_s}\n".encode())
         time.sleep(0.2)
@@ -32,7 +32,7 @@ def go_zero(ges_s=None, stop_event=None, on_finish=None):
             if line == 'CANCEL':
                 print("CANCEL empfangen.")
                 break
-        ser_arduino.close()
+        # ser_arduino.close()
     except Exception as e:
         print("Fehler bei Serial (GO ZERO): ", e) #debug
 
@@ -41,12 +41,12 @@ def go_zero(ges_s=None, stop_event=None, on_finish=None):
     else:
         on_finish()
 
-def goto(txt_goto=None, ges_s=None):
+def goto(ser_arduino, txt_goto=None, ges_s=None):
     timeout = time.monotonic() + 5
     try:
-        ser_arduino = sc.connect_ard()
-        ser_arduino.reset_input_buffer() 
-        ser_arduino.reset_output_buffer()
+        # ser_arduino = sc.connect_ard()
+        # ser_arduino.reset_input_buffer() 
+        # ser_arduino.reset_output_buffer()
         time.sleep(1)
         ser_arduino.write(f"SETS:{ges_s}\n".encode())
         time.sleep(0.2)
@@ -60,7 +60,7 @@ def goto(txt_goto=None, ges_s=None):
             if line == 'GOTO_READY':
                 print("GOTO_READY empfangen.")
                 break
-        ser_arduino.close()
+        # ser_arduino.close()
     except Exception as e:
         print("Fehler bei Serial (GO TO): ", e) #debug
 
@@ -69,12 +69,12 @@ def goto(txt_goto=None, ges_s=None):
     # else:
     #     on_finish()
 
-def show_pos():
+def show_pos(ser_arduino):
     timeout = time.monotonic() + 5
     try:
-        ser_arduino = sc.connect_ard()
-        ser_arduino.reset_input_buffer() 
-        ser_arduino.reset_output_buffer()
+        # ser_arduino = sc.connect_ard()
+        # ser_arduino.reset_input_buffer() 
+        # ser_arduino.reset_output_buffer()
         time.sleep(1)
         ser_arduino.write(b"WHERE\n")
         time.sleep(0.2)
@@ -86,27 +86,9 @@ def show_pos():
                 cur_pos = float(line[9::])
                 print(f"WHERE_POS empfangen. Position ist: {cur_pos}")
                 break
-        ser_arduino.close()
+        # ser_arduino.close()
     except Exception as e:
         print("Fehler bei Serial (SHOW POS): ", e)
 
-def reset_arduino():
-    try:
-        
-        ser_arduino = sc.connect_ard()
-        ser_arduino.reset_input_buffer() 
-        ser_arduino.reset_output_buffer()
-        time.sleep(0.1)
-        ser_arduino.write(b"STOP\n")
-        time.sleep(0.1)
-        ser_arduino.dtr = False
-        time.sleep(0.1)
-        ser_arduino.dtr = True
-        time.sleep(0.1)
-        ser_arduino.rts = False
-        time.sleep(0.1)
-        ser_arduino.rts = True
-        ser_arduino.close()
-        print("Arduino reset ausgelöst.")
-    except Exception as e:
-        print("Fehler bei Serial (RESET_ARDUINO): ", e)
+def test_xw():
+    export.save_to_excel2()
