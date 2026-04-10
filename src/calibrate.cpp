@@ -6,15 +6,15 @@
 
 
 // --------------- CONSTANTS
-const int32_t CHECK_END_START = -2000;
-const int32_t CHECK_END_END = 6000;
+const int32_t CHECK_END_START = -8000;
+const int32_t CHECK_END_END = 12000;
 const int32_t ZERO_TICK = 2050;
 const float MERCY_TOLERANCE_TICK = 15;
 const float CHECK_ENDS_TOL_DEG = 10;
 const int32_t STEP = 20;
 const int32_t PUSHBACK = 200;
 const float SAFETY_VOLT = 10;
-const float SLOW_RPM = 5;
+const float SLOW_RPM = 10;
 
 // --------------- VARIABLES
 int32_t start_tick, end_tick, real_mid_tick;
@@ -174,7 +174,7 @@ float correction_movement(float &current_volt, float goal_volt,
 
 float correction_movement_low(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, int timeout){
-  const float V_TOL = 0.0001f;        
+  const float V_TOL = 0.001f;        
   const int32_t TICK_TOL = 1;
   elapsedMillis error_timer;
   int32_t low, high;
@@ -373,7 +373,7 @@ void check_ends(){
   // ist_mid_volt = corr_measure(ist_mid_volt);
 
   drive_to(CHECK_END_END, SLOW_RPM);
-  if(reached_goal(CHECK_END_END, 0, 0, 15000) == false){
+  if(reached_goal(CHECK_END_END, 0, 0, 30000) == false){
     end_tick = stopped_tick;
     ist_start_volt = corr_measure();
     // ist_end_volt = corr_measure(ist_end_volt);
@@ -387,7 +387,7 @@ void check_ends(){
   } 
 
   drive_to(CHECK_END_START, SLOW_RPM);
-  if(reached_goal(CHECK_END_START, 0, 0, 15000) == false){
+  if(reached_goal(CHECK_END_START, 0, 0, 30000) == false){
     start_tick = stopped_tick;
     ist_end_volt = corr_measure();
     // ist_start_volt = corr_measure(ist_start_volt);
@@ -409,5 +409,22 @@ void check_ends(){
     delay(100);
   }
   all_relays_off();
+}
 
+
+void find_endless_starting_point(){
+  int32_t next_segment;
+  float before_volt, after_volt;
+
+  after_volt = corr_measure();
+  for(int i = 0; i < 6; i++){
+    before_volt = after_volt;
+    next_segment = get_tick_position() + deg_to_tick(60);
+    drive_to(next_segment, user_rpm);
+    reached_goal(next_segment, 2, 1);
+    after_volt = corr_measure();
+    if(abs(after_volt-before_volt) > 5){
+      break;
+    }
+  }
 }

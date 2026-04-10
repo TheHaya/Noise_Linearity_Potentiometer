@@ -99,16 +99,17 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
 
         title = title_txt.get()
         file = "RMTest-"+title+".xlsx"
-        sh_name = str(3)
 
         if os.path.exists(file):
-            
             wb = xw.Book(file)
-            sheet = wb.sheets.add(name=sh_name,after=wb.sheets[-1])
+
+            sh_name = str(len(wb.sheets) + 1)
+            sheet = wb.sheets.add(name=sh_name, after=wb.sheets[-1])
         else:
             wb = xw.Book()
             wb.save(file)
             sheet = wb.sheets[0]
+            sh_name = "1"
             sheet.name = sh_name
 
         df = pd.DataFrame(rows)

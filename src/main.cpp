@@ -103,10 +103,14 @@ void loop(){
       measurements_init();
       apply_relay_mode(INIT_RELAY_MODE);
       delay(1000);
-      check_beginning(target_deg_total);        if(abort_if_cancelled()) return;
-      calibrate_currents();     if(abort_if_cancelled()) return;
-      check_ends();        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
-      
+      if(target_deg_total ==0){
+        find_endless_starting_point();
+      }
+      else{
+        check_beginning(target_deg_total);        if(abort_if_cancelled()) return;
+        calibrate_currents();     if(abort_if_cancelled()) return;
+        check_ends();        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
+      }
       // drive_to(ZERO_TICK, user_rpm);
       // reached_goal(ZERO_TICK, 2);
       Serial.println("INIT_FINISH");

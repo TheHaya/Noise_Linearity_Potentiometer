@@ -22,7 +22,7 @@ const float TICK_PER_DEG = 4096.0f / 360.0f;
 const float RPM_PER_VEL = 0.229;
 const float START_CURRENT = 900;
 const float CUR_TOLERANCE = 200;
-const float CUR_TOLERANCE_SLOW = 15;
+const float CUR_TOLERANCE_SLOW = 5;
 const int POLL_TIMER = 1;
 using namespace ControlTableItem;
 

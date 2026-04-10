@@ -385,6 +385,7 @@ def measurement_chk():
     end_lin_checked = False
     mech_ends_workflow.safety_cancel = False
     pico_runner.out_volt = False
+    stop_event_global.clear()
     try:
         meas_volt = float(txt_volt.get().strip().replace(',', '.'))
         meas_angle = float(txt_angle.get().strip().replace(',', '.'))
