@@ -84,7 +84,7 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
   elapsedMillis polling;
   elapsedMillis t;
 
-  while(cancelled == false && t < timeout){  // MUSS GEÄNDERT WERDEN WENN POTI > 360°
+  while(cancelled == false && t < timeout){  
     if(polling > POLL_TIMER){
       cur_pos = get_tick_position();
       cur_cur = fabsf(dxl.getPresentCurrent(DID, UNIT_MILLI_AMPERE));

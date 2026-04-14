@@ -26,6 +26,7 @@ extern float delay1, delay2, delay3;
 extern float ist_start_volt, ist_end_volt, ist_mid_volt;
 extern float safety_pos_volt;
 extern float tar_volt;
+extern float endless_start_volt, endless_end_volt, endless_start_deg, endless_end_deg;
 
 void calibrate_init();
 float corr_measure();
@@ -33,8 +34,8 @@ void calibrate_currents();
 void check_ends();
 float correction_movement(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, int timeout=30000);
-float correction_movement_low(float &current_volt, float goal_volt, 
-                          int dead_direction, int dead_half, int timeout=30000);
+float correction_movement_endless_starts(float &current_volt, float goal_volt, int start, int timeout=30000);
 void check_beginning(float total_deg);
+void find_endless_volt_crossover();
 void find_endless_starting_point();
-// bool abort_if_cancelled();
+float correction_movement_endless_deadzones(float &current_volt, float goal_volt, int timeout=30000);

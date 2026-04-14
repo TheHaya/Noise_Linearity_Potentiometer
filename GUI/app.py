@@ -366,6 +366,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
             print("Fehler bei measurements:", e)
 
         ser_ard.write(b"ALL_END\n")
+        print("Sende: ALL_END")
         # if ser_ard: 
         #     ser_ard.close()
         #     print("[SERIAL] Arduino close")

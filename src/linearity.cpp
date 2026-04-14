@@ -218,7 +218,7 @@ void linearity_movement2(){
       Serial.print("DEAD_CW1");
       Serial.println(cw_links);
     } else if(rel_tick == d31_tick + offset_von_soll){
-      float print_deg_cw_r = correction_movement_low(print_ist_volt[i], ist_start_volt, 1, 1);
+      float print_deg_cw_r = correction_movement(print_ist_volt[i], ist_start_volt, 1, 1);
       print_ist_deg[i] = print_deg_cw_r - tick_to_deg(start_tick) - real_mid_deg;
       // print_ist_deg[i] = print_deg_cw_r - 180;
       cw_rechts = print_ist_deg[i];

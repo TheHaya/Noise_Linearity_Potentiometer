@@ -104,6 +104,7 @@ void loop(){
       apply_relay_mode(INIT_RELAY_MODE);
       delay(1000);
       if(target_deg_total ==0){
+        find_endless_volt_crossover();
         find_endless_starting_point();
       }
       else{
