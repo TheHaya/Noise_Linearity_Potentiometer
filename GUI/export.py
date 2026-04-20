@@ -56,10 +56,38 @@ def save_to_pdf(txt, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt):
     except Exception as e:
         print("Fehler bei Rauschkurve-Export: ", e)
 
+def _find_next_normal_sheet_name(sheets):
+    max_sheet_nr = 0
+    for sheet in sheets:
+        name = str(sheet.name).strip()
+        if name.isdigit():
+            max_sheet_nr = max(max_sheet_nr, int(name))
+    return str(max_sheet_nr + 1)
+
+
+def _find_next_rework_sheet_name(sheets, base_sheet_nr):
+    prefix = f"{base_sheet_nr}-"
+    max_suffix = 0
+
+    for sheet in sheets:
+        name = str(sheet.name).strip()
+        if not name.startswith(prefix):
+            continue
+
+        suffix = name[len(prefix):]
+        if suffix.isdigit():
+            max_suffix = max(max_suffix, int(suffix))
+
+    return f"{base_sheet_nr}-{max_suffix + 1}"
+
+
+def _sheet_exists(sheets, sheet_name):
+    target = str(sheet_name).strip()
+    return any(str(sheet.name).strip() == target for sheet in sheets)
 
 # --------------- EXCEL EXPORT FUNCTIONS
 def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, lin_min,
-                  tol_d_p, tol_d_n, tol_cw_p, tol_cw_n, tol_ccw_p, tol_ccw_n, tol_lin_p, tol_lin_n):
+                  tol_d_p, tol_d_n, tol_cw_p, tol_cw_n, tol_ccw_p, tol_ccw_n, tol_lin_p, tol_lin_n, rework_nr=None):
     ALIGN_CENTER = -4108
     ALIGN_LEFT = -4131
     
@@ -97,15 +125,34 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
                 #"Linearität":  float(linear)
             })
 
-        title = title_txt.get()
-        file = "RMTest-"+title+".xlsx"
+        title = title_txt.get().strip()
+        if title == "":
+            title = "-"
+
+        file = "RMTest-" + title + ".xlsx"
 
         if os.path.exists(file):
             wb = xw.Book(file)
 
-            sh_name = str(len(wb.sheets) + 1)
+            if rework_nr is not None:
+                if rework_nr < 1:
+                    print("Fehler bei Linearitäts-Export: Ungültige Nacharbeits-Tabellennummer.")
+                    return
+
+                if not _sheet_exists(wb.sheets, str(rework_nr)):
+                    print(f"Fehler bei Linearitäts-Export: Tabelle {rework_nr} existiert nicht.")
+                    return
+
+                sh_name = _find_next_rework_sheet_name(wb.sheets, rework_nr)
+            else:
+                sh_name = _find_next_normal_sheet_name(wb.sheets)
+
             sheet = wb.sheets.add(name=sh_name, after=wb.sheets[-1])
         else:
+            if rework_nr is not None:
+                print(f"Fehler bei Linearitäts-Export: Datei {file} für Nacharbeit nicht gefunden.")
+                return
+
             wb = xw.Book()
             wb.save(file)
             sheet = wb.sheets[0]

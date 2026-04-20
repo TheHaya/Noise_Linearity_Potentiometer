@@ -537,8 +537,19 @@ def measurement_chk():
     elif chk_linear_mode.get():
         modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True, True))
         print("[CHECKBOX] Linearität")
-    
 
+
+    if rework_var.get():
+        rework_text = txt_rework.get().strip()
+        if rework_text == "":
+            # open_rework_error_window("Bitte Tabellennummer für Nacharbeit eingeben.")
+            print("Nacharbeit ohne Tabellennummer.")
+            return
+        if not rework_text.isdigit() or int(rework_text) < 1:
+            # open_rework_error_window("Bitte eine gültige Tabellennummer für Nacharbeit eingeben.")
+            print("Ungültige Nacharbeits-Tabellennummer.")
+            return
+        
     if len(modes) == 1 and ends_checked is False:
         open_nocheck_window()
         print("Keine Messungen gewählt.")
@@ -551,6 +562,18 @@ def export_pdf():
     export.save_to_pdf(txt9, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt)
 
 def export_excel():
+    rework_nr = None
+
+    if rework_var.get():
+        rework_text = txt_rework.get().strip()
+        # if rework_text == "":
+        #     open_rework_error_window("Bitte Tabellennummer für Nacharbeit eingeben.")
+        #     return
+        # if not rework_text.isdigit() or int(rework_text) < 1:
+        #     open_rework_error_window("Bitte eine gültige Tabellennummer für Nacharbeit eingeben.")
+        #     return
+        rework_nr = int(rework_text)
+
     export.save_to_excel2(
         txt9,
         linear_workflow.result["daten"],
@@ -559,8 +582,21 @@ def export_excel():
         linear_workflow.result["summary_vals"],
         linear_workflow.result["lin_max"],
         linear_workflow.result["lin_min"],
-        *all_lin_tols
+        *all_lin_tols,
+        rework_nr=rework_nr
     )
+
+# def export_excel():
+#     export.save_to_excel2(
+#         txt9,
+#         linear_workflow.result["daten"],
+#         linear_workflow.result["linear_sollV"],
+#         linear_workflow.result["linear_lin"],
+#         linear_workflow.result["summary_vals"],
+#         linear_workflow.result["lin_max"],
+#         linear_workflow.result["lin_min"],
+#         *all_lin_tols
+#     )
 
 def advanced_chk():
     if advanced_mode.get():
@@ -579,6 +615,13 @@ def autosave_chk():
             export_excel()
         if measurements_finished and chk_noise_mode.get() is True:
             export_pdf()
+
+def rework_chk():
+    if rework_var.get():
+        txt_rework.focus_set()
+    else:
+        txt_rework.delete(0, tk.END)
+    
 
 def update_deadzone_ring(*_):
     global deadzone_after_id
@@ -599,7 +642,7 @@ def instant_deadzone_ring():
 
     deadzone_angles = []
     for angles in (d11, d12, d21, d22, d31, d32):
-        if angles is not None:
+        if angles is not None:  
             deadzone_angles.append(angles)
     
     ring.mark_deadzone(float(txt_angle.get().strip().replace(',', '.')), deadzone_angles)
@@ -820,13 +863,20 @@ ttk.Label(left_frame, text="Auftragsnummer:").grid(row=4, column=0, sticky="w", 
 txt9 = ttk.Entry(left_frame, width=20)
 txt9.grid(row=5, column=0, pady=(0, 10), padx=(13,0))
 
+rework_var = tk.BooleanVar(value=False)
+chk_rework = ttk.Checkbutton(left_frame, text="Nacharbeit?", variable=rework_var, command=rework_chk)
+chk_rework.grid(row=6, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+
+txt_rework = ttk.Entry(left_frame, width=20)
+txt_rework.grid(row=7, column=0, pady=(0, 10), padx=(13,0))
+
 autosave_var = tk.BooleanVar(value=True)
 chk_autosave = ttk.Checkbutton(left_frame, text="Automatisches Speichern", variable=autosave_var, command=autosave_chk)
-chk_autosave.grid(row=6, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_autosave.grid(row=9, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
 
 advanced_mode = tk.BooleanVar(value=False)
 chk_advanced_mode = ttk.Checkbutton(left_frame, text="Erweiteter Modus", variable=advanced_mode, command=advanced_chk)
-chk_advanced_mode.grid(row=7, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_advanced_mode.grid(row=10, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
 
 msg = tk.Message(left_frame, width=200, bg="#CCCCCC", fg="#C00000", font='Arial 10 bold')
 
@@ -985,8 +1035,8 @@ advanced_warning = tk.Message( width=350, bg="#FF0000", fg="#E3E3E3", font='Aria
 advanced_warning.grid(row=0, column=1, pady=(10, 10), padx=(200,0))
 advanced_warning.config(text="ACHTUNG:\nERWEITERTER MODUS AKTIVIERT")
 
-ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=9, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
-ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=10, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=11, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=12, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
