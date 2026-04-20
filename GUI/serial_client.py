@@ -28,7 +28,7 @@ def connect_multi(baud=19200, timeout=2, port=MULTI_PORT):
         ser_multi = serial.Serial(port, baudrate=baud, timeout=timeout)
         print(f"[SERIAL] Multimeter verbunden: {MULTI_PORT}")
         time.sleep(0.5)
-        init_keithley_for_read(ser_multi)
+
         return ser_multi
     except Exception as e:
         print("Multimeter kein Port")
@@ -88,10 +88,10 @@ def RegexMultimeter(output):
 def get_multi_voltage(ser_arduino, ser_Multi):
     ser_Multi.reset_input_buffer()
     ser_Multi.reset_output_buffer()
-    ser_Multi.write(b':READ?\n')
+    ser_Multi.write(b':MEAS:VOLT:DC?\n')
     # ser_Multi.write(b':READ?\n')
     #print("geschrieben")
-    #time.sleep(0.05)
+    time.sleep(0.05)
     #print("sleep 0.2 sek")
     response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
     #print("geantwortet")
@@ -107,32 +107,32 @@ def get_multi_voltage(ser_arduino, ser_Multi):
         ser_arduino.write(f"ISTV:ERR\n".encode())
         None
 
-def set_correct_voltage(ser_Multi, ser_PSU, sollspannung):
-    ser_Multi.reset_input_buffer()
-    ser_Multi.reset_output_buffer()
-    ser_Multi.write(b':READ?\n')
+# def set_correct_voltage(ser_Multi, ser_PSU, sollspannung):
+#     ser_Multi.reset_input_buffer()
+#     ser_Multi.reset_output_buffer()
+#     ser_Multi.write(b':MEAS:VOLT:DC?\n')
 
-    #print("geschrieben")
-    time.sleep(0.05)
-    #print("sleep 0.2 sek")
-    response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
-    #print("geantwortet")
-    if(RegexMultimeter(response)):
-        #print("check1")
-        voltage = float(RegexMultimeter(response))
-        voltage_round = round(voltage)
-        #print("check2")
-        print(f"Erfasste Spannung: {voltage}")
-        if round(voltage_round) < sollspannung:
-            regulate_voltage = 10 + sollspannung - voltage_round
-            ser_PSU.write(f"VOLT {regulate_voltage}\n".encode())
-            print(f"[PSU] Spannung Ausgang: {regulate_voltage}")
-            time.sleep(0.2)
+#     #print("geschrieben")
+#     time.sleep(0.05)
+#     #print("sleep 0.2 sek")
+#     response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
+#     #print("geantwortet")
+#     if(RegexMultimeter(response)):
+#         #print("check1")
+#         voltage = float(RegexMultimeter(response))
+#         voltage_round = round(voltage)
+#         #print("check2")
+#         print(f"Erfasste Spannung: {voltage}")
+#         if round(voltage_round) < sollspannung:
+#             regulate_voltage = 10 + sollspannung - voltage_round
+#             ser_PSU.write(f"VOLT {regulate_voltage}\n".encode())
+#             print(f"[PSU] Spannung Ausgang: {regulate_voltage}")
+#             time.sleep(0.2)
 
-        #print("check3")
-    else:
-        print("Problem bei DMM Response")
-        None
+#         #print("check3")
+#     else:
+#         print("Problem bei DMM Response")
+#         None
 
 def serial_ports():
     if sys.platform.startswith('win'):
@@ -148,20 +148,3 @@ def serial_ports():
         except (OSError, serial.SerialException):
             pass
     return result
-
-def init_keithley_for_read(ser_multi):
-    commands = [
-        b"*RST\n",
-        b"*CLS\n",
-        b":ABOR\n",
-        b":FORM:DATA ASC\n",
-        b":FORM:ELEM READ\n",
-        b":CONF:VOLT:DC AUTO\n",
-        b":SENS:VOLT:DC:NPLC 1\n",
-        b":TRIG:SOUR IMM\n",
-        b":SAMP:COUN 1\n",
-        b":TRIG:COUN 1\n",
-    ]
-    for cmd in commands:
-        ser_multi.write(cmd)
-        time.sleep(0.05)

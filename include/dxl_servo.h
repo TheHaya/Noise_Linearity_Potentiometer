@@ -40,6 +40,7 @@ float get_deg_position();
 uint32_t rpm_to_time(int32_t goal_tick, float rpm);
 
 void dxl_init();
+void stop_motion(uint8_t DYN_ID = 1);
 
 
 // --------------- DRIVE FUNCTIONS

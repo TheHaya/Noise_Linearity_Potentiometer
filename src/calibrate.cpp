@@ -72,6 +72,11 @@ float corr_measure(){
     if(Serial.available()){
       String VCommand = Serial.readStringUntil('\n');
       VCommand.trim();
+      if(VCommand == "STOP"){
+        cancelled = true;
+        stop_motion();
+        break;
+      }
       if(VCommand.startsWith("ISTV:")){
         if(VCommand.substring(5) == "ERR"){
           break;

@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import ImageTk, Image
 import sv_ttk
-import threading, json, os, sys
+import threading, json, os, sys, time
 
 import export
 import noise_workflow
@@ -36,6 +36,15 @@ zero_win = None
 cancelled_win = None
 stop_event_global = threading.Event()
 ser_ard = None
+measurement_thread = None
+measurement_running = False
+app_closing = False
+close_deadline = None
+active_serials = {"arduino": None, "psu": None, "multi": None}
+but_measure = None
+but_zero = None
+but_cur_pos = None
+but_go = None
 
 AMLogo = Image.open(resource_path("AMLogo.jpg"))
 scale = 0.8
@@ -261,15 +270,118 @@ def decimal_conversion(s: str):
         return float(s)
     except ValueError:
         return None
+
+
+def measurement_is_running() -> bool:
+    return measurement_running and measurement_thread is not None and measurement_thread.is_alive()
+
+
+def serial_is_open(port) -> bool:
+    return port is not None and getattr(port, "is_open", False)
+
+
+def queue_ui(callback):
+    try:
+        if root.winfo_exists():
+            root.after(0, callback)
+    except tk.TclError:
+        pass
+
+
+def set_active_serials(arduino=None, psu=None, multi=None):
+    active_serials["arduino"] = arduino
+    active_serials["psu"] = psu
+    active_serials["multi"] = multi
+
+
+def write_serial_line(port, line: str) -> bool:
+    if not serial_is_open(port):
+        return False
+    try:
+        port.write(f"{line}\n".encode())
+        port.flush()
+        return True
+    except Exception as e:
+        print(f"Fehler beim Senden '{line}':", e)
+        return False
+
+
+def close_serial_port(port, label: str):
+    if not serial_is_open(port):
+        return
+    try:
+        port.close()
+        print(f"[SERIAL] {label} close")
+    except Exception as e:
+        print(f"Fehler beim Schließen {label}:", e)
+
+
+def destroy_window(window):
+    try:
+        if window is not None and window.winfo_exists():
+            window.destroy()
+    except tk.TclError:
+        pass
+
+
+def update_wait_status(window, label, text: str):
+    try:
+        if window is not None and window.winfo_exists() and label.winfo_exists():
+            label.configure(text=text, justify='center')
+    except tk.TclError:
+        pass
+
+
+def set_measurement_controls(enabled: bool):
+    state = "normal" if enabled else "disabled"
+    for widget in (but_measure, but_zero, but_cur_pos, but_go):
+        if widget is not None:
+            widget.configure(state=state)
+
+
+def request_measurement_stop():
+    stop_event_global.set()
+    pico_runner.stop_active_run()
+    write_serial_line(active_serials.get("arduino") or ser_ard, "STOP")
+    write_serial_line(active_serials.get("psu"), "OUTP OFF")
+
+
+def finish_root_close():
+    try:
+        if serial_is_open(active_serials.get("psu")):
+            write_serial_line(active_serials["psu"], "OUTP OFF")
+        if serial_is_open(ser_ard):
+            write_serial_line(ser_ard, "STOP")
+        root.destroy()
+    except tk.TclError:
+        pass
+
+
+def wait_for_measurement_shutdown():
+    if not measurement_is_running() or (close_deadline is not None and time.monotonic() >= close_deadline):
+        finish_root_close()
+        return
+    try:
+        if root.winfo_exists():
+            root.after(100, wait_for_measurement_shutdown)
+    except tk.TclError:
+        pass
     
 
 # --------------- GUI FUNCTIONS
 def on_root_close():
-    stop_event_global.set()
-    root.after(1500, root.destroy)
+    global app_closing, close_deadline
+    app_closing = True
+    close_deadline = time.monotonic() + 5
+    request_measurement_stop()
+    if measurement_is_running():
+        wait_for_measurement_shutdown()
+    else:
+        finish_root_close()
 
 
 def start_measurements(modes, meas_volt, meas_angle, meas_speed):
+    global measurement_thread, measurement_running
     wait_win = tk.Toplevel(root)
     wait_win.title("Datenmessung")
     wait_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
@@ -286,71 +398,69 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     elec_angle_var.set("Elektrischer Winkel: --")
 
     def cancel():
-        stop_event.set()
+        request_measurement_stop()
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel)
 
     def worker():
-        #ser_arduino.busy = True    
+        global measurements_finished, measurements_noise_found, ser_ard, measurement_running, measurement_thread
+        ser_multi = None
+        ser_psu = None
         try:
-            global measurements_finished
             measurements_finished = False
-            global measurements_noise_found
             measurements_noise_found = False
             visible_total = sum(1 for m in modes if m[4] is True)
             visible_i = 0
             
-            global ser_ard
             if not ser_ard:
                 ser_ard = sc.connect_ard()
             ser_multi = sc.connect_multi()
             ser_psu = sc.connect_psu()
+            set_active_serials(ser_ard, ser_psu, ser_multi)
 
             ring.clear_noise_marks()
 
             for (workflow, workflow_args, title, needs_config, visible) in modes:
                 if visible:
                     visible_i += 1
-                    root.after(0, lambda t=title, i=visible_i, n=visible_total:
-                            status_label.configure(text=f"Messung {i}/{n}:\n\n{t}", justify='center'))
+                    queue_ui(lambda t=title, i=visible_i, n=visible_total:
+                             update_wait_status(wait_win, status_label, f"Messung {i}/{n}:\n\n{t}"))
                 if needs_config:
-                    #workflow.config(root, txt_speed, ser_arduino)
                     workflow.config(root, txt_speed, ser_ard, ser_psu, ser_multi)
 
                 workflow.measurement(meas_volt, meas_angle, meas_speed, relay_switch_pol, *workflow_args ,stop_event, lambda: None)
                 
                 if mech_ends_workflow.safety_cancel is True:
-                    root.after(0, open_safety_win)
+                    if not app_closing:
+                        queue_ui(open_safety_win)
                     stop_event.set()
                     break
                 if stop_event.is_set():
-                    root.after(0, open_cancelled_window)
+                    if not app_closing:
+                        queue_ui(open_cancelled_window)
                     break
                 if pico_runner.out_volt is True and any(wf in (elec_deg_workflow, linear_workflow) for (wf, *_rest) in modes):
                     stop_event.set()
                     measurements_noise_found = True
-                    root.after(0, open_noise_found_win)
+                    if not app_closing:
+                        queue_ui(open_noise_found_win)
                     break
                 if workflow is mech_ends_workflow and ends_checked:
                     val = getattr(mech_ends_workflow, "total_mech", None)
                     if isinstance(val, (int, float)):
-                        root.after(0, lambda v=val: mech_angle_var.set(
+                        queue_ui(lambda v=val: mech_angle_var.set(
                             f"Mechanischer Winkel: {v:.2f}°"
                         ))
                     else:
-                        root.after(0, lambda: mech_angle_var.set(
+                        queue_ui(lambda: mech_angle_var.set(
                             "Mechanischer Winkel: --"
                         ))
                 if workflow is elec_deg_workflow or end_lin_checked is True:
                     val = getattr(elec_deg_workflow, "total_elec", None)
                     if isinstance(val, (int, float)):
-                        root.after(0, lambda v=val: elec_angle_var.set(
+                        queue_ui(lambda v=val: elec_angle_var.set(
                             f"Elektrischer Winkel: {v:.2f}°"
                         ))
-                    #else:
-                    #    root.after(0, lambda: elec_angle_var.set(
-                    #        "Elektrischer Winkel: --"
-                    #    ))
             if not stop_event.is_set() or measurements_noise_found:
                 measurements_finished = True
             if noise_checked:
@@ -358,24 +468,28 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
             
         except Exception as e:
             print("Fehler bei measurements:", e)
+        finally:
+            write_serial_line(ser_ard, "ALL_END")
+            print("Sende: ALL_END")
+            write_serial_line(ser_psu, "OUTP OFF")
+            close_serial_port(ser_multi, "Multimeter")
+            close_serial_port(ser_psu, "PSU")
+            set_active_serials(ser_ard, None, None)
+            measurement_running = False
+            measurement_thread = None
+            if not app_closing:
+                queue_ui(lambda: set_measurement_controls(True))
+                queue_ui(autosave_chk)
+            queue_ui(lambda: destroy_window(wait_win))
 
-        ser_ard.write(b"ALL_END\n")
-        print("Sende: ALL_END")
-        # if ser_ard: 
-        #     ser_ard.close()
-        #     print("[SERIAL] Arduino close")
-        if ser_multi: 
-            ser_multi.close()
-            print("[SERIAL] Multimeter close")
-        if ser_psu: 
-            ser_psu.close()
-            print("[SERIAL] PSU close")
-        root.after(0, autosave_chk)
-        root.after(0, wait_win.destroy)
-    
-    threading.Thread(target=worker, daemon=True).start()
+    set_measurement_controls(False)
+    measurement_running = True
+    measurement_thread = threading.Thread(target=worker, daemon=True)
+    measurement_thread.start()
 
 def measurement_chk():
+    if measurement_is_running():
+        return
     global end_lin_checked
     end_lin_checked = False
     mech_ends_workflow.safety_cancel = False
@@ -491,11 +605,15 @@ def instant_deadzone_ring():
     ring.mark_deadzone(float(txt_angle.get().strip().replace(',', '.')), deadzone_angles)
 
 def show_current_position():
+    if measurement_is_running():
+        return
     side_functions.show_pos(ser_ard)
     cur_pos_var.set(f"Position Tick: {side_functions.cur_pos}")
 
 
 def goto_execute():
+    if measurement_is_running():
+        return
     goto_speed = float(txt_speed.get().strip().replace(',', '.'))
     goto_pos = float(txt_go.get().strip())
     def worker():
@@ -503,7 +621,7 @@ def goto_execute():
     threading.Thread(target=worker, daemon=True).start()
 
 def advanced_visible(visible: bool):
-    widgets = (but_go, advanced_warning, txt_go, but_cur_pos, lbl_cur_pos)
+    widgets = (but_go, advanced_warning, txt_go, but_cur_pos, lbl_cur_pos, but_test)
     if visible:
         open_advanced_window()
         for w in widgets:
@@ -596,6 +714,8 @@ def open_advanced_window():
 
 # --------------- OPEN ZERO WINDOW
 def open_zero_window():
+    if measurement_is_running():
+        return
     meas_speed = float(txt_speed.get().strip().replace(',', '.'))
     def on_up_wait_results():
         wait_win.destroy()
@@ -652,6 +772,9 @@ def open_cancelled_window():
     ok_button.grid(row=1, column=0, ipadx=20)
     ok_button.focus_set()  
     cancelled_win.bind("<Return>", lambda event: ok_button.invoke())
+
+def open_tester():
+    tester.test_relays(ser_ard)
 
 
 # --------------- GUI
@@ -868,12 +991,16 @@ ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=1
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Netzteil Test", command=tests,width=12).grid(row=9, column=3, pady=(20, 5), padx=(20,0))
-ttk.Button(right_frame, text="Messen", command=measurement_chk, width=12).grid(row=8, column=3, pady=(12, 5), padx=(10,0))
-ttk.Button(right_frame, text="Position 0",  command=open_zero_window, width=12).grid(row=9, column=3, pady=(12, 5), padx=(10,0))
+but_measure = ttk.Button(right_frame, text="Messen", command=measurement_chk, width=12)
+but_measure.grid(row=8, column=3, pady=(12, 5), padx=(10,0))
+but_zero = ttk.Button(right_frame, text="Position 0",  command=open_zero_window, width=12)
+but_zero.grid(row=9, column=3, pady=(12, 5), padx=(10,0))
 but_cur_pos = ttk.Button(right_frame, text="Curr Position", command=show_current_position)
 but_cur_pos.grid(row=8, column=2, pady=(12, 5), padx=(10,0))
 but_go = ttk.Button(right_frame, text="Go To", command=goto_execute)
 but_go.grid(row=10, column=2, pady=(5, 5))
+but_test = ttk.Button(right_frame, text="Tester",  command=open_tester, width=12)
+but_test.grid(row=10, column=3, pady=(12, 5), padx=(10,0))
 
 root.bind("<Escape>", lambda event: on_root_close())
 root.protocol("WM_DELETE_WINDOW", on_root_close)

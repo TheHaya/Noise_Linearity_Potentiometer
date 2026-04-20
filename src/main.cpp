@@ -40,6 +40,7 @@ void measurements_init(){
 
 bool abort_if_cancelled(){
   if(!cancelled) return false;
+  stop_motion();
   Serial.println("CANCEL");
   digitalWrite(LED_R, LOW);
   digitalWrite(LED_Y, LOW);
@@ -85,6 +86,12 @@ void loop(){
   if(Serial.available()){
     String command = Serial.readStringUntil('\n');
     command.trim();
+
+    if(command == "STOP"){
+      cancelled = true;
+      abort_if_cancelled();
+      return;
+    }
 
     // EINGABE VON PYTHON
     if(command.startsWith("SETV:")){tar_volt = command.substring(5).toFloat();}
@@ -207,6 +214,9 @@ void loop(){
       dxl.ledOff(DID);
       digitalWrite(LED_R, LOW);
       digitalWrite(LED_G, HIGH);
+
+      cancelled = false;
+      linear_checked = false;
     }
 
     if(command == "ZERO"){
@@ -224,6 +234,9 @@ void loop(){
       show_cur_pos();
     }
 
+    if(command == "TESTER"){
+      apply_relay_mode(ENDLESS_INIT_RELAY_MODE);
+    }
   
   }
 }

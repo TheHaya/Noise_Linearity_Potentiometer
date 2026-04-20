@@ -146,3 +146,6 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
 
     except Exception as e:
         print("Fehler bei Linearitäts-Export: ", e)
+
+def test_relays(ser_ard):
+    ser_ard.write(b"TESTER")

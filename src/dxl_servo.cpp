@@ -69,6 +69,10 @@ void dxl_init(){
   cur_cur = 0;
 }
 
+void stop_motion(uint8_t DYN_ID){
+  dxl.setGoalPosition(DYN_ID, get_tick_position(), UNIT_RAW);
+}
+
 
 // --------------- DRIVE FUNCTIONS
 void drive_to(int32_t tick, float rpm, uint8_t DYN_ID){
@@ -94,6 +98,7 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
         stop_command.trim();
         if(stop_command == "STOP"){
           Serial.println("Vorgang wurde abgebrochen");
+          stop_motion(DYN_ID);
           cancelled = true;
           break;
         }
@@ -160,6 +165,6 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
       polling = 0;
     }
   }
-  dxl.setGoalPosition(DID, get_tick_position(), UNIT_RAW);
+  stop_motion(DYN_ID);
   return false;
 }

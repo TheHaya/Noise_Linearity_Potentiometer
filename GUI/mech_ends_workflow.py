@@ -47,20 +47,14 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, stop_event=No
                 ser_arduino.flush()
                 ser_PSU.write(b"OUTP OFF\n")
                 print("PSU: OUTPUT OFF")
-                # ser_arduino.close()
-                # print("SERIAL: Arduino close")
-                ser_Multi.close()
-                print("SERIAL: Multimeter close")
-                ser_PSU.close()
-                print("SERIAL: Netzteil close")
                 time.sleep(0.2)
                 break
 
             line = ser_arduino.readline().decode('utf-8').strip()
             #print("Empfangen:", line) #debug
     
-            if line == 'CHECK_PSU':
-                sc.set_correct_voltage(ser_Multi, ser_PSU, 10)
+            #if line == 'CHECK_PSU':
+            #    sc.set_correct_voltage(ser_Multi, ser_PSU, 10)
 
             if line == 'VOLTR':
                 sc.get_multi_voltage(ser_arduino, ser_Multi)

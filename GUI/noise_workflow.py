@@ -137,10 +137,6 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, pico_plot_v
                 ser_arduino.flush()
                 ser_PSU.write(b"OUTP OFF\n")
                 print("PSU: OUTPUT OFF")
-                # ser_arduino.close()
-                # print("SERIAL: Arduino close")
-                ser_PSU.close()
-                print("SERIAL: Netzteil close")
                 time.sleep(0.2)
                 break
 

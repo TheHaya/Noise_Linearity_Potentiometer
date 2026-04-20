@@ -15,6 +15,7 @@ txt_speed_getter = None
 calc_duration_f = None
 total_ticks_getter = None
 out_volt = False
+active_process = None
 
 # --------------- PICO FUNCTIONS
 def config_pico(txt_s, calc_d, total_t):
@@ -23,8 +24,21 @@ def config_pico(txt_s, calc_d, total_t):
     calc_duration_f = calc_d
     total_ticks_getter = total_t
 
+
+def stop_active_run():
+    global active_process
+    if active_process is None:
+        return
+    try:
+        active_process.kill()
+        active_process.wait(timeout=2)
+    except Exception:
+        pass
+    finally:
+        active_process = None
+
 def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr, stop_event=None):
-    global start_time, picoEXE, delay_compensation, out_volt
+    global start_time, picoEXE, delay_compensation, out_volt, active_process
 
     out_volt = False
     out_found = False
@@ -40,59 +54,57 @@ def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr,
         [picoEXE, f"--time={pico_timeStr}"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         text=True, bufsize=1
     )
-    for line in p.stdout:
-        if stop_event.is_set():
-                ser_Ard.write(b"STOP\n")
-                time.sleep(0.5)
-                ser_Ard.flush()
-                time.sleep(0.2)
-                break
-        
-        line = line.strip()
-
-        if line.startswith("PICO_START"):
-            print("Sende: PICO_START") #debug
-            ser_Ard.write(b"NOISE_START\n")
-            ser_Ard.flush()
+    active_process = p
+    try:
+        for line in p.stdout:
+            if stop_event.is_set():
+                    ser_Ard.write(b"STOP\n")
+                    time.sleep(0.5)
+                    ser_Ard.flush()
+                    time.sleep(0.2)
+                    break
             
-            start_time = time.time()
-            print("NACH: PICO_START")
-        
-        if out_volt is True:
-            volt_arr.append(float(line))
+            line = line.strip()
 
-        if line.startswith("OUTPUV"):
-            out_volt = True
-            out_found = False
+            if line.startswith("PICO_START"):
+                print("Sende: PICO_START") #debug
+                ser_Ard.write(b"NOISE_START\n")
+                ser_Ard.flush()
+                
+                start_time = time.time()
+                print("NACH: PICO_START")
+            
+            if out_volt is True:
+                volt_arr.append(float(line))
 
-        if out_found is True:
-            time_arr.append(float(line)-delay_compensation)
-            pdf_time_arr.append(float(line))
+            if line.startswith("OUTPUV"):
+                out_volt = True
+                out_found = False
 
-        if line.startswith("OUTPUT"):
-            out_found = True
-            plot_volt = False
+            if out_found is True:
+                time_arr.append(float(line)-delay_compensation)
+                pdf_time_arr.append(float(line))
 
-        if plot_volt is True:
-            plot_volt_arr.append(float(line))
+            if line.startswith("OUTPUT"):
+                out_found = True
+                plot_volt = False
 
-        if line.startswith("PLOT_VOLT"):
-            plot_volt = True 
-            plot_time = False
+            if plot_volt is True:
+                plot_volt_arr.append(float(line))
 
-        if plot_time is True:
-            plot_arr.append(float(line))
+            if line.startswith("PLOT_VOLT"):
+                plot_volt = True 
+                plot_time = False
 
-        if line.startswith("PLOT_TIME"):
-            plot_time = True
+            if plot_time is True:
+                plot_arr.append(float(line))
 
-    end_time = time.time()
-    print("Time Array:")
-    print(time_arr)
-    #print("Volt Array:")
-    #print(plot_volt_arr)
-    #print("Plot Array:")
-    #print(plot_arr)
-    finish_time = end_time - start_time
-    print(f"Gemessene Zeit: {finish_time}")
-    p.terminate()
+            if line.startswith("PLOT_TIME"):
+                plot_time = True
+    finally:
+        end_time = time.time()
+        print("Time Array:")
+        print(time_arr)
+        finish_time = end_time - start_time
+        print(f"Gemessene Zeit: {finish_time}")
+        stop_active_run()
