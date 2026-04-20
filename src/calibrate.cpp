@@ -60,7 +60,7 @@ delay3 = 0;
 
 }
 float corr_measure(){
-  float current_volt;
+  float current_volt = NAN;
   elapsedMillis timer;
   int t = 8000;
   Serial.setTimeout(50);
@@ -73,6 +73,9 @@ float corr_measure(){
       String VCommand = Serial.readStringUntil('\n');
       VCommand.trim();
       if(VCommand.startsWith("ISTV:")){
+        if(VCommand.substring(5) == "ERR"){
+          break;
+        }
         current_volt = VCommand.substring(5).toFloat();
         break; 
       } 
@@ -260,7 +263,7 @@ void check_ends(){
   sim_mercy_start = start_tick + MERCY_TOLERANCE_TICK;
   sim_mercy_end = end_tick - MERCY_TOLERANCE_TICK;
   uint32_t total_distance = abs(end_tick - start_tick);
-  real_mid_tick = total_distance / 2;
+  real_mid_tick = start_tick + total_distance / 2;
   uint32_t sim_distance = abs(sim_mercy_end - sim_mercy_start);
   Serial.print("TICKS");
   Serial.println(sim_distance);

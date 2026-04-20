@@ -113,7 +113,7 @@ def insert_preset(p):
     tol_resistance_pos = p.get("tol_widerstand_pos")
     tol_resistance_neg = p.get("tol_widerstand_neg")
     global relay_switch_pol
-    relay_switch_pol = p.get("relay_switch_polarity")
+    relay_switch_pol = p.get("relay_polarity_switch")
     
     global all_lin_tols, all_mech_tols, all_elec_tols
     all_mech_tols = (tol_total_mech_deg_pos, tol_total_mech_deg_neg)
@@ -266,13 +266,7 @@ def decimal_conversion(s: str):
 # --------------- GUI FUNCTIONS
 def on_root_close():
     stop_event_global.set()
-    try:
-        ser_ard.write(b"STOP\n")
-        ser_ard.flush()
-    except Exception:
-        pass
-
-    root.destroy()
+    root.after(1500, root.destroy)
 
 
 def start_measurements(modes, meas_volt, meas_angle, meas_speed):

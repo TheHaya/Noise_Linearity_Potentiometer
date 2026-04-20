@@ -4,7 +4,7 @@ import xlwings as xw
 from itertools import cycle
 from linear_workflow import daten
 
-
+# NUR TESTER FÜR 
 ALIGN_CENTER = -4108
 ALIGN_LEFT = -4131
 def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, lin_min,

@@ -101,13 +101,15 @@ void loop(){
   
     if(command == "INIT_GO"){
       measurements_init();
-      apply_relay_mode(INIT_RELAY_MODE);
-      delay(1000);
       if(target_deg_total ==0){
+        apply_relay_mode(ENDLESS_INIT_RELAY_MODE);
+        delay(1000);
         find_endless_volt_crossover();
         find_endless_starting_point();
       }
       else{
+        apply_relay_mode(INIT_RELAY_MODE);
+        delay(1000);
         check_beginning(target_deg_total);        if(abort_if_cancelled()) return;
         calibrate_currents();     if(abort_if_cancelled()) return;
         check_ends();        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE

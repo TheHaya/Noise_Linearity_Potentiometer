@@ -3,8 +3,8 @@
 
 
 // --------------- RELAY CONSTANTS
-const int RELAY_AMOUNT = 13;
-const int RELAY_PINS[RELAY_AMOUNT] = {3,4,5,6,7,8,9,10,11,12,13,14,15}; // Pins am Arduino
+const int RELAY_AMOUNT = 14;
+const int RELAY_PINS[RELAY_AMOUNT] = {3,4,5,6,7,8,9,10,11,12,13,14,15,16}; // Pins am Arduino
 
 const uint16_t RELAY_1 = 1UL << 0;   // RELAY_1 ist in bit-schreibweise 0b0000000000000001
 const uint16_t RELAY_2 = 1UL << 1;   // RELAY_2 ist in bit-schreibweise 0b0000000000000010
@@ -15,13 +15,15 @@ const uint16_t RELAY_6 = 1UL << 5;
 const uint16_t RELAY_7_AB = 1UL << 6;
 const uint16_t RELAY_8_AB = 1UL << 7;
 const uint16_t RELAY_10_AB = 1UL << 8;
-const uint16_t RELAY_9_AB = 1UL << 9;
-const uint16_t RELAY_9_CD = 1UL << 10;
-const uint16_t RELAY_9_EF = 1UL << 11; // bis jetzt bis 0b0000100000000000
-const uint16_t RELAY_9_GH = 1UL << 12;
+const uint16_t RELAY_11_AB = 1UL << 9;
+const uint16_t RELAY_9_AB = 1UL << 10;
+const uint16_t RELAY_9_CD = 1UL << 11;
+const uint16_t RELAY_9_EF = 1UL << 12; // bis jetzt bis 0b0000100000000000
+const uint16_t RELAY_9_GH = 1UL << 13;
 
 const uint16_t IDLE_RELAY_MODE = 0;
 const uint16_t INIT_RELAY_MODE = RELAY_1 | RELAY_4 | RELAY_8_AB;
+const uint16_t ENDLESS_INIT_RELAY_MODE = RELAY_1 | RELAY_4 | RELAY_8_AB | RELAY_11_AB;
 const uint16_t LINEARITY_RELAY_MODE = RELAY_1 | RELAY_4 | RELAY_8_AB;
 const uint16_t NOISE_RELAY_MODE = RELAY_1 | RELAY_4 | RELAY_7_AB | RELAY_8_AB;
 const uint16_t NOISE_LOADED_RELAY_MODE = RELAY_7_AB | RELAY_9_AB | RELAY_9_CD | RELAY_9_EF | RELAY_9_GH;
