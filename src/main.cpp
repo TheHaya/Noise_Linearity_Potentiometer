@@ -130,8 +130,8 @@ void loop(){
       if(abort_if_cancelled()) return;
       apply_relay_mode(NOISE_RELAY_MODE);
       // if(cancelled == false){
-      drive_to(sim_mercy_end, user_rpm/2);
-      reached_goal(sim_mercy_end, 1); 
+      drive_to(sim_mercy_end, user_rpm);
+      reached_goal(sim_mercy_end, 2, 0, 15000); 
       if(cancelled == false){
         Serial.println("NOISE_READY");
       } else{
@@ -213,10 +213,28 @@ void loop(){
       all_relays_off();
       dxl.ledOff(DID);
       digitalWrite(LED_R, LOW);
+      digitalWrite(LED_Y, LOW);
       digitalWrite(LED_G, HIGH);
-
       cancelled = false;
       linear_checked = false;
+    }
+
+    if(command == "NOISE_END"){
+      drive_to(ZERO_TICK, user_rpm);
+      reached_goal(ZERO_TICK, 2);
+      all_relays_off();
+      dxl.ledOff(DID);
+      digitalWrite(LED_R, LOW);
+      digitalWrite(LED_Y, HIGH);
+      digitalWrite(LED_G, LOW);
+      cancelled = false;
+      linear_checked = false;
+    }
+
+    if(command == "FAULT_LED"){
+      digitalWrite(LED_R, LOW);
+      digitalWrite(LED_Y, HIGH);
+      digitalWrite(LED_G, LOW);
     }
 
     if(command == "ZERO"){

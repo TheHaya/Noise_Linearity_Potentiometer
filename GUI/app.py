@@ -16,8 +16,12 @@ import serial_client as sc
 import ring
 
 # --------------- PYINSTALLER FUNCTIONS
+# def resource_path(rel_path: str) -> str:
+#     base = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+#     return os.path.join(base, rel_path)
+
 def resource_path(rel_path: str) -> str:
-    base = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, rel_path)
 
 # --------------- APP VARIABLES 
@@ -34,7 +38,8 @@ noise_win = None
 linear_win = None
 zero_win = None
 cancelled_win = None
-stop_event_global = threading.Event()
+# stop_event_global = threading.Event()
+active_measurement_stop_event = None
 ser_ard = None
 measurement_thread = None
 measurement_running = False
@@ -107,6 +112,7 @@ def insert_preset(p):
     set_entry(txt_d31, p["d31"])
     set_entry(txt_d32, p["d32"])
 
+    global tol_deadzone_pos, tol_deadzone_neg, tol_active_cw_pos, tol_active_cw_neg, tol_active_ccw_pos, tol_active_ccw_neg, tol_linearity_pos, tol_linearity_neg
     tol_total_mech_deg_pos = p.get("tol_drehwinkel_mech_pos")
     tol_total_mech_deg_neg = p.get("tol_drehwinkel_mech_neg")
     tol_total_elec_deg_pos = p.get("tol_drehwinkel_elec_pos")
@@ -123,6 +129,7 @@ def insert_preset(p):
     tol_resistance_neg = p.get("tol_widerstand_neg")
     global relay_switch_pol
     relay_switch_pol = p.get("relay_polarity_switch")
+    
     
     global all_lin_tols, all_mech_tols, all_elec_tols
     all_mech_tols = (tol_total_mech_deg_pos, tol_total_mech_deg_neg)
@@ -340,7 +347,9 @@ def set_measurement_controls(enabled: bool):
 
 
 def request_measurement_stop():
-    stop_event_global.set()
+    global active_measurement_stop_event
+    if active_measurement_stop_event is not None:
+        active_measurement_stop_event.set()
     pico_runner.stop_active_run()
     write_serial_line(active_serials.get("arduino") or ser_ard, "STOP")
     write_serial_line(active_serials.get("psu"), "OUTP OFF")
@@ -380,19 +389,128 @@ def on_root_close():
         finish_root_close()
 
 
+# def start_measurements(modes, meas_volt, meas_angle, meas_speed):
+#     global measurement_thread, measurement_running, active_measurement_stop_event
+#     wait_win = tk.Toplevel(root)
+#     wait_win.title("Datenmessung")
+#     wait_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
+#     wait_win.transient(root)
+#     wait_win.grab_set()
+#     wait_win.resizable(False, False)
+    
+#     status_label = ttk.Label(wait_win, text="Bitte warten...")
+#     status_label.pack(pady=(0,20), expand=True)
+#     stop_event = stop_event_global
+#     stop_event.clear()   
+
+#     mech_angle_var.set("Mechanischer Winkel: --")
+#     elec_angle_var.set("Elektrischer Winkel: --")
+
+#     def cancel():
+#         request_measurement_stop()
+#         wait_win.destroy()
+#     wait_win.protocol("WM_DELETE_WINDOW", cancel)
+
+#     def worker():
+#         global measurements_finished, measurements_noise_found, ser_ard, measurement_running, measurement_thread
+#         ser_multi = None
+#         ser_psu = None
+#         try:
+#             measurements_finished = False
+#             measurements_noise_found = False
+#             visible_total = sum(1 for m in modes if m[4] is True)
+#             visible_i = 0
+            
+#             if not ser_ard:
+#                 ser_ard = sc.connect_ard()
+#             ser_multi = sc.connect_multi()
+#             ser_psu = sc.connect_psu()
+#             set_active_serials(ser_ard, ser_psu, ser_multi)
+
+#             ring.clear_noise_marks()
+
+#             for (workflow, workflow_args, title, needs_config, visible) in modes:
+#                 if visible:
+#                     visible_i += 1
+#                     queue_ui(lambda t=title, i=visible_i, n=visible_total:
+#                              update_wait_status(wait_win, status_label, f"Messung {i}/{n}:\n\n{t}"))
+#                 if needs_config:
+#                     workflow.config(root, txt_speed, ser_ard, ser_psu, ser_multi)
+
+#                 workflow.measurement(meas_volt, meas_angle, meas_speed, relay_switch_pol, *workflow_args ,stop_event, lambda: None)
+                
+#                 if mech_ends_workflow.safety_cancel is True:
+#                     if not app_closing:
+#                         queue_ui(open_safety_win)
+#                     stop_event.set()
+#                     break
+#                 if stop_event.is_set():
+#                     if not app_closing:
+#                         queue_ui(open_cancelled_window)
+#                     break
+#                 if pico_runner.out_volt is True and any(wf in (elec_deg_workflow, linear_workflow) for (wf, *_rest) in modes):
+#                     stop_event.set()
+#                     measurements_noise_found = True
+#                     if not app_closing:
+#                         queue_ui(open_noise_found_win)
+#                     break
+#                 if workflow is mech_ends_workflow and ends_checked:
+#                     val = getattr(mech_ends_workflow, "total_mech", None)
+#                     if isinstance(val, (int, float)):
+#                         queue_ui(lambda v=val: mech_angle_var.set(
+#                             f"Mechanischer Winkel: {v:.2f}°"
+#                         ))
+#                     else:
+#                         queue_ui(lambda: mech_angle_var.set(
+#                             "Mechanischer Winkel: --"
+#                         ))
+#                 if workflow is elec_deg_workflow or end_lin_checked is True:
+#                     val = getattr(elec_deg_workflow, "total_elec", None)
+#                     if isinstance(val, (int, float)):
+#                         queue_ui(lambda v=val: elec_angle_var.set(
+#                             f"Elektrischer Winkel: {v:.2f}°"
+#                         ))
+#             if not stop_event.is_set() or measurements_noise_found:
+#                 measurements_finished = True
+#             if noise_checked:
+#                 ring.set_circle_text(noise_workflow.pico_angle, noise_checked)
+            
+#         except Exception as e:
+#             print("Fehler bei measurements:", e)
+#         finally:
+#             write_serial_line(ser_ard, "ALL_END")
+#             print("Sende: ALL_END")
+#             write_serial_line(ser_psu, "OUTP OFF")
+#             close_serial_port(ser_multi, "Multimeter")
+#             close_serial_port(ser_psu, "PSU")
+#             set_active_serials(ser_ard, None, None)
+#             measurement_running = False
+#             measurement_thread = None
+#             if not app_closing:
+#                 queue_ui(lambda: set_measurement_controls(True))
+#                 queue_ui(autosave_chk)
+#             queue_ui(lambda: destroy_window(wait_win))
+
+#     set_measurement_controls(False)
+#     measurement_running = True
+#     measurement_thread = threading.Thread(target=worker, daemon=True)
+#     measurement_thread.start()
+
 def start_measurements(modes, meas_volt, meas_angle, meas_speed):
-    global measurement_thread, measurement_running
+    global measurement_thread, measurement_running, active_measurement_stop_event
+
     wait_win = tk.Toplevel(root)
     wait_win.title("Datenmessung")
     wait_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
     wait_win.transient(root)
     wait_win.grab_set()
     wait_win.resizable(False, False)
-    
+
     status_label = ttk.Label(wait_win, text="Bitte warten...")
     status_label.pack(pady=(0,20), expand=True)
-    stop_event = stop_event_global
-    stop_event.clear()   
+
+    stop_event = threading.Event()
+    active_measurement_stop_event = stop_event
 
     mech_angle_var.set("Mechanischer Winkel: --")
     elec_angle_var.set("Elektrischer Winkel: --")
@@ -400,18 +518,23 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     def cancel():
         request_measurement_stop()
         wait_win.destroy()
+
     wait_win.protocol("WM_DELETE_WINDOW", cancel)
 
     def worker():
-        global measurements_finished, measurements_noise_found, ser_ard, measurement_running, measurement_thread
+        global measurements_finished, measurements_noise_found
+        global ser_ard, measurement_running, measurement_thread, active_measurement_stop_event
+
         ser_multi = None
         ser_psu = None
+        noise_angles = []
+
         try:
             measurements_finished = False
             measurements_noise_found = False
             visible_total = sum(1 for m in modes if m[4] is True)
             visible_i = 0
-            
+
             if not ser_ard:
                 ser_ard = sc.connect_ard()
             ser_multi = sc.connect_multi()
@@ -425,56 +548,87 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     visible_i += 1
                     queue_ui(lambda t=title, i=visible_i, n=visible_total:
                              update_wait_status(wait_win, status_label, f"Messung {i}/{n}:\n\n{t}"))
+
                 if needs_config:
                     workflow.config(root, txt_speed, ser_ard, ser_psu, ser_multi)
 
-                workflow.measurement(meas_volt, meas_angle, meas_speed, relay_switch_pol, *workflow_args ,stop_event, lambda: None)
-                
+                workflow.measurement(
+                    meas_volt,
+                    meas_angle,
+                    meas_speed,
+                    relay_switch_pol,
+                    *workflow_args,
+                    stop_event,
+                    lambda: None
+                )
+
+                if workflow is noise_workflow:
+                    noise_angles = list(getattr(noise_workflow, "pico_angle", []))
+
                 if mech_ends_workflow.safety_cancel is True:
                     if not app_closing:
                         queue_ui(open_safety_win)
                     stop_event.set()
                     break
+
                 if stop_event.is_set():
                     if not app_closing:
                         queue_ui(open_cancelled_window)
                     break
+
                 if pico_runner.out_volt is True and any(wf in (elec_deg_workflow, linear_workflow) for (wf, *_rest) in modes):
                     stop_event.set()
                     measurements_noise_found = True
                     if not app_closing:
                         queue_ui(open_noise_found_win)
                     break
+
                 if workflow is mech_ends_workflow and ends_checked:
                     val = getattr(mech_ends_workflow, "total_mech", None)
                     if isinstance(val, (int, float)):
-                        queue_ui(lambda v=val: mech_angle_var.set(
-                            f"Mechanischer Winkel: {v:.2f}°"
-                        ))
+                        queue_ui(lambda v=val: mech_angle_var.set(f"Mechanischer Winkel: {v:.2f}°"))
                     else:
-                        queue_ui(lambda: mech_angle_var.set(
-                            "Mechanischer Winkel: --"
-                        ))
+                        queue_ui(lambda: mech_angle_var.set("Mechanischer Winkel: --"))
+
                 if workflow is elec_deg_workflow or end_lin_checked is True:
                     val = getattr(elec_deg_workflow, "total_elec", None)
                     if isinstance(val, (int, float)):
-                        queue_ui(lambda v=val: elec_angle_var.set(
-                            f"Elektrischer Winkel: {v:.2f}°"
-                        ))
+                        queue_ui(lambda v=val: elec_angle_var.set(f"Elektrischer Winkel: {v:.2f}°"))
+
+                if workflow is linear_workflow:
+                    if linear_workflow.summary_vals.get("Totzone") > tol_deadzone_pos or linear_workflow.summary_vals.get("Totzone") < tol_deadzone_neg:
+                        linear_workflow.lin_error = True
+                    elif linear_workflow.summary_vals.get("AktivCW") > tol_active_cw_pos or linear_workflow.summary_vals.get("Totzone") < tol_active_cw_neg:
+                        linear_workflow.lin_error = True
+                    elif linear_workflow.summary_vals.get("AktivCCW") > tol_active_ccw_pos or linear_workflow.summary_vals.get("Totzone") < tol_active_ccw_neg:
+                        linear_workflow.lin_error = True
+                    elif linear_workflow.lin_max > tol_linearity_pos or linear_workflow.lin_min > tol_linearity_neg:
+                        linear_workflow.lin_error = True
+                
+            ring.set_linearity_text(linear_workflow.lin_error, chk_linear_mode.get())
+            ring.set_circle_text(noise_angles, chk_noise_mode.get())
+
             if not stop_event.is_set() or measurements_noise_found:
                 measurements_finished = True
-            if noise_checked:
-                ring.set_circle_text(noise_workflow.pico_angle, noise_checked)
-            
+
+
+                
+
         except Exception as e:
             print("Fehler bei measurements:", e)
+
         finally:
-            write_serial_line(ser_ard, "ALL_END")
-            print("Sende: ALL_END")
+            if pico_runner.out_volt:
+                write_serial_line(ser_ard, "NOISE_END")
+                print("Sende: NOISE_END")
+            else:
+                write_serial_line(ser_ard, "ALL_END")
+                print("Sende: ALL_END")
             write_serial_line(ser_psu, "OUTP OFF")
             close_serial_port(ser_multi, "Multimeter")
             close_serial_port(ser_psu, "PSU")
             set_active_serials(ser_ard, None, None)
+            active_measurement_stop_event = None
             measurement_running = False
             measurement_thread = None
             if not app_closing:
@@ -494,7 +648,7 @@ def measurement_chk():
     end_lin_checked = False
     mech_ends_workflow.safety_cancel = False
     pico_runner.out_volt = False
-    stop_event_global.clear()
+    # stop_event_global.clear()
     try:
         meas_volt = float(txt_volt.get().strip().replace(',', '.'))
         meas_angle = float(txt_angle.get().strip().replace(',', '.'))
@@ -516,9 +670,7 @@ def measurement_chk():
     modes.append((mech_ends_workflow, (), "Mech. Endwinkel", True, ends_checked))
     if ends_checked: print("[CHECKBOX] Mech. Ends")
 
-    global noise_checked
-    noise_checked = chk_noise_mode.get()
-    if noise_checked:
+    if chk_noise_mode.get():
         pico_plot_time.clear()
         pico_plot_volt.clear()
         modes.append((noise_workflow, (pico_plot_volt, pico_plot_time), "Rauschprüfung", True, True))
@@ -618,9 +770,11 @@ def autosave_chk():
 
 def rework_chk():
     if rework_var.get():
+        txt_rework.config(state="normal")
         txt_rework.focus_set()
     else:
         txt_rework.delete(0, tk.END)
+        txt_rework.config(state="readonly")
     
 
 def update_deadzone_ring(*_):
@@ -1056,6 +1210,7 @@ root.bind("<Escape>", lambda event: on_root_close())
 root.protocol("WM_DELETE_WINDOW", on_root_close)
 # --------------- MAIN
 ser_ard = sc.connect_ard()
+rework_chk()
 ring.build_ring(ring_area)
 ring.init_circle_text()
 advanced_visible(False)

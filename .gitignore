@@ -6,6 +6,10 @@ dist/
 __pycache__/
 *.pyc
 
+# Output
+*.pdf
+*.xlsx
+
 # LaTeX
 *.aux
 *.log

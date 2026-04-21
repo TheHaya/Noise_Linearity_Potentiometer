@@ -3,6 +3,7 @@
 
 
 // --------------- CALIBRATE CONSTANTS
+extern const int32_t CHECK_END_MERCY;
 extern const int32_t CHECK_END_START;
 extern const int32_t CHECK_END_END;
 extern const int32_t CALIBRATE_CURRENT_CCW;

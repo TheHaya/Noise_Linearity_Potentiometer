@@ -4,11 +4,10 @@ import serial_client as sc
 
 # --------------- LINEAR VARIABLES
 root = None
-MULTI_PORT = "COM17"
-PSU_PORT = "COM15"
 daten = []
 result = {}
-
+lin_error = False
+summary_vals = {}
 # --------------- LINEAR FUNCTIONS
 def RegexMultimeter(output):
     match = re.search(r"[-+]?\d\.\d+(?:[Ee][-+]\d+)", output)
@@ -28,6 +27,8 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
 def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, d11=None, d12=None, 
                 d21=None, d22=None, d31=None, d32=None, stop_event=None, on_finish=None):
     try:
+        global lin_error
+        lin_error = False
         N = 13 #Anz Messpunkte wegen leere Zellen
         global daten, result
         result = {
@@ -42,8 +43,10 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, d11=None, d12
         linear_sollV = [None] * N
         linear_lin = [None] * N
         error_lin_idx = set()
+        global lin_max, lin_min
         lin_max = None
         lin_min = None
+        global summary_vals
         summary_vals = {}
 
         #ser_arduino = sc.connect_ard()
@@ -68,7 +71,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, d11=None, d12
         #print(d11, d12, d21, d22, d31, d32)
         # ser_arduino.reset_input_buffer()
         # ser_arduino.reset_output_buffer()
-        ser_arduino.flush()
+
+        sc.prepare_arduino_run(ser_arduino)
         ser_arduino.write(b"LINEAR_GO\n")
 
         #ser_arduino.timeout = 0.1

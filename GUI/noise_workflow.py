@@ -7,7 +7,6 @@ import mech_ends_workflow as mech
 # --------------- NOISE VARIABLES
 root = None
 txt_speed = None
-PSU_PORT = "COM15"
 
 
 # --------------- CALC FUNCTIONS
@@ -124,7 +123,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, pico_plot_v
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
         # ser_arduino.reset_input_buffer()
         # ser_arduino.reset_output_buffer()
-        ser_arduino.flush()
+        sc.prepare_arduino_run(ser_arduino)
         ser_arduino.write(b"NOISE_GO\n")
         print("NOISE Sende: GO")
 
@@ -167,6 +166,9 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, pico_plot_v
 
             elif line == 'CANCEL':
                 print("Empfangen: CANCEL")
+                if stop_event is not None:
+                    stop_event.set()
+                ser_arduino.reset_input_buffer()
                 break
         
         time.sleep(1)

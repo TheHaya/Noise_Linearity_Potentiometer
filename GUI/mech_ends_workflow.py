@@ -5,8 +5,6 @@ import serial_client as sc
 # --------------- MECH ENDS VARIABLES
 root = None
 txt_speed = None
-MULTI_PORT = "COM17"
-PSU_PORT = "COM15"
 delay_time1 = 0.0
 delay_time2 = 0.0
 delay_time3 = 0.0
@@ -32,10 +30,10 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, stop_event=No
         global safety_cancel
         safety_cancel = False
 
-        print("MECH_ENDS Sende: INIT_GO")
         # ser_arduino.reset_input_buffer()
         # ser_arduino.reset_output_buffer()
-        ser_arduino.flush()
+        print("MECH_ENDS Sende: INIT_GO")
+        sc.prepare_arduino_run(ser_arduino)
         ser_arduino.write(b"INIT_GO\n")
 
         ser_arduino.timeout = 0.1
@@ -110,6 +108,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, stop_event=No
                 break
             elif line == 'CANCEL':
                 print("Empfangen: CANCEL")
+                if stop_event is not None:
+                    stop_event.set()
+                ser_arduino.reset_input_buffer()
                 break
 
         ser_PSU.write(b"OUTP OFF\n")

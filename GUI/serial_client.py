@@ -3,12 +3,12 @@ import serial.tools.list_ports
 
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
+# ARDUINO_PORT = "COM7"
+# MULTI_PORT = "COM4"
+# PSU_PORT = "COM5"
 ARDUINO_PORT = "COM18"
 MULTI_PORT = "COM17"
 PSU_PORT = "COM15"
-# ARDUINO_PORT = "COM3"
-# MULTI_PORT = "COM4"
-# PSU_PORT = "COM5"
 
 # --------------- SERIAL MIT SERVO
 def connect_ard(baud=115200, timeout=2, port=ARDUINO_PORT):
@@ -76,6 +76,11 @@ def set_part_parameters(ser_arduino, part_voltage, part_angle, part_speed, rel_s
     time.sleep(0.2)
     print("[PRESET] relay_switch_pol =", rel_sw)
     
+def prepare_arduino_run(ser_arduino):
+    if ser_arduino is None:
+        return
+    ser_arduino.flush()
+    ser_arduino.reset_input_buffer()
 
 def RegexMultimeter(output):
     match = re.search(r"[-+]?\d\.\d+(?:[Ee][-+]\d+)", output)

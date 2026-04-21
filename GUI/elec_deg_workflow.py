@@ -3,8 +3,6 @@ import serial_client as sc
 
 # --------------- ELEC DEG VARIABLES
 root = None
-MULTI_PORT = "COM17"
-PSU_PORT = "COM15"
 
 
 # --------------- ELEC DEG FUNCTIONS
@@ -39,7 +37,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, d12=None,
         #print(d11, d12, d21, d22, d31, d32)
         # ser_arduino.reset_input_buffer()
         # ser_arduino.reset_output_buffer()
-        ser_arduino.flush()
+        sc.prepare_arduino_run(ser_arduino)
         ser_arduino.write(b"ELEC_DEG_GO\n")
 
         ser_arduino.timeout = 0.1
@@ -75,6 +73,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, d12=None,
                 break
             elif line == 'CANCEL':
                 print("Empfangen: CANCEL")
+                if stop_event is not None:
+                    stop_event.set()
+                ser_arduino.reset_input_buffer()
                 break
             
         ser_PSU.write(b"OUTP OFF\n")

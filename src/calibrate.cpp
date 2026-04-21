@@ -6,6 +6,7 @@
 
 
 // --------------- CONSTANTS
+const int32_t CHECK_END_MERCY = 30;
 const int32_t CHECK_END_START = -8000;
 const int32_t CHECK_END_END = 12000;
 const int32_t ZERO_TICK = 2050;
@@ -243,7 +244,7 @@ void check_beginning(float total_deg){
 
 // --------------- MECHANICAL ENDS
 void check_ends(){
-
+  
   drive_to(CHECK_END_END, SLOW_RPM);
   if(reached_goal(CHECK_END_END, 0, 0, 30000) == false){
     end_tick = stopped_tick;
@@ -257,6 +258,11 @@ void check_ends(){
     dxl.ledOn(1);
   delay(100);
   } 
+
+  int32_t test_check_start = get_tick_position() - deg_to_tick(target_deg_total-CHECK_END_MERCY);
+
+  drive_to(test_check_start, user_rpm);
+  reached_goal(test_check_start, 2);
 
   drive_to(CHECK_END_START, SLOW_RPM);
   if(reached_goal(CHECK_END_START, 0, 0, 30000) == false){

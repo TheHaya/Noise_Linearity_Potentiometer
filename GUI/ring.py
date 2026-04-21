@@ -151,25 +151,22 @@ def set_circle_text(pico_angle, noise_meas = False):
                 font=text_font, anchor="center")
     noise_times.append(iid)
 
-def set_linearity_text(linear_check: bool, good_part: bool):
+def set_linearity_text(lin_error: bool, lin_checked: bool):
     x0, y0, x1, y1 = ring_box
     canv_x = (x0 + x1) / 2
     canv_y = (y0 + y1) / 2
     text_font = font.Font(family="Arial", size=20, weight="bold")
-    if linear_check:
-        if good_part:
+    if lin_checked:
+        if lin_error:
             iid = ring_canvas.create_text(
-                canv_x, canv_y+305, text="In Ordnung", fill="#00ff33",
+                canv_x, canv_y+305, text="Fehler", fill="#ff0000",
                 font=text_font, anchor="center")
         else:
             iid = ring_canvas.create_text(
-                canv_x, canv_y+305, text="Fehler", fill="#ff0000",
+                canv_x, canv_y+305, text="In Ordnung", fill="#00ff33",
                 font=text_font, anchor="center")
     else:
         iid = ring_canvas.create_text(
                 canv_x, canv_y+305, text="Bereit", fill="#d7d7d7",
                 font=text_font, anchor="center")
-
-    
-    
-    
+    noise_times.append(iid)
