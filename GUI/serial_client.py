@@ -11,7 +11,7 @@ MULTI_PORT = "COM17"
 PSU_PORT = "COM15"
 
 # --------------- SERIAL MIT SERVO
-def connect_ard(baud=115200, timeout=2, port=ARDUINO_PORT):
+def connect_ard(baud=115200, timeout=0.1, port=ARDUINO_PORT):
     serial_ports()
     err_time = time.monotonic() + 15
     while time.monotonic() < err_time:

@@ -365,7 +365,6 @@ def finish_root_close():
     except tk.TclError:
         pass
 
-
 def wait_for_measurement_shutdown():
     if not measurement_is_running() or (close_deadline is not None and time.monotonic() >= close_deadline):
         finish_root_close()
@@ -375,6 +374,20 @@ def wait_for_measurement_shutdown():
             root.after(100, wait_for_measurement_shutdown)
     except tk.TclError:
         pass
+    
+def polling_push_button():
+    if app_closing:
+        return
+    if not measurement_is_running() and serial_is_open(ser_ard):
+        if ser_ard.in_waiting > 0:
+            line = ser_ard.readline().decode("utf-8", errors="ignore").strip()
+            if line == "BUTTON":
+                print("Empfangen: BUTTON")
+                handler_push_button()
+    root.after(100, polling_push_button)
+
+def handler_push_button():
+    measurement_chk()
     
 
 # --------------- GUI FUNCTIONS
@@ -388,113 +401,6 @@ def on_root_close():
     else:
         finish_root_close()
 
-
-# def start_measurements(modes, meas_volt, meas_angle, meas_speed):
-#     global measurement_thread, measurement_running, active_measurement_stop_event
-#     wait_win = tk.Toplevel(root)
-#     wait_win.title("Datenmessung")
-#     wait_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
-#     wait_win.transient(root)
-#     wait_win.grab_set()
-#     wait_win.resizable(False, False)
-    
-#     status_label = ttk.Label(wait_win, text="Bitte warten...")
-#     status_label.pack(pady=(0,20), expand=True)
-#     stop_event = stop_event_global
-#     stop_event.clear()   
-
-#     mech_angle_var.set("Mechanischer Winkel: --")
-#     elec_angle_var.set("Elektrischer Winkel: --")
-
-#     def cancel():
-#         request_measurement_stop()
-#         wait_win.destroy()
-#     wait_win.protocol("WM_DELETE_WINDOW", cancel)
-
-#     def worker():
-#         global measurements_finished, measurements_noise_found, ser_ard, measurement_running, measurement_thread
-#         ser_multi = None
-#         ser_psu = None
-#         try:
-#             measurements_finished = False
-#             measurements_noise_found = False
-#             visible_total = sum(1 for m in modes if m[4] is True)
-#             visible_i = 0
-            
-#             if not ser_ard:
-#                 ser_ard = sc.connect_ard()
-#             ser_multi = sc.connect_multi()
-#             ser_psu = sc.connect_psu()
-#             set_active_serials(ser_ard, ser_psu, ser_multi)
-
-#             ring.clear_noise_marks()
-
-#             for (workflow, workflow_args, title, needs_config, visible) in modes:
-#                 if visible:
-#                     visible_i += 1
-#                     queue_ui(lambda t=title, i=visible_i, n=visible_total:
-#                              update_wait_status(wait_win, status_label, f"Messung {i}/{n}:\n\n{t}"))
-#                 if needs_config:
-#                     workflow.config(root, txt_speed, ser_ard, ser_psu, ser_multi)
-
-#                 workflow.measurement(meas_volt, meas_angle, meas_speed, relay_switch_pol, *workflow_args ,stop_event, lambda: None)
-                
-#                 if mech_ends_workflow.safety_cancel is True:
-#                     if not app_closing:
-#                         queue_ui(open_safety_win)
-#                     stop_event.set()
-#                     break
-#                 if stop_event.is_set():
-#                     if not app_closing:
-#                         queue_ui(open_cancelled_window)
-#                     break
-#                 if pico_runner.out_volt is True and any(wf in (elec_deg_workflow, linear_workflow) for (wf, *_rest) in modes):
-#                     stop_event.set()
-#                     measurements_noise_found = True
-#                     if not app_closing:
-#                         queue_ui(open_noise_found_win)
-#                     break
-#                 if workflow is mech_ends_workflow and ends_checked:
-#                     val = getattr(mech_ends_workflow, "total_mech", None)
-#                     if isinstance(val, (int, float)):
-#                         queue_ui(lambda v=val: mech_angle_var.set(
-#                             f"Mechanischer Winkel: {v:.2f}°"
-#                         ))
-#                     else:
-#                         queue_ui(lambda: mech_angle_var.set(
-#                             "Mechanischer Winkel: --"
-#                         ))
-#                 if workflow is elec_deg_workflow or end_lin_checked is True:
-#                     val = getattr(elec_deg_workflow, "total_elec", None)
-#                     if isinstance(val, (int, float)):
-#                         queue_ui(lambda v=val: elec_angle_var.set(
-#                             f"Elektrischer Winkel: {v:.2f}°"
-#                         ))
-#             if not stop_event.is_set() or measurements_noise_found:
-#                 measurements_finished = True
-#             if noise_checked:
-#                 ring.set_circle_text(noise_workflow.pico_angle, noise_checked)
-            
-#         except Exception as e:
-#             print("Fehler bei measurements:", e)
-#         finally:
-#             write_serial_line(ser_ard, "ALL_END")
-#             print("Sende: ALL_END")
-#             write_serial_line(ser_psu, "OUTP OFF")
-#             close_serial_port(ser_multi, "Multimeter")
-#             close_serial_port(ser_psu, "PSU")
-#             set_active_serials(ser_ard, None, None)
-#             measurement_running = False
-#             measurement_thread = None
-#             if not app_closing:
-#                 queue_ui(lambda: set_measurement_controls(True))
-#                 queue_ui(autosave_chk)
-#             queue_ui(lambda: destroy_window(wait_win))
-
-#     set_measurement_controls(False)
-#     measurement_running = True
-#     measurement_thread = threading.Thread(target=worker, daemon=True)
-#     measurement_thread.start()
 
 def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     global measurement_thread, measurement_running, active_measurement_stop_event
@@ -675,7 +581,6 @@ def measurement_chk():
         pico_plot_volt.clear()
         modes.append((noise_workflow, (pico_plot_volt, pico_plot_time), "Rauschprüfung", True, True))
         print("[CHECKBOX] Rauschen")
-    
     
     if chk_linear_mode.get() and chk_elec_mode.get():
         end_lin_checked = True
@@ -1215,6 +1120,7 @@ ring.build_ring(ring_area)
 ring.init_circle_text()
 advanced_visible(False)
 instant_deadzone_ring()
+polling_push_button()
 sv_ttk.set_theme("dark")
 root.mainloop()
 

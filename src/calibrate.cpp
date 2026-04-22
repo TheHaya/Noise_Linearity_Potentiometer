@@ -6,14 +6,14 @@
 
 
 // --------------- CONSTANTS
-const int32_t CHECK_END_MERCY = 30;
+const int32_t CHECK_END_MERCY_DEG = 30;
 const int32_t CHECK_END_START = -8000;
 const int32_t CHECK_END_END = 12000;
 const int32_t ZERO_TICK = 2050;
 const float MERCY_TOLERANCE_TICK = 15;
 const float CHECK_ENDS_TOL_DEG = 10;
 const float SAFETY_VOLT = 10;
-const float SLOW_RPM = 10;
+const float SLOW_RPM = 8;
 
 // --------------- VARIABLES
 int32_t start_tick, end_tick, real_mid_tick;
@@ -259,7 +259,7 @@ void check_ends(){
   delay(100);
   } 
 
-  int32_t test_check_start = get_tick_position() - deg_to_tick(target_deg_total-CHECK_END_MERCY);
+  int32_t test_check_start = get_tick_position() - deg_to_tick(target_deg_total-CHECK_END_MERCY_DEG);
 
   drive_to(test_check_start, user_rpm);
   reached_goal(test_check_start, 2);
