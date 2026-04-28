@@ -109,7 +109,7 @@ void loop(){
     if(command == "INIT_GO"){
       measurements_init();
       if(target_deg_total ==0){
-        apply_relay_mode(ENDLESS_INIT_RELAY_MODE);
+        apply_relay_mode(INIT_RELAY_MODE);
         delay(1000);
         find_endless_volt_crossover();
         find_endless_starting_point();
@@ -129,6 +129,7 @@ void loop(){
     if(command == "NOISE_GO"){
       if(abort_if_cancelled()) return;
       apply_relay_mode(NOISE_RELAY_MODE);
+      noise_preparation_movement();
       // if(cancelled == false){
       drive_to(sim_mercy_end, user_rpm);
       reached_goal(sim_mercy_end, 2, 0, 15000); 

@@ -89,13 +89,16 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, d11=None, d12
 
             line = ser_arduino.readline().decode('utf-8').strip()
             #print("Empfangen:", line) #debug
-            if line == 'VOLTR':
+            if line.startswith('VOLTR'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
-                continue
-            elif line.startswith('DEBUG_POS'):
-                debug_pos = float(line[9::])
+                debug_pos = float(line[5::])
                 print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
                 print("_____")
+                continue
+            # elif line.startswith('DEBUG_POS'):
+            #     debug_pos = float(line[9::])
+            #     print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
+            #     print("_____")
             elif line.startswith('DEAD_CCW1'):
                 dead_ccw1 = float(line[9::])
                 print(f"--Deadzone CCW links: {dead_ccw1}")

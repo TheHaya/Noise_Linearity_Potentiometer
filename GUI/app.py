@@ -59,6 +59,9 @@ text_rw_state = 'readonly'
 deadzone_after_id = None
 debounce_id = {"id": None}
 output_ends = False
+arduino_serial_lock = threading.Lock()
+
+
 
 # --------------- PRESETS LADEN
 tol_total_mech_deg_pos = None
@@ -376,6 +379,9 @@ def wait_for_measurement_shutdown():
         pass
     
 def polling_push_button():
+    if arduino_serial_lock.locked():
+        root.after(100, polling_push_button)
+        return
     if app_closing:
         return
     if not measurement_is_running() and serial_is_open(ser_ard):
@@ -388,7 +394,7 @@ def polling_push_button():
 
 def handler_push_button():
     measurement_chk()
-    
+
 
 # --------------- GUI FUNCTIONS
 def on_root_close():
@@ -709,7 +715,7 @@ def instant_deadzone_ring():
 def show_current_position():
     if measurement_is_running():
         return
-    side_functions.show_pos(ser_ard)
+    side_functions.show_pos(ser_ard, arduino_serial_lock)
     cur_pos_var.set(f"Position Tick: {side_functions.cur_pos}")
 
 
@@ -719,7 +725,7 @@ def goto_execute():
     goto_speed = float(txt_speed.get().strip().replace(',', '.'))
     goto_pos = float(txt_go.get().strip())
     def worker():
-        side_functions.goto(ser_ard, goto_pos, goto_speed)
+        side_functions.goto(ser_ard, goto_pos, goto_speed, arduino_serial_lock)
     threading.Thread(target=worker, daemon=True).start()
 
 def advanced_visible(visible: bool):
@@ -856,7 +862,7 @@ def open_zero_window():
         stop_event.set()
         wait_win.destroy()
     wait_win.protocol("WM_DELETE_WINDOW", cancel_on_up)
-    threading.Thread(target=side_functions.go_zero, args=(ser_ard, meas_speed, stop_event, on_up_wait_results), daemon=True).start()
+    threading.Thread(target=side_functions.go_zero, args=(ser_ard, meas_speed, arduino_serial_lock, stop_event, on_up_wait_results), daemon=True).start()
     
 
 def open_cancelled_window():

@@ -54,8 +54,11 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, d12=None,
 
             line = ser_arduino.readline().decode('utf-8').strip()
             #print("Empfangen:", line) #debug
-            if line == 'VOLTR':
+            if line.startswith('VOLTR'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
+                debug_pos = float(line[5::])
+                print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
+                print("_____")
                 continue
             elif line == 'ELEC_DEG_READY':
                 print("Empfangen: ELEC_DEG READY")

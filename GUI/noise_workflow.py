@@ -18,7 +18,7 @@ def calc_duration(ges_spd):
     for i in range(1, 4, 1):
         div_spd = user_rpm/2
         duration += 2 * (60/(div_spd*i)) * (mech.total_ticks/circle_tick)
-    duration = duration + total_delay # wegen servo delay für jeden antrieb
+    duration = (duration + total_delay) * 2  # wegen servo delay für jeden antrieb // *2 wegen 2 rounds pro geschwindigkeit
     return duration
 
 def calc_individual_turns(ges_spd, turn_number):

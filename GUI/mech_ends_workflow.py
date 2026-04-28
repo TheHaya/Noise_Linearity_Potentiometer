@@ -25,7 +25,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, stop_event=No
         #ser_arduino = sc.connect_ard()
         # ser_Multi = sc.connect_multi()
         # ser_PSU = sc.connect_psu()
-        sc.set_psu_parameters(ser_PSU, 12, 0.12, 10, 0.004)
+        sc.set_psu_parameters(ser_PSU, 12, 0.12, 10, 0.044)
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
         global safety_cancel
         safety_cancel = False
@@ -54,8 +54,11 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, stop_event=No
             #if line == 'CHECK_PSU':
             #    sc.set_correct_voltage(ser_Multi, ser_PSU, 10)
 
-            if line == 'VOLTR':
+            if line.startswith('VOLTR'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
+                debug_pos = float(line[5::])
+                print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
+                print("_____")
                 continue
 
             if line.startswith("ANGLE"):
