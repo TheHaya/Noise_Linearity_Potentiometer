@@ -4,6 +4,7 @@
 #include <dxl_servo.h>
 #include <relay.h>
 
+
 // --------------- NOISE MOVEMENT
 void noise_preparation_movement(){
   float rpm_intervall; 
@@ -37,4 +38,3 @@ void noise_movement(){
   }
   Serial.println("NOISE_MOVE_FINISH");
 }
-

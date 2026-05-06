@@ -5,7 +5,26 @@
 #include <relay.h>
 #include <calibrate.h>
 
-float endless_start_volt, endless_end_volt, endless_start_deg, endless_end_deg;
+
+// --------------- CONSTANTS
+const int32_t ENDLESS_MERCY_TOLERANCE_TICK = 2;
+
+
+// --------------- VARIABLES
+float endless_start_volt, endless_end_volt, endless_start_tick, endless_end_tick;
+int32_t endless_sim_start, endless_sim_end;
+
+
+// --------------- FUNCTIONS
+
+void endless_init(){
+  endless_start_volt = 0; 
+  endless_end_volt = 0;
+  endless_start_tick = 0;
+  endless_end_tick = 0;
+  endless_sim_start = 0;
+  endless_sim_end = 0;
+}
 
 void find_endless_volt_crossover(){
   int32_t next_segment;
@@ -79,7 +98,7 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
         low = mid;
       }
     }
-    return tick_to_deg(low);
+    return low;
   }
   return NAN;
 }
@@ -87,8 +106,27 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
 
 void find_endless_starting_point(){
   float cur_volt;
-  endless_start_deg = correction_movement_endless_starts(cur_volt, endless_start_volt, 1);
+  endless_start_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 1);
+  drive_to(endless_start_tick + 3750, user_rpm); // ~330°
+  reached_goal(endless_start_tick + 3750, 2);
   apply_relay_mode(ENDLESS_INIT_RELAY_MODE);
-  endless_end_deg = correction_movement_endless_starts(cur_volt, endless_start_volt, 0);
+  endless_end_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 0);
+
+  endless_sim_start = endless_start_tick + ENDLESS_MERCY_TOLERANCE_TICK;
+  endless_sim_end = endless_end_tick - ENDLESS_MERCY_TOLERANCE_TICK;
+  uint32_t total_distance = abs(endless_end_tick - endless_start_tick); // 4096 ticks -> 360°
+  real_mid_tick = endless_start_tick + total_distance / 2;
+  // uint32_t sim_distance = abs(sim_mercy_end - sim_mercy_start);
+  // Serial.print("TICKS");
+  // Serial.println(sim_distance);
+  Serial.print("ANGLE");
+  Serial.println(tick_to_deg(total_distance));
+  for(int i = 0; i < 5; i++){
+    dxl.ledOff(1);
+    delay(100);
+     dxl.ledOn(1);
+    delay(100);
+  }
+  all_relays_off();
 }
 

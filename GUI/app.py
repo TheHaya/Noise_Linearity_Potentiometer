@@ -510,11 +510,11 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                 if workflow is linear_workflow:
                     if linear_workflow.summary_vals.get("Totzone") > tol_deadzone_pos or linear_workflow.summary_vals.get("Totzone") < tol_deadzone_neg:
                         linear_workflow.lin_error = True
-                    elif linear_workflow.summary_vals.get("AktivCW") > tol_active_cw_pos or linear_workflow.summary_vals.get("Totzone") < tol_active_cw_neg:
+                    elif linear_workflow.summary_vals.get("AktivCW") > tol_active_cw_pos or linear_workflow.summary_vals.get("AktivCW") < tol_active_cw_neg:
                         linear_workflow.lin_error = True
-                    elif linear_workflow.summary_vals.get("AktivCCW") > tol_active_ccw_pos or linear_workflow.summary_vals.get("Totzone") < tol_active_ccw_neg:
+                    elif linear_workflow.summary_vals.get("AktivCCW") > tol_active_ccw_pos or linear_workflow.summary_vals.get("AktivCCW") < tol_active_ccw_neg:
                         linear_workflow.lin_error = True
-                    elif linear_workflow.lin_max > tol_linearity_pos or linear_workflow.lin_min > tol_linearity_neg:
+                    elif linear_workflow.lin_max > tol_linearity_pos or linear_workflow.lin_min < tol_linearity_neg:
                         linear_workflow.lin_error = True
                 
             ring.set_linearity_text(linear_workflow.lin_error, chk_linear_mode.get())

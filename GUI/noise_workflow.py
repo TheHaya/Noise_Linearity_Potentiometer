@@ -10,25 +10,42 @@ txt_speed = None
 
 
 # --------------- CALC FUNCTIONS
-def calc_duration(ges_spd):
-    total_delay = mech.delay_time1 + mech.delay_time2 + mech.delay_time3
+def calc_duration(ges_spd, ges_deg):
+    total_delay = (mech.delay_time1 + mech.delay_time2 + mech.delay_time3) * 2
     user_rpm = float(ges_spd)
     duration = 0
     circle_tick = 4096
     for i in range(1, 4, 1):
         div_spd = user_rpm/2
-        duration += 2 * (60/(div_spd*i)) * (mech.total_ticks/circle_tick)
+        if ges_deg == 0:
+            duration += 2 * (60/(div_spd*i))
+        else:
+            duration += 2 * (60/(div_spd*i)) * (mech.total_ticks/circle_tick)
+       
     duration = (duration + total_delay) * 2  # wegen servo delay für jeden antrieb // *2 wegen 2 rounds pro geschwindigkeit
     return duration
 
-def calc_individual_turns(ges_spd, turn_number):
+def calc_individual_turns(ges_spd, turn_number, ges_deg):
     user_rpm = float(ges_spd)
     total_duration = 0
     circle_tick = 4096
     for i in range(1, 4, 1):
         div_spd = user_rpm/2
-        turn_duration = (60/(div_spd*i)) * (mech.total_ticks/circle_tick)
-        total_duration += 2 * turn_duration
+        if ges_deg == 0:
+            turn_duration += 2 * (60/(div_spd*i))
+        else:
+            turn_duration += 2 * (60/(div_spd*i)) * (mech.total_ticks/circle_tick)
+        total_duration += 4 * turn_duration
+        # match i:
+        #     case 1:
+        #         time1 = total_duration + mech.delay_time1
+        #         turn1 = turn_duration + (mech.delay_time1 / 2)
+        #     case 2:
+        #         time2 = total_duration + mech.delay_time1 + mech.delay_time2
+        #         turn2 = turn_duration + (mech.delay_time2 / 2)
+        #     case 3:
+        #         time3 = total_duration + mech.delay_time1 + mech.delay_time2 + mech.delay_time3
+        #         turn3 = turn_duration + (mech.delay_time3 / 2)
         match i:
             case 1:
                 time1 = total_duration + mech.delay_time1
@@ -48,15 +65,15 @@ def calc_individual_turns(ges_spd, turn_number):
         case 5: return turn2
         case 6: return turn3
 
-def calc_rel_angle(time_arr, turn_arr, angle_arr):
+def calc_rel_angle(time_arr, turn_arr, angle_arr, ges_deg):
     user_rpm = float(txt_speed.get().strip().replace(',', '.'))
-    time1 = calc_individual_turns(user_rpm, 1)
-    time2 = calc_individual_turns(user_rpm, 2)
-    time3 = calc_individual_turns(user_rpm, 3)
+    time1 = calc_individual_turns(user_rpm, 1, ges_deg)
+    time2 = calc_individual_turns(user_rpm, 2, ges_deg)
+    time3 = calc_individual_turns(user_rpm, 3, ges_deg)
 
-    turn1 = calc_individual_turns(user_rpm, 4)
-    turn2 = calc_individual_turns(user_rpm, 5)
-    turn3 = calc_individual_turns(user_rpm, 6)
+    turn1 = calc_individual_turns(user_rpm, 4, ges_deg)
+    turn2 = calc_individual_turns(user_rpm, 5, ges_deg)
+    turn3 = calc_individual_turns(user_rpm, 6, ges_deg)
     
     if not time_arr:
         return 
@@ -118,7 +135,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, pico_plot_v
         
         #ser_arduino = sc.connect_ard()
         # ser_PSU = sc.connect_psu()
-        sc.set_psu_parameters(ser_PSU, 6, 0.12, 5, 0.004) # für dp37
+        sc.set_psu_parameters(ser_PSU, 6, 0.12, 5, 0.040) # für dp37
         # sc.set_psu_parameters(ser_PSU, 2.5, 0.12, 2, 0.008) # für t18
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
         # ser_arduino.reset_input_buffer()
@@ -144,11 +161,18 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, pico_plot_v
             if line == 'NOISE_READY':
                 print("Empfangen: NOISE_READY")
                 print("Config Pico")
-                pico_runner.config_pico(
+                if ges_w == 0:
+                    pico_runner.config_pico(
                     txt_s=lambda: txt_speed.get(),
-                    calc_d=calc_duration,
-                    total_t=lambda: mech.total_ticks
+                    calc_d=lambda speed: calc_duration(speed, ges_w),
+                    total_t=lambda: 4096
                 )
+                else:
+                    pico_runner.config_pico(
+                        txt_s=lambda: txt_speed.get(),
+                        calc_d=lambda speed: calc_duration(speed, ges_w),
+                        total_t=lambda: mech.total_ticks
+                    )
                 print("Run_Pico starten")
                 pico_runner.run_pico(ser_arduino, pico_time, pico_volt, pico_pdf_time, pico_plot_volt, pico_plot_time, stop_event)
 
@@ -156,8 +180,11 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, pico_plot_v
                 finish_time = time.time()
                 total_duration = finish_time - pico_runner.start_time
                 print(f"Empfangen: NOISE_MOVE_FINISH, total Dauer: {total_duration}")
-                calc_rel_angle(pico_time, pico_turn, pico_angle)
-                mark_ends(mech.total_ticks)
+                calc_rel_angle(pico_time, pico_turn, pico_angle, ges_w)
+                if ges_w == 0:
+                    mark_ends(4096)
+                else:
+                    mark_ends(mech.total_ticks)
                 mark_noise_segments(pico_angle)
                 
             elif line == 'NOISE_FINISH':

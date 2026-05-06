@@ -42,9 +42,6 @@ sim_mercy_end = 0;
 ist_start_volt = 0;
 ist_end_volt = 0;
 ist_mid_volt = 0;
-endless_start_volt = 0; 
-endless_end_volt = 0;
-endless_start_deg = 0;
 rpm1 = 0;
 rpm2 = 0;
 rpm3 = 0;
@@ -274,9 +271,9 @@ void check_ends(){
   sim_mercy_end = end_tick - MERCY_TOLERANCE_TICK;
   uint32_t total_distance = abs(end_tick - start_tick);
   real_mid_tick = start_tick + total_distance / 2;
-  uint32_t sim_distance = abs(sim_mercy_end - sim_mercy_start);
-  Serial.print("TICKS");
-  Serial.println(sim_distance);
+  // uint32_t sim_distance = abs(sim_mercy_end - sim_mercy_start);
+  // Serial.print("TICKS");
+  // Serial.println(sim_distance);
   Serial.print("ANGLE");
   Serial.println(tick_to_deg(total_distance));
   for(int i = 0; i < 5; i++){

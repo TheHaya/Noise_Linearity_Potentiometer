@@ -10,6 +10,10 @@
 #include <elec_deg.h>
 #include <relay.h>
 #include <side_functions.h>
+#include <endless_calibrate.h>
+#include <endless_elec_deg.h>
+#include <endless_noise.h>
+
 
 // --------------- CONSTANTS
 const int BUTTON = 19;
@@ -33,6 +37,7 @@ void measurements_init(){
   linear_checked = false;
   dxl_init();
   calibrate_init();
+  endless_init();
   elec_deg_init();
   lin_init();
   relays_init();
@@ -108,7 +113,7 @@ void loop(){
   
     if(command == "INIT_GO"){
       measurements_init();
-      if(target_deg_total ==0){
+      if(target_deg_total == 0){
         apply_relay_mode(INIT_RELAY_MODE);
         delay(1000);
         find_endless_volt_crossover();
@@ -127,12 +132,19 @@ void loop(){
     }
 
     if(command == "NOISE_GO"){
-      if(abort_if_cancelled()) return;
-      apply_relay_mode(NOISE_RELAY_MODE);
-      noise_preparation_movement();
-      // if(cancelled == false){
-      drive_to(sim_mercy_end, user_rpm);
-      reached_goal(sim_mercy_end, 2, 0, 15000); 
+      if(target_deg_total == 0){
+        apply_relay_mode(NOISE_RELAY_MODE);
+        endless_noise_preparation_movement();
+        drive_to(endless_sim_start, user_rpm);
+        reached_goal(endless_sim_start, 2, 0, 15000); 
+      }
+      else{
+        apply_relay_mode(NOISE_RELAY_MODE);
+        noise_preparation_movement();
+        // if(cancelled == false){
+        drive_to(sim_mercy_end, user_rpm);
+        reached_goal(sim_mercy_end, 2, 0, 15000); 
+        }
       if(cancelled == false){
         Serial.println("NOISE_READY");
       } else{
@@ -140,9 +152,14 @@ void loop(){
         return;
         // cancelled = false;
       }
+      
     }
     if(command == "NOISE_START"){
-      noise_movement(); 
+      if(target_deg_total == 0){
+        endless_noise_movement();
+      } else{
+        noise_movement(); 
+      }
       if(cancelled == true){
         Serial.println("CANCEL");
         return;
@@ -254,7 +271,7 @@ void loop(){
     }
 
     if(command == "TESTER"){
-      apply_relay_mode(ENDLESS_INIT_RELAY_MODE);
+      apply_relay_mode(NOISE_RELAY_MODE);
     }
   
   }
