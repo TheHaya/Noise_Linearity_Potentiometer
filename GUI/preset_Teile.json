@@ -57,5 +57,35 @@
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
         "comment": "Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar"
+    },
+
+    "104235":{
+        "soll_spannung_rauschen": 2.0,
+        "soll_spannung_linear": 2.0,
+        "soll_spannung_widerstand": 2.0,
+        "soll_winkel": 320,
+        "soll_geschwindigkeit": 60.0,
+        "d11": 0.0,
+        "d12": 0.0,
+        "d21": 0.0,
+        "d22": 0.0,
+        "d31": 0.0,
+        "d32": 0.0,
+        "tol_drehwinkel_mech_pos": 322,
+        "tol_drehwinkel_mech_neg": 318,
+        "tol_drehwinkel_elec_pos": 318,
+        "tol_drehwinkel_elec_neg": 315, 
+        "tol_mittelanzapfung_pos": 0,
+        "tol_mittelanzapfung_neg": 0,
+        "tol_active_cw_pos": 0,
+        "tol_active_cw_neg": 0,
+        "tol_active_ccw_pos": 0,
+        "tol_active_ccw_neg": 0,
+        "tol_linear_pos": 0.005,
+        "tol_linear_neg": -0.005,
+        "tol_widerstand_pos": 0.05,
+        "tol_widerstand_neg": -0.05,
+        "relay_polarity_switch": 0,
+        "comment":""
     }
 }

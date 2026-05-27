@@ -40,3 +40,6 @@ void check_beginning(float total_deg);
 void find_endless_volt_crossover();
 void find_endless_starting_point();
 float correction_movement_endless_deadzones(float &current_volt, float goal_volt, int timeout=30000);
+bool read_hardware_error_status(uint8_t &error_code, uint8_t id=1);
+bool recover_dxl_after_fault(uint8_t id=1);
+bool wait_for_dxl_after_reboot(uint8_t id = 1, uint32_t timeout_ms = 3000);

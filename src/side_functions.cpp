@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <dxl_servo.h>
 #include <calibrate.h>
-
+#include <relay.h>
 // --------------- VARIABLES
 int32_t user_go_to;
 
@@ -27,4 +27,8 @@ void show_cur_pos()
   int32_t show_pos = dxl.getPresentPosition(DID, UNIT_RAW);
   Serial.print("WHERE_POS");
   Serial.println(show_pos);
+}
+
+void tester(){
+  apply_relay_mode(INIT_RELAY_MODE);
 }

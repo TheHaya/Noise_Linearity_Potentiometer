@@ -162,13 +162,13 @@ void calibrate_currents(){
   calibrate_current_cw = get_tick_position() + 300;
   calibrate_current_ccw = get_tick_position() - 300;
   drive_to(calibrate_current_cw, SLOW_RPM);
-  reached_goal(calibrate_current_cw, 0, 1);
+  if(!reached_goal(calibrate_current_cw, 0, 1)) return;
   
   drive_to(calibrate_current_ccw, SLOW_RPM);
-  reached_goal(calibrate_current_ccw, 0, 1);
+  if(!reached_goal(calibrate_current_ccw, 0, 1)) return;
   
   drive_to(calibrate_current_cw, SLOW_RPM);
-  reached_goal(calibrate_current_cw, 0, 1);
+  if(!reached_goal(calibrate_current_cw, 0, 1)) return;
   
 
 
@@ -177,12 +177,12 @@ void calibrate_currents(){
     float cal_rpm = rpm_intervall*i;
     elapsedMillis cur_millis;
     drive_to(calibrate_current_ccw, cal_rpm);
-    reached_goal(calibrate_current_ccw, i, 1);
-    // if(!reached_goal(calibrate_current_ccw, i, 1));
+    // reached_goal(calibrate_current_ccw, i, 1);
+    if(!reached_goal(calibrate_current_ccw, i, 1)) return;
 
     drive_to(calibrate_current_cw, cal_rpm);
-    reached_goal(calibrate_current_cw, i, 1);
-    // if(!reached_goal(calibrate_current_cw, i, 1));
+    // reached_goal(calibrate_current_cw, i, 1);
+    if(!reached_goal(calibrate_current_cw, i, 1)) return;
 
     switch(i){
       case 1: rpm1 = cal_rpm; real_time1 = cur_millis; 
@@ -215,11 +215,7 @@ void calibrate_currents(){
   Serial.println(cal_cur2);
   Serial.print("CUR3");
   Serial.println(cal_cur3);
-
 }
-
-
-
 
 void check_beginning(float total_deg){
   const float LOW_SAFETY = SAFETY_VOLT*0.1;
@@ -285,3 +281,48 @@ void check_ends(){
   all_relays_off();
 }
 
+bool wait_for_dxl_after_reboot(uint8_t id, uint32_t timeout_ms) {
+  delay(100);  // Servo erst einmal hochkommen lassen
+
+  elapsedMillis waited;
+  while (waited < timeout_ms) {
+    if (dxl.ping(id)) {
+      return true;
+    }
+    delay(20);
+  }
+  return false;
+}
+
+bool recover_dxl_after_fault(uint8_t id) {
+  if (!dxl.reboot(id)) {
+    return false;
+  }
+
+  if (!wait_for_dxl_after_reboot(id)) {
+    return false;
+  }
+
+  dxl.torqueOff(id);
+  dxl.setOperatingMode(id, OP_EXTENDED_POSITION);
+  dxl.writeControlTableItem(DRIVE_MODE, id, 0b101);
+  dxl.writeControlTableItem(HOMING_OFFSET, id, 0);
+  dxl.writeControlTableItem(PROFILE_VELOCITY, id, 1000);
+  dxl.writeControlTableItem(CURRENT_LIMIT, id, 900);
+  dxl.writeControlTableItem(PROFILE_ACCELERATION, id, 500);
+  dxl.torqueOn(id);
+  dxl.ledOn(id);
+
+  return true;
+}
+
+bool read_hardware_error_status(uint8_t &error_code, uint8_t id) {
+  int32_t raw = dxl.readControlTableItem(HARDWARE_ERROR_STATUS, id);
+
+  if (dxl.getLastLibErrCode() != DXL_LIB_OK) {
+    return false;
+  }
+
+  error_code = static_cast<uint8_t>(raw);
+  return true;
+}

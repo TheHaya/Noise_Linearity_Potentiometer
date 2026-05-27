@@ -28,6 +28,7 @@ def calc_duration(ges_spd, ges_deg):
 def calc_individual_turns(ges_spd, turn_number, ges_deg):
     user_rpm = float(ges_spd)
     total_duration = 0
+    turn_duration = 0
     circle_tick = 4096
     for i in range(1, 4, 1):
         div_spd = user_rpm/2

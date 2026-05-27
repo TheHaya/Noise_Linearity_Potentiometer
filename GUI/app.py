@@ -62,7 +62,6 @@ output_ends = False
 arduino_serial_lock = threading.Lock()
 
 
-
 # --------------- PRESETS LADEN
 tol_total_mech_deg_pos = None
 tol_total_mech_deg_neg = None
@@ -115,7 +114,14 @@ def insert_preset(p):
     set_entry(txt_d31, p["d31"])
     set_entry(txt_d32, p["d32"])
 
-    global tol_deadzone_pos, tol_deadzone_neg, tol_active_cw_pos, tol_active_cw_neg, tol_active_ccw_pos, tol_active_ccw_neg, tol_linearity_pos, tol_linearity_neg
+    global tol_total_mech_deg_neg, tol_total_mech_deg_pos
+    global tol_total_elec_deg_pos, tol_total_elec_deg_neg
+    global tol_deadzone_pos, tol_deadzone_neg
+    global tol_active_cw_pos, tol_active_cw_neg
+    global tol_active_ccw_pos, tol_active_ccw_neg
+    global tol_linearity_pos, tol_linearity_neg
+    global tol_resistance_pos, tol_resistance_neg
+    global relay_switch_pol
     tol_total_mech_deg_pos = p.get("tol_drehwinkel_mech_pos")
     tol_total_mech_deg_neg = p.get("tol_drehwinkel_mech_neg")
     tol_total_elec_deg_pos = p.get("tol_drehwinkel_elec_pos")
@@ -130,7 +136,6 @@ def insert_preset(p):
     tol_linearity_neg = p.get("tol_linear_neg")
     tol_resistance_pos = p.get("tol_widerstand_pos")
     tol_resistance_neg = p.get("tol_widerstand_neg")
-    global relay_switch_pol
     relay_switch_pol = p.get("relay_polarity_switch")
     
     
@@ -442,6 +447,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
         noise_angles = []
 
         try:
+            mech_error = False
             measurements_finished = False
             measurements_noise_found = False
             visible_total = sum(1 for m in modes if m[4] is True)
@@ -498,6 +504,10 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                 if workflow is mech_ends_workflow and ends_checked:
                     val = getattr(mech_ends_workflow, "total_mech", None)
                     if isinstance(val, (int, float)):
+                        if val < tol_total_mech_deg_neg or val > tol_total_mech_deg_pos:
+                            lbl_mech.config(fg = "#FF0000", bg="#00F0F0")
+                        else:
+                            lbl_mech.config(fg = "#FFFFFF",bg="#00F0F0")
                         queue_ui(lambda v=val: mech_angle_var.set(f"Mechanischer Winkel: {v:.2f}°"))
                     else:
                         queue_ui(lambda: mech_angle_var.set("Mechanischer Winkel: --"))
@@ -517,14 +527,11 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     elif linear_workflow.lin_max > tol_linearity_pos or linear_workflow.lin_min < tol_linearity_neg:
                         linear_workflow.lin_error = True
                 
-            ring.set_linearity_text(linear_workflow.lin_error, chk_linear_mode.get())
-            ring.set_circle_text(noise_angles, chk_noise_mode.get())
+            ring.set_linearity_text(linear_workflow.lin_error, chk_linear_mode.get(), stop_event.is_set())
+            ring.set_circle_text(noise_angles, stop_event.is_set(), chk_noise_mode.get(), pico_runner.out_volt)
 
             if not stop_event.is_set() or measurements_noise_found:
-                measurements_finished = True
-
-
-                
+                measurements_finished = True   
 
         except Exception as e:
             print("Fehler bei measurements:", e)
@@ -533,6 +540,9 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
             if pico_runner.out_volt:
                 write_serial_line(ser_ard, "NOISE_END")
                 print("Sende: NOISE_END")
+            if linear_workflow.lin_error:
+                write_serial_line(ser_ard, "LIN_END")
+                print("Sende: LIN_END")
             else:
                 write_serial_line(ser_ard, "ALL_END")
                 print("Sende: ALL_END")
@@ -903,6 +913,7 @@ root.grid_columnconfigure(0, weight=0)
 root.grid_columnconfigure(1, weight=1)
 root.grid_rowconfigure(0, weight=0)
 root.grid_rowconfigure(1, weight=1)
+sv_ttk.set_theme("dark")
 
 left_frame  = ttk.Frame(root)
 right_frame = ttk.Frame(root)
@@ -1080,8 +1091,11 @@ chk_linearity = ttk.Checkbutton(right_frame, text="Linearität", variable=chk_li
 chk_linearity.grid(row=7, column=3, sticky="w", pady=(60, 0), padx=(20, 0))
 
 mech_angle_var = tk.StringVar(value="Mechanischer Winkel: --")
-lbl_mech = ttk.Label(right_frame, textvariable=mech_angle_var, font="Verdana 12 bold")
+lbl_mech = tk.Label(right_frame, textvariable=mech_angle_var, font="Verdana 12 bold")
 lbl_mech.grid(row=8, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
+
+
+
 
 elec_angle_var = tk.StringVar(value="Elektrischer Winkel: --")
 lbl_elec = ttk.Label(right_frame, textvariable=elec_angle_var, font="Verdana 12 bold")
@@ -1127,6 +1141,6 @@ ring.init_circle_text()
 advanced_visible(False)
 instant_deadzone_ring()
 polling_push_button()
-sv_ttk.set_theme("dark")
+
 root.mainloop()
 

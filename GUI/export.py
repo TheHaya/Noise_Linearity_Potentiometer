@@ -125,11 +125,16 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
                                 realwinkelmitte), label in zip(daten, labels_iter):
             rows.append({
                 " ": label,
-                "Soll-Winkel [°]": round(sollwinkel, 1),
-                "Soll-Spannung [V]": round(sollspannung, 2),
-                "Ist-Spannung [V]": round(istspannung, 3),
-                "Ist-Winkel [°]": round(istwinkel, 1),
-                "Realer Winkel zur\nMitte [°]": round(realwinkelmitte, 1),
+                "Soll-Winkel [°]": round(sollwinkel, 4),
+                "Soll-Spannung [V]": round(sollspannung, 8),
+                "Ist-Spannung [V]": round(istspannung, 8),
+                "Ist-Winkel [°]": round(istwinkel, 4),
+                "Realer Winkel zur\nMitte [°]": round(realwinkelmitte, 4),
+                # "Soll-Winkel [°]": round(sollwinkel, 1),
+                # "Soll-Spannung [V]": round(sollspannung, 2),
+                # "Ist-Spannung [V]": round(istspannung, 3),
+                # "Ist-Winkel [°]": round(istwinkel, 1),
+                # "Realer Winkel zur\nMitte [°]": round(realwinkelmitte, 1),
                 #"Soll-Spannung Real [V]": round(realsollspannung, 3),
                 #"Linearität":  float(linear)
             })
@@ -172,7 +177,8 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
         L = len(df)
         
         def round_sollReal(x): 
-            return None if x is None else round(x, 3)
+            # return None if x is None else round(x, 3)
+            return None if x is None else round(x, 8)
 
         def round_linear(x): 
             return None if x is None else float(x)
@@ -189,13 +195,22 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
         sheet['A:H'].api.VerticalAlignment = ALIGN_CENTER
         sheet['A1:H1'].font.bold = True
 
-        sheet['B:B'].number_format = '0,0°'
-        sheet['C:C'].number_format = '0,00'
-        sheet['D:D'].number_format = '0,000'
-        sheet['E:E'].number_format = '0,0°'
-        sheet['F:F'].number_format = '0,0°'
-        sheet['G:G'].number_format = '0,000'
-        sheet['H1:H17'].number_format = '0,00%'
+        # sheet['B:B'].number_format = '0,0°'
+        # sheet['C:C'].number_format = '0,00'
+        # sheet['D:D'].number_format = '0,000'
+        # sheet['E:E'].number_format = '0,0°'
+        # sheet['F:F'].number_format = '0,0°'
+        # sheet['G:G'].number_format = '0,000'
+        # sheet['H1:H17'].number_format = '0,00%'
+
+        # TEMPORÄR
+        sheet['B:B'].number_format = '0,000°'
+        sheet['C:C'].number_format = '0,00000000'
+        sheet['D:D'].number_format = '0,00000000'
+        sheet['E:E'].number_format = '0,000°'
+        sheet['F:F'].number_format = '0,000°'
+        sheet['G:G'].number_format = '0,00000000'
+        sheet['H1:H17'].number_format = '0,0000000%'
         
         sheet['A16'].value = "Totzone"
         sheet['B16'].value = totzone

@@ -131,7 +131,7 @@ def init_circle_text():
                 font=text_font, anchor="center")
     noise_times.append(iid)
 
-def set_circle_text(pico_angle, noise_meas = False):
+def set_circle_text(pico_angle, stop:bool, noise_meas = False, noise_error = False):
     x0, y0, x1, y1 = ring_box
     canv_x = (x0 + x1) / 2
     canv_y = (y0 + y1) / 2
@@ -140,6 +140,14 @@ def set_circle_text(pico_angle, noise_meas = False):
     if noise_meas is False:
         iid = ring_canvas.create_text(
                 canv_x, canv_y+30, text="Bereit", fill="#d7d7d7",
+                font=text_font, anchor="center")
+    elif stop:
+        iid = ring_canvas.create_text(
+                canv_x, canv_y+305, text="Bereit", fill="#d7d7d7",
+                font=text_font, anchor="center")
+    elif noise_error:
+        iid = ring_canvas.create_text(
+                canv_x, canv_y+30, text="Fehler", fill="#ff0000",
                 font=text_font, anchor="center")
     elif not pico_angle:
         iid = ring_canvas.create_text(
@@ -151,13 +159,17 @@ def set_circle_text(pico_angle, noise_meas = False):
                 font=text_font, anchor="center")
     noise_times.append(iid)
 
-def set_linearity_text(lin_error: bool, lin_checked: bool):
+def set_linearity_text(lin_error: bool, lin_checked: bool, stop: bool):
     x0, y0, x1, y1 = ring_box
     canv_x = (x0 + x1) / 2
     canv_y = (y0 + y1) / 2
     text_font = font.Font(family="Arial", size=20, weight="bold")
     if lin_checked:
-        if lin_error:
+        if stop:
+            iid = ring_canvas.create_text(
+                canv_x, canv_y+305, text="Bereit", fill="#d7d7d7",
+                font=text_font, anchor="center")
+        elif lin_error:
             iid = ring_canvas.create_text(
                 canv_x, canv_y+305, text="Fehler", fill="#ff0000",
                 font=text_font, anchor="center")

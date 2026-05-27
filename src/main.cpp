@@ -30,10 +30,30 @@ bool but_press;
 
 
 // --------------- SETUP AND ASSIST FUNCTIONS
+
+void setLEDS(int setting){
+  switch(setting){
+    case 1:
+    digitalWrite(LED_R, HIGH);
+    digitalWrite(LED_Y, LOW);
+    digitalWrite(LED_G, LOW);
+    case 2:
+    digitalWrite(LED_R, LOW);
+    digitalWrite(LED_Y, HIGH);
+    digitalWrite(LED_G, LOW);
+    case 3:
+    digitalWrite(LED_R, LOW);
+    digitalWrite(LED_Y, LOW);
+    digitalWrite(LED_G, HIGH);
+    default:
+    digitalWrite(LED_R, LOW);
+    digitalWrite(LED_Y, LOW);
+    digitalWrite(LED_G, HIGH);
+  }
+}
+
 void measurements_init(){
-  digitalWrite(LED_R, HIGH);
-  digitalWrite(LED_Y, LOW);
-  digitalWrite(LED_G, LOW);
+  setLEDS(1);
   linear_checked = false;
   dxl_init();
   calibrate_init();
@@ -47,10 +67,17 @@ bool abort_if_cancelled(){
   if(!cancelled) return false;
   stop_motion();
   Serial.println("CANCEL");
-  digitalWrite(LED_R, LOW);
-  digitalWrite(LED_Y, LOW);
-  digitalWrite(LED_G, HIGH);
+  setLEDS(3);
   all_relays_off();
+  uint8_t error_code = 0;
+  bool read_ok = read_hardware_error_status(error_code, DID);
+
+  if (!read_ok) {
+    Serial.println("HARDWARE_ERROR_STATUS konnte nicht gelesen werden");
+  } else if (error_code != 0) {
+    Serial.print("DXL HW Error: ");
+    Serial.println(error_code, BIN);
+  }
   return true;
 }
 
@@ -64,7 +91,7 @@ void setup(){
   dxl.writeControlTableItem(DRIVE_MODE, DID, 0b101);
   dxl.writeControlTableItem(HOMING_OFFSET, DID, 0);
   dxl.writeControlTableItem(PROFILE_VELOCITY, DID, 1000);
-  dxl.writeControlTableItem(CURRENT_LIMIT, DID, 910);
+  dxl.writeControlTableItem(CURRENT_LIMIT, DID, 900);
   dxl.writeControlTableItem(PROFILE_ACCELERATION, DID, 500);
   dxl.torqueOn(DID);
   dxl.ledOn(DID);
@@ -74,9 +101,7 @@ void setup(){
   pinMode(LED_R, OUTPUT);
   pinMode(LED_Y, OUTPUT);
   pinMode(LED_G, OUTPUT);
-  digitalWrite(LED_R, LOW);
-  digitalWrite(LED_Y, LOW);
-  digitalWrite(LED_G, HIGH);
+  setLEDS(3);
 }
 
 // --------------- LOOP
@@ -230,9 +255,7 @@ void loop(){
       reached_goal(ZERO_TICK, 2);
       all_relays_off();
       dxl.ledOff(DID);
-      digitalWrite(LED_R, LOW);
-      digitalWrite(LED_Y, LOW);
-      digitalWrite(LED_G, HIGH);
+      setLEDS(3);
       cancelled = false;
       linear_checked = false;
     }
@@ -242,37 +265,46 @@ void loop(){
       reached_goal(ZERO_TICK, 2);
       all_relays_off();
       dxl.ledOff(DID);
-      digitalWrite(LED_R, LOW);
-      digitalWrite(LED_Y, HIGH);
-      digitalWrite(LED_G, LOW);
+      setLEDS(2);
+      cancelled = false;
+      linear_checked = false;
+    }
+
+    if(command == "LIN_END"){
+      drive_to(ZERO_TICK, user_rpm);
+      reached_goal(ZERO_TICK, 2);
+      all_relays_off();
+      dxl.ledOff(DID);
+      setLEDS(2);
       cancelled = false;
       linear_checked = false;
     }
 
     if(command == "FAULT_LED"){
-      digitalWrite(LED_R, LOW);
-      digitalWrite(LED_Y, HIGH);
-      digitalWrite(LED_G, LOW);
+      setLEDS(2);
     }
 
     if(command == "ZERO"){
       measurements_init();
       go_zero();
+      setLEDS(3);
     } 
 
     if(command == "GOTO"){
       measurements_init();
       go_to();
+      setLEDS(3);
     } 
 
     if(command == "WHERE"){
       measurements_init();
       show_cur_pos();
+      setLEDS(3);
     }
 
     if(command == "TESTER"){
-      apply_relay_mode(NOISE_RELAY_MODE);
+      tester();
     }
-  
+    
   }
 }
