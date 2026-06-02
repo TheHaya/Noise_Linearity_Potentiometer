@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import ImageTk, Image
 import sv_ttk
-import threading, json, os, sys, time
+import threading, json, os, sys, time, serial
 
 import export
 import noise_workflow
@@ -51,6 +51,7 @@ but_zero = None
 but_cur_pos = None
 but_go = None
 
+
 AMLogo = Image.open(resource_path("AMLogo.jpg"))
 scale = 0.8
 w, h = AMLogo.size
@@ -67,8 +68,12 @@ tol_total_mech_deg_pos = None
 tol_total_mech_deg_neg = None
 tol_total_elec_deg_pos = None
 tol_total_elec_deg_neg = None
-tol_deadzone_pos = None
-tol_deadzone_neg = None
+tol_position_deadzone_cw_pos = None
+tol_position_deadzone_cw_neg = None
+tol_position_deadzone_ccw_pos = None
+tol_position_deadzone_ccw_neg = None
+tol_total_deadzone_pos = None
+tol_total_deadzone_neg = None
 tol_active_cw_pos = None
 tol_active_cw_neg = None
 tol_active_ccw_pos = None
@@ -116,7 +121,9 @@ def insert_preset(p):
 
     global tol_total_mech_deg_neg, tol_total_mech_deg_pos
     global tol_total_elec_deg_pos, tol_total_elec_deg_neg
-    global tol_deadzone_pos, tol_deadzone_neg
+    global tol_position_deadzone_cw_pos, tol_position_deadzone_cw_neg
+    global tol_position_deadzone_ccw_pos, tol_position_deadzone_ccw_neg
+    global tol_total_deadzone_pos, tol_total_deadzone_neg
     global tol_active_cw_pos, tol_active_cw_neg
     global tol_active_ccw_pos, tol_active_ccw_neg
     global tol_linearity_pos, tol_linearity_neg
@@ -126,8 +133,12 @@ def insert_preset(p):
     tol_total_mech_deg_neg = p.get("tol_drehwinkel_mech_neg")
     tol_total_elec_deg_pos = p.get("tol_drehwinkel_elec_pos")
     tol_total_elec_deg_neg = p.get("tol_drehwinkel_elec_neg")
-    tol_deadzone_pos = p.get("tol_mittelanzapfung_pos")
-    tol_deadzone_neg = p.get("tol_mittelanzapfung_neg")
+    tol_position_deadzone_cw_pos = p.get("tol_position_mittelanzapfung_cw_pos")
+    tol_position_deadzone_cw_neg = p.get("tol_position_mittelanzapfung_cw_neg")
+    tol_position_deadzone_ccw_pos = p.get("tol_position_mittelanzapfung_ccw_pos")
+    tol_position_deadzone_ccw_neg = p.get("tol_position_mittelanzapfung_ccw_neg")
+    tol_total_deadzone_pos = p.get("tol_gesamt_mittelanzapfung_pos")
+    tol_total_deadzone_neg = p.get("tol_gesamt_mittelanzapfung_neg")
     tol_active_cw_pos = p.get("tol_active_cw_pos")
     tol_active_cw_neg = p.get("tol_active_cw_neg")
     tol_active_ccw_pos = p.get("tol_active_ccw_pos")
@@ -138,12 +149,17 @@ def insert_preset(p):
     tol_resistance_neg = p.get("tol_widerstand_neg")
     relay_switch_pol = p.get("relay_polarity_switch")
     
+    global soll_volt_linear, soll_volt_noise, soll_volt_resistance
+    soll_volt_linear = p.get("soll_spannung_linear")
+    soll_volt_noise = p.get("soll_spannung_rauschen")
+    soll_volt_resistance = p.get("soll_spannung_widerstand")
     
     global all_lin_tols, all_mech_tols, all_elec_tols
     all_mech_tols = (tol_total_mech_deg_pos, tol_total_mech_deg_neg)
     all_elec_tols = (tol_total_elec_deg_pos, tol_total_elec_deg_neg)
-    all_lin_tols = (tol_deadzone_pos, tol_deadzone_neg, tol_active_cw_pos, tol_active_cw_neg, 
-                    tol_active_ccw_pos, tol_active_ccw_neg, tol_linearity_pos, tol_linearity_neg)
+    all_lin_tols = (tol_total_deadzone_pos, tol_total_deadzone_neg,
+                    tol_position_deadzone_cw_pos, tol_position_deadzone_cw_neg, tol_position_deadzone_ccw_pos, tol_position_deadzone_ccw_neg,
+                    tol_active_cw_pos, tol_active_cw_neg, tol_active_ccw_pos, tol_active_ccw_neg, tol_linearity_pos, tol_linearity_neg)
     comment = (p.get("comment") or "").strip()
     msg.configure(text=comment)
 
@@ -384,17 +400,23 @@ def wait_for_measurement_shutdown():
         pass
     
 def polling_push_button():
+    global ser_ard
     if arduino_serial_lock.locked():
         root.after(100, polling_push_button)
         return
     if app_closing:
         return
-    if not measurement_is_running() and serial_is_open(ser_ard):
-        if ser_ard.in_waiting > 0:
-            line = ser_ard.readline().decode("utf-8", errors="ignore").strip()
-            if line == "BUTTON":
-                print("Empfangen: BUTTON")
-                handler_push_button()
+    try:
+        if not measurement_is_running() and serial_is_open(ser_ard):
+            if ser_ard.in_waiting > 0:
+                line = ser_ard.readline().decode("utf-8", errors="ignore").strip()
+                if line == "BUTTON":
+                    print("Empfangen: BUTTON")
+                    handler_push_button()
+    except serial.SerialException as e:
+        print("Fehler beim Arduino-Polling:", e)
+        close_serial_port(ser_ard, "Mikrocontroller")
+        ser_ard = None
     root.after(100, polling_push_button)
 
 def handler_push_button():
@@ -413,7 +435,7 @@ def on_root_close():
         finish_root_close()
 
 
-def start_measurements(modes, meas_volt, meas_angle, meas_speed):
+def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=False):
     global measurement_thread, measurement_running, active_measurement_stop_event
 
     wait_win = tk.Toplevel(root)
@@ -429,6 +451,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
     stop_event = threading.Event()
     active_measurement_stop_event = stop_event
 
+    queue_ui(lambda:lbl_mech.config(fg = "#FFFFFF",bg="#1c1c1c"))
     mech_angle_var.set("Mechanischer Winkel: --")
     elec_angle_var.set("Elektrischer Winkel: --")
 
@@ -440,11 +463,13 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
 
     def worker():
         global measurements_finished, measurements_noise_found
-        global ser_ard, measurement_running, measurement_thread, active_measurement_stop_event
+        global ser_ard, measurement_running, measurement_thread, active_measurement_stop_event, measurements_finished
 
         ser_multi = None
         ser_psu = None
         noise_angles = []
+        retry_requested = False
+
 
         try:
             mech_error = False
@@ -505,9 +530,9 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                     val = getattr(mech_ends_workflow, "total_mech", None)
                     if isinstance(val, (int, float)):
                         if val < tol_total_mech_deg_neg or val > tol_total_mech_deg_pos:
-                            lbl_mech.config(fg = "#FF0000", bg="#00F0F0")
+                            queue_ui(lambda:lbl_mech.config(fg = "#FF0000", bg="#1c1c1c"))
                         else:
-                            lbl_mech.config(fg = "#FFFFFF",bg="#00F0F0")
+                            queue_ui(lambda:lbl_mech.config(fg = "#00FF00",bg="#1c1c1c"))
                         queue_ui(lambda v=val: mech_angle_var.set(f"Mechanischer Winkel: {v:.2f}°"))
                     else:
                         queue_ui(lambda: mech_angle_var.set("Mechanischer Winkel: --"))
@@ -518,13 +543,19 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                         queue_ui(lambda v=val: elec_angle_var.set(f"Elektrischer Winkel: {v:.2f}°"))
 
                 if workflow is linear_workflow:
-                    if linear_workflow.summary_vals.get("Totzone") > tol_deadzone_pos or linear_workflow.summary_vals.get("Totzone") < tol_deadzone_neg:
+                    mittelanzapfung_cw = linear_workflow.daten[1][3]
+                    mittelanzapfung_ccw = linear_workflow.daten[7][3]
+                    if linear_workflow.summary_vals.get("Totzone") > tol_total_deadzone_pos or linear_workflow.summary_vals.get("Totzone") < tol_total_deadzone_neg:
                         linear_workflow.lin_error = True
                     elif linear_workflow.summary_vals.get("AktivCW") > tol_active_cw_pos or linear_workflow.summary_vals.get("AktivCW") < tol_active_cw_neg:
                         linear_workflow.lin_error = True
                     elif linear_workflow.summary_vals.get("AktivCCW") > tol_active_ccw_pos or linear_workflow.summary_vals.get("AktivCCW") < tol_active_ccw_neg:
                         linear_workflow.lin_error = True
                     elif linear_workflow.lin_max > tol_linearity_pos or linear_workflow.lin_min < tol_linearity_neg:
+                        linear_workflow.lin_error = True
+                    elif mittelanzapfung_cw > tol_position_deadzone_cw_pos or mittelanzapfung_cw < tol_position_deadzone_cw_neg:
+                        linear_workflow.lin_error = True
+                    elif mittelanzapfung_ccw > tol_position_deadzone_ccw_pos or mittelanzapfung_ccw < tol_position_deadzone_ccw_neg:
                         linear_workflow.lin_error = True
                 
             ring.set_linearity_text(linear_workflow.lin_error, chk_linear_mode.get(), stop_event.is_set())
@@ -535,6 +566,10 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
 
         except Exception as e:
             print("Fehler bei measurements:", e)
+            close_serial_port(ser_ard, "Mikrocontroller")
+            ser_ard = None
+            retry_requested = not retry_used and not app_closing and not stop_event.is_set()
+                
 
         finally:
             if pico_runner.out_volt:
@@ -557,13 +592,16 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed):
                 queue_ui(lambda: set_measurement_controls(True))
                 queue_ui(autosave_chk)
             queue_ui(lambda: destroy_window(wait_win))
+            if retry_requested: 
+                queue_ui(lambda: measurement_chk(retry_used=True))
+            
 
     set_measurement_controls(False)
     measurement_running = True
     measurement_thread = threading.Thread(target=worker, daemon=True)
     measurement_thread.start()
 
-def measurement_chk():
+def measurement_chk(retry_used=False):
     if measurement_is_running():
         return
     global end_lin_checked
@@ -589,26 +627,26 @@ def measurement_chk():
     modes = []
     global ends_checked
     ends_checked = chk_ends_mode.get()
-    modes.append((mech_ends_workflow, (), "Mech. Endwinkel", True, ends_checked))
+    modes.append((mech_ends_workflow, (soll_volt_linear,), "Mech. Endwinkel", True, ends_checked))
     if ends_checked: print("[CHECKBOX] Mech. Ends")
 
     if chk_noise_mode.get():
         pico_plot_time.clear()
         pico_plot_volt.clear()
-        modes.append((noise_workflow, (pico_plot_volt, pico_plot_time), "Rauschprüfung", True, True))
+        modes.append((noise_workflow, (soll_volt_noise, pico_plot_volt, pico_plot_time), "Rauschprüfung", True, True))
         print("[CHECKBOX] Rauschen")
     
     if chk_linear_mode.get() and chk_elec_mode.get():
         end_lin_checked = True
-        modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Elektr. Winkel\n+\nLinearitätsprüfung", True, True))
+        modes.append((linear_workflow, (soll_volt_linear, d11, d12, d21, d22, d31, d32), "Elektr. Winkel\n+\nLinearitätsprüfung", True, True))
         print("[CHECKBOX] Linearität und Elektr. Winkel")
 
     elif chk_elec_mode.get():
-        modes.append((elec_deg_workflow, (d12, d21, d22, d31), "Elektr. Winkel", True, True))
+        modes.append((elec_deg_workflow, (soll_volt_linear, d12, d21, d22, d31), "Elektr. Winkel", True, True))
         print("[CHECKBOX] Elektr. Winkel")
     
     elif chk_linear_mode.get():
-        modes.append((linear_workflow, (d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True, True))
+        modes.append((linear_workflow, (soll_volt_linear, d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True, True))
         print("[CHECKBOX] Linearität")
 
 
@@ -629,7 +667,7 @@ def measurement_chk():
         return
     
     #send_modes(chk_ends_mode.get(), chk_elec_mode.get(), chk_noise_mode.get(), chk_linear_mode.get())
-    start_measurements(modes, meas_volt, meas_angle, meas_speed)
+    start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=retry_used)
 
 def export_pdf():
     export.save_to_pdf(txt9, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt)

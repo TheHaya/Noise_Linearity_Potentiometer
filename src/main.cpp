@@ -23,8 +23,11 @@ const int LED_Y = 17;
 const int LED_G = 18;
 
 // --------------- VARIABLES
+const int POLLING_TIMER_PING = 200;
 bool linear_checked;
 elapsedMillis but_millis;
+elapsedMillis servo_ping_timer;
+bool servo_online = false;
 bool but_up = HIGH;
 bool but_press;
 
@@ -33,22 +36,31 @@ bool but_press;
 
 void setLEDS(int setting){
   switch(setting){
+    case 0:
+    digitalWrite(LED_R, LOW);
+    digitalWrite(LED_Y, LOW);
+    digitalWrite(LED_G, LOW);
+    break;
     case 1:
     digitalWrite(LED_R, HIGH);
     digitalWrite(LED_Y, LOW);
     digitalWrite(LED_G, LOW);
+    break;
     case 2:
     digitalWrite(LED_R, LOW);
     digitalWrite(LED_Y, HIGH);
     digitalWrite(LED_G, LOW);
+    break;
     case 3:
     digitalWrite(LED_R, LOW);
     digitalWrite(LED_Y, LOW);
     digitalWrite(LED_G, HIGH);
+    break;
     default:
     digitalWrite(LED_R, LOW);
     digitalWrite(LED_Y, LOW);
     digitalWrite(LED_G, HIGH);
+    break;
   }
 }
 
@@ -60,7 +72,7 @@ void measurements_init(){
   endless_init();
   elec_deg_init();
   lin_init();
-  relays_init();
+  
 }
 
 bool abort_if_cancelled(){
@@ -101,11 +113,26 @@ void setup(){
   pinMode(LED_R, OUTPUT);
   pinMode(LED_Y, OUTPUT);
   pinMode(LED_G, OUTPUT);
-  setLEDS(3);
 }
 
 // --------------- LOOP
 void loop(){
+  if(servo_ping_timer > POLLING_TIMER_PING){
+    servo_ping_timer = 0;
+
+    bool ping_ok = dxl.ping(DID);
+
+    if(ping_ok && !servo_online){
+      servo_online = true;
+      setLEDS(3);
+    }
+    else if(!ping_ok && servo_online){
+      servo_online = false;
+      setLEDS(0);
+    }
+  }
+
+
   but_press = digitalRead(BUTTON);
   if(but_press == LOW && but_up == HIGH && but_millis > BUT_TIMER){
     Serial.println("BUTTON");
@@ -138,6 +165,7 @@ void loop(){
   
     if(command == "INIT_GO"){
       measurements_init();
+      relays_init();
       if(target_deg_total == 0){
         apply_relay_mode(INIT_RELAY_MODE);
         delay(1000);
@@ -161,7 +189,7 @@ void loop(){
         apply_relay_mode(NOISE_RELAY_MODE);
         endless_noise_preparation_movement();
         drive_to(endless_sim_start, user_rpm);
-        reached_goal(endless_sim_start, 2, 0, 15000); 
+        reached_goal(endless_sim_start, 2, 0, 15000);  
       }
       else{
         apply_relay_mode(NOISE_RELAY_MODE);

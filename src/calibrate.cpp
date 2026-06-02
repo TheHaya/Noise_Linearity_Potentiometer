@@ -12,7 +12,6 @@ const int32_t CHECK_END_END = 12000;
 const int32_t ZERO_TICK = 2050;
 const float MERCY_TOLERANCE_TICK = 15;
 const float CHECK_ENDS_TOL_DEG = 10;
-const float SAFETY_VOLT = 10;
 const float SLOW_RPM = 8;
 
 // --------------- VARIABLES
@@ -92,10 +91,18 @@ float corr_measure(){
 // dead_direction 0 -> deadzone links von position //////--- ;;; 1 -> rechts von position ---//////
 // dead_half 0 -> linke Hälfte, 1 -> rechte Hälfte
 float correction_movement(float &current_volt, float goal_volt, 
-                          int dead_direction, int dead_half, int timeout){
-  const int32_t STEP = 20;
+                          int dead_direction, int dead_half, bool smaller_steps,int timeout){
+  
+  int32_t step;
+  if(smaller_steps){
+    step = 5;
+  } else{
+    step = 20;
+  }
+                            
   const int32_t PUSHBACK = 200;
-  const float V_TOL = 0.001f;        
+  // const float V_TOL = 0.001f;     
+  const float V_TOL = 0.001f;    
   const int32_t TICK_TOL = 1;
   elapsedMillis error_timer;
   int32_t low, high;
@@ -106,9 +113,9 @@ float correction_movement(float &current_volt, float goal_volt,
       int32_t t = 0;
       int32_t back = 0;
       if(dead_direction == 0){                // deadzone links von position
-        t = get_tick_position() + STEP;
+        t = get_tick_position() + step;
       } else if(dead_direction == 1){         // deadzone rechts von position
-        t = get_tick_position() - STEP;
+        t = get_tick_position() - step;
       }
       drive_to(t, user_rpm);
       reached_goal(t, 2);
@@ -121,9 +128,9 @@ float correction_movement(float &current_volt, float goal_volt,
       int32_t t = 0;
       int32_t back = 0;
       if(dead_direction == 0){                // deadzone links von position
-        t = get_tick_position() - STEP;
+        t = get_tick_position() - step;
       } else if(dead_direction == 1){         // deadzone rechts von position
-        t = get_tick_position() + STEP;
+        t = get_tick_position() + step;
       }
       drive_to(t, user_rpm);
       reached_goal(t, 2);
@@ -136,7 +143,7 @@ float correction_movement(float &current_volt, float goal_volt,
       int32_t back = 0;
       int32_t mid = (high + low) / 2;
       if(dead_half == 0){back = mid + PUSHBACK;}  // dead linke Hälfte
-        else {back = mid - PUSHBACK;}             // dead rechte Hälfte   
+        else {back = mid - PUSHBACK;}             // dead rechte Hälfte  
       drive_to(back, user_rpm);
       reached_goal(back, 2);
       drive_to(mid, user_rpm);
@@ -218,16 +225,20 @@ void calibrate_currents(){
 }
 
 void check_beginning(float total_deg){
-  const float LOW_SAFETY = SAFETY_VOLT*0.1;
-  const float HIGH_SAFETY = SAFETY_VOLT*0.9;
+  const float LOW_SAFETY = tar_volt*0.1;
+  const float HIGH_SAFETY = tar_volt*0.9;
   safety_pos_volt = corr_measure();
   if(safety_pos_volt <= LOW_SAFETY){
     int32_t low_to_mid = get_tick_position() - deg_to_tick(total_deg)/2;
+    Serial.print("SAFETY_L");
+    Serial.println(safety_pos_volt);
     drive_to(low_to_mid, SLOW_RPM);
     reached_goal(low_to_mid, 0, 1);
 
   } else if(safety_pos_volt >= HIGH_SAFETY){
     int32_t high_to_mid = get_tick_position() + deg_to_tick(total_deg)/2;
+    Serial.print("SAFETY_H");
+    Serial.println(safety_pos_volt);
     drive_to(high_to_mid, SLOW_RPM);
     reached_goal(high_to_mid, 0, 1);
 

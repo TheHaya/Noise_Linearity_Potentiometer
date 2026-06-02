@@ -4,19 +4,19 @@ import serial.tools.list_ports
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
 # ------ PRÜFVORRICHTUNG FIRMA
-# ARDUINO_PORT = "COM7"
-# MULTI_PORT = "COM4"
-# PSU_PORT = "COM5"
+ARDUINO_PORT = "COM7"
+MULTI_PORT = "COM4"
+PSU_PORT = "COM5"
 
 # ------ ALWIN LAPTOP
-ARDUINO_PORT = "COM18"
-MULTI_PORT = "COM17"
-PSU_PORT = "COM15"
+# ARDUINO_PORT = "COM18"
+# MULTI_PORT = "COM17"
+# PSU_PORT = "COM15"
 
-# ------ TEMPORÄR MIT KLEINEN AUFBAU
+# ------ TEMPORÄR ZWEITE VORRICHTUNG
 # ARDUINO_PORT = "COM20"
-# MULTI_PORT = "COM00"
-# PSU_PORT = "COM00"
+# MULTI_PORT = "COM6"
+# PSU_PORT = "COM7"
 
 
 # --------------- SERIAL MIT SERVO
@@ -52,22 +52,25 @@ def connect_psu(baud=115200, timeout=2, port=PSU_PORT):
         print("Netzteil kein Port")
 
 def set_psu_parameters(ser_PSU, v_lim, c_lim, v_set, c_set):
-    ser_PSU.write(b"OUTP OFF\n")
-    time.sleep(0.2)
-    ser_PSU.write(f"VOLT:LIM {v_lim}\n".encode())
-    print(f"[PSU] Spannung Limit: {v_lim}")
-    time.sleep(0.2)
-    ser_PSU.write(f"CURR:LIM {c_lim}\n".encode())
-    print(f"[PSU] Strom Limit: {c_lim}")
-    time.sleep(0.2)
-    ser_PSU.write(f"VOLT {v_set}\n".encode())
-    print(f"[PSU] Spannung Ausgang: {v_set}")
-    time.sleep(0.2)
-    ser_PSU.write(f"CURR {c_set}\n".encode())
-    print(f"[PSU] Strom Ausgang: {c_set}")
-    time.sleep(0.2)
-    ser_PSU.write(b"OUTP ON\n")
-    time.sleep(0.2)
+    try:
+        ser_PSU.write(b"OUTP OFF\n")
+        time.sleep(0.2)
+        ser_PSU.write(f"VOLT:LIM {v_lim}\n".encode())
+        print(f"[PSU] Spannung Limit: {v_lim}")
+        time.sleep(0.2)
+        ser_PSU.write(f"CURR:LIM {c_lim}\n".encode())
+        print(f"[PSU] Strom Limit: {c_lim}")
+        time.sleep(0.2)
+        ser_PSU.write(f"VOLT {v_set}\n".encode())
+        print(f"[PSU] Spannung Ausgang: {v_set}")
+        time.sleep(0.2)
+        ser_PSU.write(f"CURR {c_set}\n".encode())
+        print(f"[PSU] Strom Ausgang: {c_set}")
+        time.sleep(0.2)
+        ser_PSU.write(b"OUTP ON\n")
+        time.sleep(0.2)
+    except Exception as e:
+        print("Netzteil Problem bei Parameter Settings")
     return
 
 
@@ -102,12 +105,17 @@ def RegexMultimeter(output):
 def get_multi_voltage(ser_arduino, ser_Multi):
     ser_Multi.reset_input_buffer()
     ser_Multi.reset_output_buffer()
+
     ser_Multi.write(b':MEAS:VOLT:DC?\n')
+    # ser_Multi.write(b"*IDN?\n")
     # ser_Multi.write(b':READ?\n')
     #print("geschrieben")
     time.sleep(0.05)
     #print("sleep 0.2 sek")
     response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
+    # print("DMM Antwort:", response)
+    if response == "":
+        print("DMM leere Antwort")
     #print("geantwortet")
     if(RegexMultimeter(response)):
         #print("check1")

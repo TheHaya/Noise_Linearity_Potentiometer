@@ -11,7 +11,7 @@ const size_t ELEC_ARRAY_SIZE = 2;
 // --------------- VARIABLES
 float print_elec_deg[ELEC_ARRAY_SIZE];
 float print_elec_volt[ELEC_ARRAY_SIZE];
-
+bool smaller_steps = false;
 
 // --------------- ELEC_DEG_FUNCTIONS
 void elec_deg_init(){
@@ -19,6 +19,7 @@ void elec_deg_init(){
         print_elec_deg[i] = 0;
         print_elec_volt[i] = 0;
     }
+    bool smaller_steps = false;
 }
 
 void elec_deg_movement(){
@@ -32,7 +33,10 @@ void elec_deg_movement(){
     d12_tick = deg_to_tick(d12_deg);
     d31_tick = deg_to_tick(d31_deg);
 
-    
+    if(fabsf(end_tick - start_tick - d31_tick) < 30){
+        smaller_steps = true;
+    }
+
     int32_t sim_tick [] = {d31_tick, d12_tick};
   
     int32_t drive_tick[ELEC_ARRAY_SIZE];
@@ -54,10 +58,18 @@ void elec_deg_movement(){
         
         int32_t rel_tick = tick - start_tick;
         if(rel_tick == d31_tick + offset_von_soll){
-            print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 1, 1) - tick_to_deg(start_tick) - real_mid_deg;
+            if(smaller_steps){
+                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1, true) - tick_to_deg(start_tick) - real_mid_deg;
+            } else{
+                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1) - tick_to_deg(start_tick) - real_mid_deg;
+            }
             cw_rechts = print_elec_deg[i];
         } else if(rel_tick == d12_tick + offset_von_soll){
-            print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 0, 0) - tick_to_deg(start_tick) - real_mid_deg;
+            if(smaller_steps){
+                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0, true) - tick_to_deg(start_tick) - real_mid_deg;
+            } else{
+                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0) - tick_to_deg(start_tick) - real_mid_deg;
+            }
             ccw_links = print_elec_deg[i];
         }
 

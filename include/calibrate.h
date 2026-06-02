@@ -11,7 +11,7 @@ extern const int32_t CALIBRATE_CURRENT_CW;
 extern const int32_t ZERO_TICK;
 extern const float MERCY_TOLERANCE_TICK;
 extern const float CHECK_ENDS_TOL_DEG;
-extern const float SAFETY_VOLT;
+// extern const float SAFETY_VOLT;
 extern const int BEGINNING_TIMER;
 extern const float SLOW_RPM;
 
@@ -34,12 +34,11 @@ float corr_measure();
 void calibrate_currents();
 void check_ends();
 float correction_movement(float &current_volt, float goal_volt, 
-                          int dead_direction, int dead_half, int timeout=30000);
+                          int dead_direction, int dead_half, bool smaller_steps = false, int timeout=30000);
 float correction_movement_endless_starts(float &current_volt, float goal_volt, int start, int timeout=30000);
 void check_beginning(float total_deg);
 void find_endless_volt_crossover();
 void find_endless_starting_point();
-float correction_movement_endless_deadzones(float &current_volt, float goal_volt, int timeout=30000);
 bool read_hardware_error_status(uint8_t &error_code, uint8_t id=1);
 bool recover_dxl_after_fault(uint8_t id=1);
 bool wait_for_dxl_after_reboot(uint8_t id = 1, uint32_t timeout_ms = 3000);

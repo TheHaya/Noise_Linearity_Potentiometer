@@ -120,7 +120,8 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
     ser_PSU = ser_psu_app
     ser_Multi = ser_multi_app
 
-def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, pico_plot_volt=None, pico_plot_time=None, stop_event=None, on_finish=None):
+def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
+                pico_plot_volt=None, pico_plot_time=None, stop_event=None, on_finish=None):
     try:
         global pico_pdf_time
         pico_pdf_time = []
@@ -134,9 +135,12 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, pico_plot_v
         global noise_found
         noise_found = False
         
+        PSU_ovp = soll_v+soll_v*0.2
+        PSU_ocp = 0.15
+        PSU_current = 0.05
         #ser_arduino = sc.connect_ard()
         # ser_PSU = sc.connect_psu()
-        sc.set_psu_parameters(ser_PSU, 6, 0.12, 5, 0.040) # für dp37
+        sc.set_psu_parameters(ser_PSU, PSU_ovp, PSU_ocp, soll_v, PSU_current) # für dp37
         # sc.set_psu_parameters(ser_PSU, 2.5, 0.12, 2, 0.008) # für t18
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
         # ser_arduino.reset_input_buffer()
@@ -205,7 +209,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, pico_plot_v
         #ser_PSU.close()
 
     except Exception as e:
-        print("Fehler bei Serial: ", e) #debug
+        print("Fehler bei Serial (noise): ", e) #debug
 
     if root is not None:
         root.after(0, on_finish)

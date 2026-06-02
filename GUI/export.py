@@ -96,7 +96,8 @@ def _sheet_exists(sheets, sheet_name):
 
 # --------------- EXCEL EXPORT FUNCTIONS
 def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin_max, lin_min,
-                  tol_d_p, tol_d_n, tol_cw_p, tol_cw_n, tol_ccw_p, tol_ccw_n, tol_lin_p, tol_lin_n, rework_nr=None):
+                  tol_d_p, tol_d_n, tol_pos_d_cw_p, tol_pos_d_cw_n, tol_pos_d_ccw_p, tol_pos_d_ccw_n, tol_cw_p, tol_cw_n, 
+                  tol_ccw_p, tol_ccw_n, tol_lin_p, tol_lin_n, rework_nr=None):
     ALIGN_CENTER = -4108
     ALIGN_LEFT = -4131
     
@@ -162,6 +163,7 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
                 sh_name = _find_next_normal_sheet_name(wb.sheets)
 
             sheet = wb.sheets.add(name=sh_name, after=wb.sheets[-1])
+            print("Excel Sheet gespeichert: ", sh_name)
         else:
             if rework_nr is not None:
                 print(f"Fehler bei Linearitäts-Export: Datei {file} für Nacharbeit nicht gefunden.")
@@ -231,15 +233,21 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
                 continue
             if float(sheet[f'H{i}'].value) > tol_lin_p or float(sheet[f'H{i}'].value) < tol_lin_n:
                 sheet[f'H{i}'].color = "#FF5454"
+        
+        if float(sheet['E3'].value) > tol_pos_d_cw_p or float(sheet['E3'].value) < tol_pos_d_cw_n:
+            sheet['E3'].color = "#FF5454"
+
+        if float(sheet['E9'].value) > tol_pos_d_ccw_p or float(sheet['E9'].value) < tol_pos_d_ccw_n:
+            sheet['E9'].color = "#FF5454"
 
         if float(sheet['B16'].value) > tol_d_p or float(sheet['B16'].value) < tol_d_n:
-             sheet['B16'].color = "#FF5454"
+            sheet['B16'].color = "#FF5454"
 
         if float(sheet['B17'].value) > tol_cw_p or float(sheet['B17'].value) < tol_cw_n:
-             sheet['B17'].color = "#FF5454"
+            sheet['B17'].color = "#FF5454"
 
         if float(sheet['B18'].value) > tol_ccw_p or float(sheet['B18'].value) < tol_ccw_n:
-             sheet['B18'].color = "#FF5454"
+            sheet['B18'].color = "#FF5454"
 
         wb.save(file)
         #wb.close()

@@ -20,12 +20,16 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
     ser_PSU = ser_psu_app
     ser_Multi = ser_multi_app
     
-def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, stop_event=None, on_finish=None):
+def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, stop_event=None, on_finish=None):
     try:
         #ser_arduino = sc.connect_ard()
         # ser_Multi = sc.connect_multi()
         # ser_PSU = sc.connect_psu()
-        sc.set_psu_parameters(ser_PSU, 12, 0.12, 10, 0.044)
+
+        PSU_ovp = soll_v+soll_v*0.2
+        PSU_ocp = 0.15
+        PSU_current = 0.05
+        sc.set_psu_parameters(ser_PSU, PSU_ovp, PSU_ocp, soll_v, PSU_current)
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
         global safety_cancel
         safety_cancel = False
@@ -99,16 +103,22 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, stop_event=No
                 delay_time3 = float(line[6::])
                 print(f"Delay 1.5x: {delay_time3}")
 
+            elif line.startswith('SAFETY_L'):
+                global safety_V_low
+                safety_V_low = float(line[8::])
+                print("Empfangen: SAFETY_L")
+                print(f"An Start-Voltage: {safety_V_low} V")
+
+            elif line.startswith('SAFETY_H'):
+                global safety_V_high
+                safety_V_high = float(line[8::])
+                print("Empfangen: SAFETY_H")
+                print(f"An End-Voltage: {safety_V_high} V")
+
             elif line == 'INIT_FINISH':
                 print("Empfangen: INIT_FINISH")
                 break
 
-            elif line == 'SAFETY':
-                print("Empfangen: SAFETY")
-                safety_cancel = True
-                ser_PSU.write(b"OUTP OFF\n")
-                print("Schleifer zu nah an mechanischem Anschlag")
-                break
             elif line == 'CANCEL':
                 print("Empfangen: CANCEL")
                 if stop_event is not None:
@@ -122,7 +132,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, stop_event=No
         # ser_Multi.close()
         # ser_PSU.close()
     except Exception as e:
-        print("Fehler bei Serial: ", e) #debug
+        print("Fehler bei Serial (mech_ends): ", e) #debug
+        raise
 
     if root is not None:
         root.after(0, on_finish)
