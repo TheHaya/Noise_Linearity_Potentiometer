@@ -30,7 +30,7 @@ elapsedMillis servo_ping_timer;
 bool servo_online = false;
 bool but_up = HIGH;
 bool but_press;
-
+bool endless_poti;
 
 // --------------- SETUP AND ASSIST FUNCTIONS
 
@@ -66,6 +66,7 @@ void setLEDS(int setting){
 
 void measurements_init(){
   setLEDS(1);
+  endless_poti = false;
   linear_checked = false;
   dxl_init();
   calibrate_init();
@@ -166,7 +167,10 @@ void loop(){
     if(command == "INIT_GO"){
       measurements_init();
       relays_init();
-      if(target_deg_total == 0){
+      if(target_deg_total == 360){
+        endless_poti = true;
+      }
+      if(endless_poti){
         apply_relay_mode(INIT_RELAY_MODE);
         delay(1000);
         find_endless_volt_crossover();
@@ -175,9 +179,14 @@ void loop(){
       else{
         apply_relay_mode(INIT_RELAY_MODE);
         delay(1000);
-        check_beginning(target_deg_total);        if(abort_if_cancelled()) return;
-        calibrate_currents();     if(abort_if_cancelled()) return;
-        check_ends();        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
+        if(!endless_poti){
+          check_beginning(target_deg_total);
+          if(abort_if_cancelled()) return;
+        }
+        calibrate_currents();
+        if(abort_if_cancelled()) return;
+        check_ends();
+        if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
       }
       // drive_to(ZERO_TICK, user_rpm);
       // reached_goal(ZERO_TICK, 2);
@@ -265,7 +274,11 @@ void loop(){
         }
       }
       if(command == "ELEC_DEG_START"){
-        elec_deg_movement();
+        if(endless_poti){
+          endless_elec_deg_movement();
+        } else{
+          elec_deg_movement();
+        }
         if(cancelled == true){
           Serial.println("CANCEL");
           return;

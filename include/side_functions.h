@@ -3,7 +3,7 @@
 
 // --------------- SIDE FUNCTION VARIABLES
 extern int32_t user_go_to;
-
+extern int32_t tester_val;
 
 // --------------- SIDE FUNCTIONS
 void go_to();

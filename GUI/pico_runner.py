@@ -15,6 +15,7 @@ txt_speed_getter = None
 calc_duration_f = None
 total_ticks_getter = None
 out_volt = False
+noise_error = False
 active_process = None
 
 # --------------- PICO FUNCTIONS
@@ -38,7 +39,7 @@ def stop_active_run():
         active_process = None
 
 def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr, stop_event=None):
-    global start_time, picoEXE, delay_compensation, out_volt, active_process
+    global start_time, picoEXE, delay_compensation, out_volt, active_process, noise_error
 
     out_volt = False
     out_found = False
@@ -75,6 +76,7 @@ def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr,
                 print("NACH: PICO_START")
             
             if out_volt is True:
+                noise_error = True
                 volt_arr.append(float(line))
 
             if line.startswith("OUTPUV"):

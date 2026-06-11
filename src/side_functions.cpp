@@ -4,7 +4,7 @@
 #include <relay.h>
 // --------------- VARIABLES
 int32_t user_go_to;
-
+int32_t tester_val = 1;
 // --------------- FUNCTIONS
 void go_zero()
 {
@@ -30,5 +30,17 @@ void show_cur_pos()
 }
 
 void tester(){
-  apply_relay_mode(INIT_RELAY_MODE);
+  switch(tester_val){
+    case 1:
+      apply_relay_mode(INIT_RELAY_MODE);
+      tester_val += 1;
+      break;
+    case 2:
+      apply_relay_mode(ENDLESS_INIT_RELAY_MODE);
+      tester_val = 1;
+      break;
+    default:
+      break;
+  }
+  
 }

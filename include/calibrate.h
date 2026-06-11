@@ -30,7 +30,7 @@ extern float tar_volt;
 extern float endless_start_volt, endless_end_volt, endless_start_deg, endless_end_deg;
 
 void calibrate_init();
-float corr_measure();
+float corr_measure(int start_end = 0);
 void calibrate_currents();
 void check_ends();
 float correction_movement(float &current_volt, float goal_volt, 

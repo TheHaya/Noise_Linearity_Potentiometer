@@ -236,9 +236,13 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
         
         if float(sheet['E3'].value) > tol_pos_d_cw_p or float(sheet['E3'].value) < tol_pos_d_cw_n:
             sheet['E3'].color = "#FF5454"
+        else:
+            sheet['E3'].color = "#5AFF54"
 
         if float(sheet['E9'].value) > tol_pos_d_ccw_p or float(sheet['E9'].value) < tol_pos_d_ccw_n:
             sheet['E9'].color = "#FF5454"
+        else:
+            sheet['E9'].color = "#5AFF54"
 
         if float(sheet['B16'].value) > tol_d_p or float(sheet['B16'].value) < tol_d_n:
             sheet['B16'].color = "#FF5454"

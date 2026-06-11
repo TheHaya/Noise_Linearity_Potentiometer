@@ -58,20 +58,31 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
             #if line == 'CHECK_PSU':
             #    sc.set_correct_voltage(ser_Multi, ser_PSU, 10)
 
-            if line.startswith('VOLTR'):
+            
+            if line.startswith('VOLTR_START'):
+                sc.get_multi_voltage(ser_arduino, ser_Multi)
+                debug_pos = float(line[11::])
+                print(f"Ist_Start Position: {debug_pos} // {debug_pos*0.087890625}")
+                print("_____")
+                continue
+            elif line.startswith('VOLTR_END'):
+                sc.get_multi_voltage(ser_arduino, ser_Multi)
+                debug_pos = float(line[9::])
+                print(f"Ist_End Position: {debug_pos} // {debug_pos*0.087890625}")
+                print("_____")
+                continue
+            elif line.startswith('VOLTR'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 debug_pos = float(line[5::])
                 print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
                 print("_____")
                 continue
-
-            if line.startswith("ANGLE"):
+            elif line.startswith("ANGLE"):
                 global total_mech
                 total_mech = float(line[5::])
                 global total_ticks
                 total_ticks = round(total_mech*(4096/360))
                 print(f"Gesamtwinkel ist: {total_mech}")
-            
             elif line.startswith("CUR0"):
                 cal_cur0 = float(line[4::])
                 print(f"Max. Strom RPM0: {cal_cur0}")

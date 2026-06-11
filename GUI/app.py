@@ -472,6 +472,8 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
 
 
         try:
+            pico_runner.noise_error = False
+            linear_workflow.lin_error = False
             mech_error = False
             measurements_finished = False
             measurements_noise_found = False
@@ -572,7 +574,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
                 
 
         finally:
-            if pico_runner.out_volt:
+            if pico_runner.noise_error:
                 write_serial_line(ser_ard, "NOISE_END")
                 print("Sende: NOISE_END")
             if linear_workflow.lin_error:

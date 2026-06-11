@@ -107,10 +107,15 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
 void find_endless_starting_point(){
   float cur_volt;
   endless_start_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 1);
+  ist_start_volt = corr_measure(1);
   drive_to(endless_start_tick + 3750, user_rpm); // ~330°
   reached_goal(endless_start_tick + 3750, 2);
   apply_relay_mode(ENDLESS_INIT_RELAY_MODE);
+  delay(200);
   endless_end_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 0);
+  apply_relay_mode(INIT_RELAY_MODE);
+  delay(200);
+  ist_end_volt = corr_measure(2);
 
   endless_sim_start = endless_start_tick + ENDLESS_MERCY_TOLERANCE_TICK;
   endless_sim_end = endless_end_tick - ENDLESS_MERCY_TOLERANCE_TICK;

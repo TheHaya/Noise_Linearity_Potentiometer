@@ -4,9 +4,9 @@ import serial.tools.list_ports
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
 # ------ PRÜFVORRICHTUNG FIRMA
-ARDUINO_PORT = "COM7"
-MULTI_PORT = "COM4"
-PSU_PORT = "COM5"
+# ARDUINO_PORT = "COM7"
+# MULTI_PORT = "COM4"
+# PSU_PORT = "COM5"
 
 # ------ ALWIN LAPTOP
 # ARDUINO_PORT = "COM18"
@@ -14,9 +14,9 @@ PSU_PORT = "COM5"
 # PSU_PORT = "COM15"
 
 # ------ TEMPORÄR ZWEITE VORRICHTUNG
-# ARDUINO_PORT = "COM20"
-# MULTI_PORT = "COM6"
-# PSU_PORT = "COM7"
+ARDUINO_PORT = "COM20"
+MULTI_PORT = "COM6"
+PSU_PORT = "COM7"
 
 
 # --------------- SERIAL MIT SERVO

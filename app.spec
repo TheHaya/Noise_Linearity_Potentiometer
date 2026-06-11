@@ -4,8 +4,8 @@
 a = Analysis(
     ['GUI\\app.py'],
     pathex=[],
-    binaries=[('Pico_Demo\\ps2000a.dll', '.'), ('Pico_Demo\\picoipp.dll', '.')],
-    datas=[('AMLogo.jpg', '.'), ('preset_Teile.json', '.'), ('Pico_Demo\\pico_demo.exe', '.')],
+    binaries=[('GUI\\ps2000a.dll', '.'), ('GUI\\picoipp.dll', '.')],
+    datas=[('GUI\\AMLogo.jpg', '.'), ('GUI\\preset_Teile.json', '.'), ('GUI\\pico_demo.exe', '.')],
     hiddenimports=['matplotlib.backends.backend_pdf'],
     hookspath=[],
     hooksconfig={},

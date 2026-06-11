@@ -8,3 +8,4 @@
 
 
 // --------------- FUNCTIONS
+void endless_elec_deg_movement();

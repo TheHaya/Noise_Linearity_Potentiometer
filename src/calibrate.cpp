@@ -56,13 +56,28 @@ delay2 = 0;
 delay3 = 0;
 
 }
-float corr_measure(){
+float corr_measure(int start_end){
   float current_volt = NAN;
   elapsedMillis timer;
   int t = 8000;
   Serial.setTimeout(50);
-  Serial.print("VOLTR");
-  Serial.println(dxl.getPresentPosition(DID,UNIT_RAW));
+  switch(start_end){
+    case 0:
+      Serial.print("VOLTR");
+      Serial.println(dxl.getPresentPosition(DID,UNIT_RAW));
+      break;
+    case 1:
+      Serial.print("VOLTR_START");
+      Serial.println(dxl.getPresentPosition(DID,UNIT_RAW));
+      break;    
+    case 2:
+      Serial.print("VOLTR_END");
+      Serial.println(dxl.getPresentPosition(DID,UNIT_RAW));
+      break;
+    default:
+      break;
+  }
+  
   delay(50);
   
   while(timer < t){
