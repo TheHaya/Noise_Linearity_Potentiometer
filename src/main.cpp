@@ -31,6 +31,7 @@ bool servo_online = false;
 bool but_up = HIGH;
 bool but_press;
 bool endless_poti;
+bool calib_finished;
 
 // --------------- SETUP AND ASSIST FUNCTIONS
 
@@ -68,9 +69,11 @@ void measurements_init(){
   setLEDS(1);
   endless_poti = false;
   linear_checked = false;
+  calib_finished = false;
   dxl_init();
   calibrate_init();
   endless_init();
+  endless_noise_init();
   elec_deg_init();
   lin_init();
   
@@ -169,12 +172,18 @@ void loop(){
       relays_init();
       if(target_deg_total == 360){
         endless_poti = true;
-      }
+        calibrate_currents();
+      } 
+      Serial.println("INIT_FINISH");
+    }
+    
+    if(command == "CALIB_GO"){
       if(endless_poti){
         apply_relay_mode(INIT_RELAY_MODE);
         delay(1000);
         find_endless_volt_crossover();
         find_endless_starting_point();
+        calib_finished = true;
       }
       else{
         apply_relay_mode(INIT_RELAY_MODE);
@@ -190,18 +199,18 @@ void loop(){
       }
       // drive_to(ZERO_TICK, user_rpm);
       // reached_goal(ZERO_TICK, 2);
-      Serial.println("INIT_FINISH");
+      Serial.println("CALIB_FINISH");
     }
 
     if(command == "NOISE_GO"){
-      if(target_deg_total == 0){
-        apply_relay_mode(NOISE_RELAY_MODE);
+      apply_relay_mode(NOISE_RELAY_MODE);
+      if(target_deg_total == 360){
         endless_noise_preparation_movement();
-        drive_to(endless_sim_start, user_rpm);
-        reached_goal(endless_sim_start, 2, 0, 15000);  
+        
+        // drive_to(endless_sim_start, user_rpm);
+        // reached_goal(endless_sim_start, 2, 0, 15000);  
       }
       else{
-        apply_relay_mode(NOISE_RELAY_MODE);
         noise_preparation_movement();
         // if(cancelled == false){
         drive_to(sim_mercy_end, user_rpm);
@@ -217,7 +226,7 @@ void loop(){
       
     }
     if(command == "NOISE_START"){
-      if(target_deg_total == 0){
+      if(target_deg_total == 360){
         endless_noise_movement();
       } else{
         noise_movement(); 

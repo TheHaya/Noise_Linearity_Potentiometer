@@ -560,8 +560,8 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
                     elif mittelanzapfung_ccw > tol_position_deadzone_ccw_pos or mittelanzapfung_ccw < tol_position_deadzone_ccw_neg:
                         linear_workflow.lin_error = True
                 
-            ring.set_linearity_text(linear_workflow.lin_error, chk_linear_mode.get(), stop_event.is_set())
-            ring.set_circle_text(noise_angles, stop_event.is_set(), chk_noise_mode.get(), pico_runner.out_volt)
+            ring.set_linearity_text(linear_workflow.lin_error, linear_checked, stop_event.is_set())
+            ring.set_circle_text(noise_angles, stop_event.is_set(), noise_checked, pico_runner.out_volt)
 
             if not stop_event.is_set() or measurements_noise_found:
                 measurements_finished = True   
@@ -607,9 +607,12 @@ def measurement_chk(retry_used=False):
     if measurement_is_running():
         return
     global end_lin_checked
+    global endless_noise
+    endless_noise = False
     end_lin_checked = False
     mech_ends_workflow.safety_cancel = False
     pico_runner.out_volt = False
+    mech_ends_workflow.endless_noise_init = False
     # stop_event_global.clear()
     try:
         meas_volt = float(txt_volt.get().strip().replace(',', '.'))
@@ -627,29 +630,42 @@ def measurement_chk(retry_used=False):
     d32 = decimal_conversion(d32_var.get())
 
     modes = []
-    global ends_checked
+    global ends_checked, noise_checked, elec_checked, linear_checked
     ends_checked = chk_ends_mode.get()
+    noise_checked = chk_noise_mode.get()
+    elec_checked = chk_elec_mode.get()
+    linear_checked = chk_linear_mode.get()
+    target_angle = float(txt_angle.get().strip().replace(',', '.'))
+
+    # SPEZIALFALL 360° und NUR Rauschmessung
+    if noise_checked and not ends_checked and not linear_checked and not elec_checked and target_angle == 360:
+        endless_noise = True
+        mech_ends_workflow.endless_noise_init = True
+
     modes.append((mech_ends_workflow, (soll_volt_linear,), "Mech. Endwinkel", True, ends_checked))
     if ends_checked: print("[CHECKBOX] Mech. Ends")
 
-    if chk_noise_mode.get():
+    if noise_checked:
         pico_plot_time.clear()
         pico_plot_volt.clear()
         modes.append((noise_workflow, (soll_volt_noise, pico_plot_volt, pico_plot_time), "Rauschprüfung", True, True))
         print("[CHECKBOX] Rauschen")
     
-    if chk_linear_mode.get() and chk_elec_mode.get():
+    if linear_checked and elec_checked:
         end_lin_checked = True
         modes.append((linear_workflow, (soll_volt_linear, d11, d12, d21, d22, d31, d32), "Elektr. Winkel\n+\nLinearitätsprüfung", True, True))
         print("[CHECKBOX] Linearität und Elektr. Winkel")
 
-    elif chk_elec_mode.get():
+    elif elec_checked:
         modes.append((elec_deg_workflow, (soll_volt_linear, d12, d21, d22, d31), "Elektr. Winkel", True, True))
         print("[CHECKBOX] Elektr. Winkel")
     
-    elif chk_linear_mode.get():
+    elif linear_checked:
         modes.append((linear_workflow, (soll_volt_linear, d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True, True))
         print("[CHECKBOX] Linearität")
+
+    
+        
 
 
     if rework_var.get():
@@ -724,9 +740,9 @@ def advanced_chk():
         
 def autosave_chk():
     if autosave_var.get():
-        if measurements_finished and chk_linear_mode.get() is True and not pico_runner.out_volt:
+        if measurements_finished and linear_checked is True and not pico_runner.out_volt:
             export_excel()
-        if measurements_finished and chk_noise_mode.get() is True:
+        if measurements_finished and noise_checked is True:
             export_pdf()
 
 def rework_chk():

@@ -6,18 +6,29 @@
 #include <endless_calibrate.h>
 
 
+float endless_noise_prep_start;
+float endless_noise_prep_end;
+
+void endless_noise_init(){
+    endless_noise_prep_start = 0;
+    endless_noise_prep_end = 0;
+}
 // --------------- NOISE MOVEMENT
 void endless_noise_preparation_movement(){
-  float rpm_intervall; 
+    float rpm_intervall; 
+    endless_noise_prep_start = get_tick_position();
+    endless_noise_prep_end = endless_noise_prep_start + 4096; // ganze umdrehung
 
-  for(int i = 1; i <= 10; i++){
-    rpm_intervall = user_rpm*1.5;
+    for(int i = 1; i <= 10; i++){
+        rpm_intervall = user_rpm*1.5;
 
-    drive_to(endless_sim_start, rpm_intervall);
-    reached_goal(endless_sim_start, 3);
-    drive_to(endless_sim_end, rpm_intervall);
-    reached_goal(endless_sim_end, 3);
-  }
+        drive_to(endless_noise_prep_start, rpm_intervall);
+        reached_goal(endless_noise_prep_start, 3);
+        drive_to(endless_noise_prep_end, rpm_intervall);
+        reached_goal(endless_noise_prep_end, 3);
+    }
+    drive_to(endless_noise_prep_start, rpm_intervall);
+    reached_goal(endless_noise_prep_start, 3);
 }
 
 
@@ -27,25 +38,20 @@ void endless_noise_movement(){
     int32_t endless_noise_start_tick;
 
     for(int i = 1; i <= 3; i++){
-        for(int j = 1; j <= 2; j++){
-            rpm_intervall = user_rpm/2;
-            sim_rpm = rpm_intervall * i;
-            endless_noise_start_tick = endless_sim_start+((i - 1) * 2 + j)*4096;
+        rpm_intervall = user_rpm/2;
+        sim_rpm = rpm_intervall * i;
+        endless_noise_start_tick = endless_noise_prep_start + i * 8192; // 2 Umdrehungen pro go
 
-            drive_to(endless_noise_start_tick, sim_rpm);
-            reached_goal(endless_noise_start_tick, i);
+        drive_to(endless_noise_start_tick, sim_rpm);
+        reached_goal(endless_noise_start_tick, i);
         }
-    }
 
     for(int i = 1; i <= 3; i++){
-        for(int j = 1; j <= 2; j++){
-            rpm_intervall = user_rpm/2;
-            sim_rpm = rpm_intervall * i;
-            endless_noise_start_tick = endless_sim_start+ (6 - ((i - 1) * 2 + j))*4096; // Zählt wieder zurück von 6 -> 1
+        rpm_intervall = user_rpm/2;
+        sim_rpm = rpm_intervall * i;
+        endless_noise_start_tick = endless_noise_prep_start+ (3 - i) * 8192; // Zählt wieder zurück von 6 -> 1
 
-            drive_to(endless_noise_start_tick, sim_rpm);
-            reached_goal(endless_noise_start_tick, i);
+        drive_to(endless_noise_start_tick, sim_rpm);
+        reached_goal(endless_noise_start_tick, i);
         }
-    }
-        
 }
