@@ -4,17 +4,12 @@ import serial.tools.list_ports
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
 # ------ PRÜFVORRICHTUNG FIRMA
-# ARDUINO_PORT = "COM7"
+# ARDUINO_PORT = "COM3"
 # MULTI_PORT = "COM4"
 # PSU_PORT = "COM5"
 
 # ------ ALWIN LAPTOP
-# ARDUINO_PORT = "COM18"
-# MULTI_PORT = "COM17"
-# PSU_PORT = "COM15"
-
-# ------ TEMPORÄR ZWEITE VORRICHTUNG
-ARDUINO_PORT = "COM20"
+ARDUINO_PORT = "COM18"
 MULTI_PORT = "COM6"
 PSU_PORT = "COM7"
 

@@ -4,8 +4,6 @@
 
 // --------------- CALIBRATE CONSTANTS
 extern const int32_t CHECK_END_MERCY;
-extern const int32_t CHECK_END_START;
-extern const int32_t CHECK_END_END;
 extern const int32_t CALIBRATE_CURRENT_CCW;
 extern const int32_t CALIBRATE_CURRENT_CW;
 extern const int32_t ZERO_TICK;
@@ -13,13 +11,14 @@ extern const float MERCY_TOLERANCE_TICK;
 extern const float CHECK_ENDS_TOL_DEG;
 // extern const float SAFETY_VOLT;
 extern const int BEGINNING_TIMER;
-extern const float SLOW_RPM;
+// extern const float SLOW_RPM;
 
 // --------------- CALIBRATE VARIABLES
 extern int32_t start_tick, end_tick, real_mid_tick;
 extern int32_t sim_mercy_start, sim_mercy_end;
-
-extern float user_rpm, rpm1, rpm2, rpm3;
+extern int32_t check_end_start;
+extern int32_t check_end_end;
+// extern float user_rpm, rpm1, rpm2, rpm3;
 extern float real_time1, real_time2, real_time3;
 extern float theo_time1, theo_time2, theo_time3;
 extern float target_deg_total;

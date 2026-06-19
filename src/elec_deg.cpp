@@ -48,13 +48,14 @@ void elec_deg_movement(){
         //DEBUG_SERIAL.print(tick);
         int32_t tick = drive_tick[i];
 
-        drive_to(tick, user_rpm);
-        if (!reached_goal(tick, 2)) {
-        // Strom-Trip -> sofort raus
-        Serial.println("CANCEL");
-        cancelled = true;
-        break;
-        }
+        // drive_to(tick, user_rpm);
+        // if (!reached_goal(tick, 2)) {
+        // // Strom-Trip -> sofort raus
+        // Serial.println("CANCEL");
+        // cancelled = true;
+        // break;
+        // }
+        drive_and_check(tick, user_rpm);
         
         int32_t rel_tick = tick - start_tick;
         if(rel_tick == d31_tick + offset_von_soll){

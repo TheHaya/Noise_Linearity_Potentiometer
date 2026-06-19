@@ -12,10 +12,12 @@ void noise_preparation_movement(){
   for(int i = 1; i <= 10; i++){
     rpm_intervall = user_rpm*1.5;
 
-    drive_to(sim_mercy_start, rpm_intervall);
-    reached_goal(sim_mercy_start, 3);
-    drive_to(sim_mercy_end, rpm_intervall);
-    reached_goal(sim_mercy_end, 3);
+    // drive_to(sim_mercy_start, rpm_intervall);
+    // reached_goal(sim_mercy_start, 3);
+    // drive_to(sim_mercy_end, rpm_intervall);
+    // reached_goal(sim_mercy_end, 3);
+    drive_and_check(sim_mercy_start, rpm_intervall);
+    drive_and_check(sim_mercy_end, rpm_intervall);
   }
 }
 
@@ -27,14 +29,18 @@ void noise_movement(){
     rpm_intervall = user_rpm/2;
     sim_rpm = rpm_intervall * i;
 
-    drive_to(sim_mercy_start, sim_rpm);
-    reached_goal(sim_mercy_start, i);
-    drive_to(sim_mercy_end, sim_rpm);
-    reached_goal(sim_mercy_end, i);
-    drive_to(sim_mercy_start, sim_rpm);
-    reached_goal(sim_mercy_start, i);
-    drive_to(sim_mercy_end, sim_rpm);
-    reached_goal(sim_mercy_end, i);
+    // drive_to(sim_mercy_start, sim_rpm);
+    // reached_goal(sim_mercy_start, i);
+    // drive_to(sim_mercy_end, sim_rpm);
+    // reached_goal(sim_mercy_end, i);
+    // drive_to(sim_mercy_start, sim_rpm);
+    // reached_goal(sim_mercy_start, i);
+    // drive_to(sim_mercy_end, sim_rpm);
+    // reached_goal(sim_mercy_end, i);
+    drive_and_check(sim_mercy_start, sim_rpm);
+    drive_and_check(sim_mercy_end, sim_rpm);
+    drive_and_check(sim_mercy_start, sim_rpm);
+    drive_and_check(sim_mercy_end, sim_rpm);
   }
   Serial.println("NOISE_MOVE_FINISH");
 }

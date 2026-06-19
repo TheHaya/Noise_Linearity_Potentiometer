@@ -989,7 +989,7 @@ right_frame.grid_columnconfigure(1, weight=0)
 #ser_arduino = serial_manager(root, on_button=measurement_chk)
 #ser_arduino.connect()
 
-vcmd = (root.register(lambda P: (P.count(',') <= 1 and all(ch.isdigit() or ch == ',' for ch in P))), "%P")
+vcmd = (root.register(lambda P: (P.count(',') <= 1 and all(ch.isdigit() or ch == ',' or ch == '-' for ch in P))), "%P")
 
 ttk.Label(left_frame, text="Auftragsnummer:").grid(row=4, column=0, sticky="w", pady=(20, 0), padx=(20,0))
 txt9 = ttk.Entry(left_frame, width=20)

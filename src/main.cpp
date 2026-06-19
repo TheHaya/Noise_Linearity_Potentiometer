@@ -170,6 +170,7 @@ void loop(){
     if(command == "INIT_GO"){
       measurements_init();
       relays_init();
+      calc_rpm();
       if(target_deg_total == 360){
         endless_poti = true;
         calibrate_currents();
@@ -199,6 +200,7 @@ void loop(){
       }
       // drive_to(ZERO_TICK, user_rpm);
       // reached_goal(ZERO_TICK, 2);
+      drive_and_check(ZERO_TICK, user_rpm);
       Serial.println("CALIB_FINISH");
     }
 
@@ -213,8 +215,10 @@ void loop(){
       else{
         noise_preparation_movement();
         // if(cancelled == false){
-        drive_to(sim_mercy_end, user_rpm);
-        reached_goal(sim_mercy_end, 2, 0, 15000); 
+        // drive_to(sim_mercy_end, user_rpm);
+        // reached_goal(sim_mercy_end, 2, 0, 15000); 
+        drive_and_check(sim_mercy_end, user_rpm, 0);
+
         }
       if(cancelled == false){
         Serial.println("NOISE_READY");
@@ -301,8 +305,10 @@ void loop(){
     }
 
     if(command == "ALL_END"){
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
+      // drive_to(ZERO_TICK, user_rpm);
+      // reached_goal(ZERO_TICK, 2);
+      drive_and_check(ZERO_TICK, user_rpm);
+
       all_relays_off();
       dxl.ledOff(DID);
       setLEDS(3);
@@ -311,8 +317,9 @@ void loop(){
     }
 
     if(command == "NOISE_END"){
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
+      // drive_to(ZERO_TICK, user_rpm);
+      // reached_goal(ZERO_TICK, 2);
+      drive_and_check(ZERO_TICK, user_rpm);
       all_relays_off();
       dxl.ledOff(DID);
       setLEDS(2);
@@ -321,8 +328,9 @@ void loop(){
     }
 
     if(command == "LIN_END"){
-      drive_to(ZERO_TICK, user_rpm);
-      reached_goal(ZERO_TICK, 2);
+      // drive_to(ZERO_TICK, user_rpm);
+      // reached_goal(ZERO_TICK, 2);
+      drive_and_check(ZERO_TICK, user_rpm);
       all_relays_off();
       dxl.ledOff(DID);
       setLEDS(2);

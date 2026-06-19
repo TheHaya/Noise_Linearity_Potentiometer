@@ -14,6 +14,8 @@ def go_zero(ser_arduino, ges_s=None, serial_lock=None, stop_event=None, on_finis
         # ser_arduino = sc.connect_ard()
         # ser_arduino.reset_input_buffer() 
         # ser_arduino.reset_output_buffer()
+        if not ser_arduino:
+                ser_arduino = sc.connect_ard()
         ard_lock = serial_lock if serial_lock is not None else contextlib.nullcontext()
         with ard_lock:
             time.sleep(1)
@@ -50,6 +52,8 @@ def goto(ser_arduino, txt_goto=None, ges_s=None, serial_lock = None):
         # ser_arduino = sc.connect_ard()
         # ser_arduino.reset_input_buffer() 
         # ser_arduino.reset_output_buffer()
+        if not ser_arduino:
+                ser_arduino = sc.connect_ard()
         ard_lock = serial_lock if serial_lock is not None else contextlib.nullcontext()
         with ard_lock:
             time.sleep(1)
@@ -80,6 +84,8 @@ def show_pos(ser_arduino, serial_lock = None):
         # ser_arduino = sc.connect_ard()
         # ser_arduino.reset_input_buffer() 
         # ser_arduino.reset_output_buffer()
+        if not ser_arduino:
+                ser_arduino = sc.connect_ard()
         ard_lock = serial_lock if serial_lock is not None else contextlib.nullcontext()
         with ard_lock:
             time.sleep(1)

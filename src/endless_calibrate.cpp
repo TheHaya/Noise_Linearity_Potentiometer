@@ -34,8 +34,9 @@ void find_endless_volt_crossover(){
   for(int i = 0; i < 6; i++){
     before_volt = after_volt;
     next_segment = get_tick_position() + deg_to_tick(60);
-    drive_to(next_segment, user_rpm);
-    reached_goal(next_segment, 2, 1);
+    // drive_to(next_segment, user_rpm);
+    // reached_goal(next_segment, 2, 1);
+    drive_and_check(next_segment, user_rpm, 1);
     after_volt = corr_measure();
     if(abs(after_volt-before_volt) > 5){
       endless_end_volt = before_volt;
@@ -64,8 +65,9 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
       else{
         t = get_tick_position() + STEP;
       }
-      drive_to(t, user_rpm);
-      reached_goal(t, 2);
+      // drive_to(t, user_rpm);
+      // reached_goal(t, 2);
+      drive_and_check(t, user_rpm);
       current_volt = corr_measure();
     }
     high = get_tick_position();
@@ -78,8 +80,9 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
       else{
         t = get_tick_position() - STEP;
       }
-      drive_to(t, user_rpm);
-      reached_goal(t, 2);
+      // drive_to(t, user_rpm);
+      // reached_goal(t, 2);
+      drive_and_check(t, user_rpm);
       current_volt = corr_measure();
     }
     low = get_tick_position();
@@ -87,10 +90,12 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
       int32_t back = 0;
       int32_t mid = (high + low) / 2;
       back = mid + PUSHBACK; // dead linke Hälfte  
-      drive_to(back, user_rpm);
-      reached_goal(back, 2);
-      drive_to(mid, user_rpm);
-      reached_goal(mid, 2);
+      // drive_to(back, user_rpm);
+      // reached_goal(back, 2);
+      // drive_to(mid, user_rpm);
+      // reached_goal(mid, 2);
+      drive_and_check(back, user_rpm);
+      drive_and_check(mid, user_rpm);
       current_volt = corr_measure();
       if(fabsf(current_volt - goal_volt) > V_TOL) {
         high = mid;
@@ -108,8 +113,9 @@ void find_endless_starting_point(){
   float cur_volt;
   endless_start_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 1);
   ist_start_volt = corr_measure(1);
-  drive_to(endless_start_tick + 3750, user_rpm); // ~330°
-  reached_goal(endless_start_tick + 3750, 2);
+  // drive_to(endless_start_tick + 3750, user_rpm); // ~330°
+  // reached_goal(endless_start_tick + 3750, 2);
+  drive_and_check(endless_start_tick + 3750, user_rpm);
   apply_relay_mode(ENDLESS_INIT_RELAY_MODE);
   delay(200);
   endless_end_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 0);

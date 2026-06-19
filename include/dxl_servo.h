@@ -23,6 +23,7 @@ extern const int POLL_TIMER;
 extern const float START_CURRENT;
 extern const float CUR_TOLERANCE;
 extern const float CUR_TOLERANCE_SLOW;
+extern const float SLOW_RPM;
 
 // --------------- SERVO VARIABLES
 extern int32_t stopped_tick;
@@ -30,7 +31,7 @@ extern float cal_cur0, cal_cur1, cal_cur2, cal_cur3;
 extern bool cancelled;
 extern int32_t cur_pos;
 extern float cur_cur;
-
+extern float user_rpm, rpm1, rpm2, rpm3;
 
 // --------------- HELPER FUNCTIONS
 int32_t deg_to_tick(float deg);
@@ -47,3 +48,5 @@ void stop_motion(uint8_t DYN_ID = 1);
 void drive_to(int32_t tick, float rpm, uint8_t DYN_ID = 1);
 bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode = 0, int timeout = 5000,
                     uint8_t error_tick = 1, uint8_t DYN_ID = 1);
+void calc_rpm();
+void drive_and_check(int32_t tick, float rpm, int measure_mode = 0);

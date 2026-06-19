@@ -24,6 +24,7 @@ const float START_CURRENT = 800;
 const float CUR_TOLERANCE = 200;
 const float CUR_TOLERANCE_SLOW = 5;
 const int POLL_TIMER = 1;
+const float SLOW_RPM = 8;
 using namespace ControlTableItem;
 
 // --------------- VARIABLES
@@ -32,7 +33,8 @@ float cal_cur0, cal_cur1, cal_cur2, cal_cur3;
 bool cancelled;
 int32_t cur_pos;
 float cur_cur;
-
+float user_rpm = 60;
+float rpm1, rpm2, rpm3;
 
 // --------------- HELPER FUNCTIONS
 int32_t deg_to_tick(float deg){
@@ -67,6 +69,9 @@ void dxl_init(){
   cal_cur3 = 0;
   cur_pos = 0;
   cur_cur = 0;
+  rpm1 = 0;
+  rpm2 = 0;
+  rpm3 = 0;
 }
 
 void stop_motion(uint8_t DYN_ID){
@@ -113,16 +118,19 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
           case 1: if(cur_cur > cal_cur1 + CUR_TOLERANCE){
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
             cancelled = true;
+            Serial.println("CANCEL");
             return false;} 
             break;
           case 2: if(cur_cur > cal_cur2 + CUR_TOLERANCE){
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
             cancelled = true;
+            Serial.println("CANCEL");
             return false;} 
             break;
           case 3: if(cur_cur > cal_cur3 + CUR_TOLERANCE){
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
             cancelled = true;
+            Serial.println("CANCEL");
             return false;} 
             break;
           default: break;
@@ -140,6 +148,7 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
         if(fabsf(cur_cur) >= START_CURRENT){
           dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
           cancelled = true;
+          Serial.println("CANCEL");
           return false;
           break;
         }
@@ -168,4 +177,53 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
   }
   stop_motion(DYN_ID);
   return false;
+}
+
+void calc_rpm(){
+  float rpm_intervall = user_rpm/2;
+  for(int i = 1; i <= 3; i++){
+    switch(i){
+      case 1:
+        rpm1 = rpm_intervall*i;
+        break;
+      case 2:
+        rpm2 = rpm_intervall*i;
+        break;
+      case 3:
+        rpm3 = rpm_intervall*i;
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+void drive_and_check(int32_t tick, float rpm, int measure_mode){
+  int measure_spd = 2;
+  int counter = 1;
+  int32_t starting_tick = get_tick_position();
+  int32_t difference_tick = tick - starting_tick;
+  if(rpm == SLOW_RPM){
+    measure_spd = 0;
+  }
+  if(rpm == rpm1){
+    measure_spd = 1;
+  }
+  if(rpm == rpm2){
+    measure_spd = 2;
+  }
+  if(rpm == rpm3){
+    measure_spd = 3;
+  }
+  
+  while(rpm_to_time(starting_tick + difference_tick/counter, rpm) > 25000){
+    counter += 1;
+  }
+    int32_t div_tick = difference_tick / counter;
+    
+  for(int i = 1; i<= counter; i++){
+    drive_to(starting_tick + div_tick * i, rpm);
+    reached_goal(starting_tick  + div_tick * i, measure_spd, measure_mode, 30000);
+  }
+
 }
