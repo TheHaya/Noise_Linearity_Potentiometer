@@ -21,3 +21,6 @@ __pycache__/
 
 # HTML
 *.html
+
+.github/
+.codex/

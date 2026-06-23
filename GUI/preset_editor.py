@@ -1,3 +1,5 @@
+import tkinter as tk
+from tkinter import Canvas, Scrollbar, LEFT, RIGHT, BOTH, Y, VERTICAL, Frame, Label
 from tkinter import ttk
 from tkinter import messagebox
 import json, os, shutil, datetime, tempfile, sys
@@ -10,16 +12,20 @@ from PIL import ImageTk, Image
 
 # ------------------ BACKEND FUNCTIONS
 
-def get_preset_file_path() -> str:
-    if getattr(sys, "frozen", False):
-        base_dir = os.path.dirname(sys.executable)
-    else:
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    return os.path.join(base_dir, "preset_Teile.json")
+# def get_preset_file_path() -> str:
+#     if getattr(sys, "frozen", False):
+#         base_dir = os.path.dirname(sys.executable)
+#     else:
+#         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+#     return os.path.join(base_dir, "preset_Teile.json")
 
-if __name__ == "__main__": pass
+# if __name__ == "__main__": pass
 
-PRESET_PATH = get_preset_file_path()
+
+def resource_path(rel_path: str) -> str:
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, rel_path)
+# PRESET_PATH = get_preset_file_path()
 
 FIELD_SCHEMA = [
     {   #1
@@ -265,6 +271,13 @@ FIELD_SCHEMA = [
     },
 ]
 
+
+AMLogo = Image.open(resource_path("AMLogo.jpg"))
+scale = 0.8
+w, h = AMLogo.size
+smallLogo = AMLogo.resize((int(w*scale), int(h*scale)))
+
+
 def get_schema_keys():
     return [field["key"] for field in FIELD_SCHEMA]
 
@@ -395,3 +408,264 @@ def serialize_presets(presets: dict) -> dict:
 
 # ------------------ FRONTEND FUNCTIONS
 
+print("Programm wird gestartet...")
+
+root = tk.Tk()
+scr_wid = root.winfo_screenwidth()
+scr_hei = root.winfo_screenheight()
+small_wid = 300
+small_hei = 170
+
+root.minsize(width=680, height=800)
+root.geometry("700x800")
+#root.geometry(f"{scr_wid - scr_wid//5}x{scr_hei - scr_hei//5}+0+0")
+root.title("Altmann .json Editor")
+root.resizable(True, True)
+root.configure(bg="#1c1c1c")
+
+# root.grid_columnconfigure(0, weight=0)
+# root.grid_columnconfigure(1, weight=1)
+root.grid_rowconfigure(0, weight=0)
+# root.grid_rowconfigure(1, weight=1)
+sv_ttk.set_theme("dark")
+root.grid_rowconfigure(1, weight = 1)
+root.grid_columnconfigure(0, weight=0)
+root.grid_columnconfigure(1, weight=1)
+root.grid_columnconfigure(2, weight=0)
+root.grid_columnconfigure(3, weight=0)
+left_frame  = ttk.Frame(root)
+right_frame = ttk.Frame(root)
+left_frame.grid(row=1, column=0, sticky="nw", padx=12, pady=12)
+ring_area = ttk.Frame(root)
+
+canvas = Canvas(root, highlightthickness=0, borderwidth=0)
+canvas.grid(row=1, column=1, sticky="nsew", padx=12, pady=12)
+
+scrollbar = ttk.Scrollbar(root,orient="vertical", command=canvas.yview)
+scrollbar.grid(row=1, column=2, sticky="ns")
+
+canvas.configure(yscrollcommand=scrollbar.set)
+scrollable_frame = ttk.Frame(canvas)
+
+canvas_window = canvas.create_window((0,0), window=scrollable_frame, anchor="nw")
+# scrollable_frame.bind("<Configure>", lambda e:
+#                       canvas.configure(scrollregion=canvas.bbox("all")))
+
+def update_scrollregion(event=None):
+    canvas.configure(scrollregion=canvas.bbox("all"))
+
+
+def fit_scrollable_frame(event):
+    canvas.itemconfigure(canvas_window, width=event.width)
+
+def on_mousewheel(event):
+    delta = int(event.delta / 120)
+
+    if delta == 0:
+        return "break"
+
+    canvas.yview_scroll(-delta * 1, "units")
+    return "break"
+
+
+scrollable_frame.bind("<Configure>", update_scrollregion)
+canvas.bind("<Configure>", fit_scrollable_frame)
+def bind_mousewheel_recursive(widget):
+    widget.bind("<MouseWheel>", on_mousewheel, add="+")
+    for child in widget.winfo_children():
+        bind_mousewheel_recursive(child)
+
+
+canvas.bind("<MouseWheel>", on_mousewheel, add="+")
+scrollable_frame.after_idle(lambda: bind_mousewheel_recursive(scrollable_frame))
+
+img = ImageTk.PhotoImage(smallLogo)
+panel = tk.Label(root, image=img)
+panel.image = img    
+panel.grid(row=0, column=0, columnspan=2,padx=24, pady=24, sticky="nw")
+
+right_frame.grid_columnconfigure(1, weight=0)
+
+but_open_file = ttk.Button(left_frame, text="Öffnen...")
+but_open_file.grid(row=1, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+lbl_open_file = ttk.Label(left_frame, text="Testdatei.json")
+lbl_open_file.grid(row=2, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_partnr = ttk.Label(left_frame, text="Teilnummer")
+lbl_partnr.grid(row=5, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+
+but_save = ttk.Button(left_frame, text="Speichern")
+but_save.grid(row=8, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+
+but_saveas = ttk.Button(left_frame, text="Speichern unter...")
+but_saveas.grid(row=9, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+
+
+lbl_soll_V_noise = ttk.Label(scrollable_frame, text="Sollspannung Rauschen")
+lbl_soll_V_noise.grid(row=1, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_soll_V_noise = ttk.Entry(scrollable_frame)
+txt_soll_V_noise.grid(row=1, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_soll_V_linear = ttk.Label(scrollable_frame, text="Sollspannung Linearität")
+lbl_soll_V_linear.grid(row=2, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_soll_V_linear = ttk.Entry(scrollable_frame)
+txt_soll_V_linear.grid(row=2, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_soll_V_resist = ttk.Label(scrollable_frame, text="Sollspannung Widerstand")
+lbl_soll_V_resist.grid(row=3, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_soll_V_resist = ttk.Entry(scrollable_frame)
+txt_soll_V_resist.grid(row=3, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_soll_mech_angle = ttk.Label(scrollable_frame, text="Mech. Sollwinkel")
+lbl_soll_mech_angle.grid(row=4, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_soll_mech_angle = ttk.Entry(scrollable_frame)
+txt_soll_mech_angle.grid(row=4, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_soll_speed = ttk.Label(scrollable_frame, text="Max. Drehgeschwindigkeit")
+lbl_soll_speed.grid(row=5, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_soll_speed = ttk.Entry(scrollable_frame)
+txt_soll_speed.grid(row=5, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_d11 = ttk.Label(scrollable_frame, text="Position Kurzschluss 1 Anfang")
+lbl_d11.grid(row=7, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_d11 = ttk.Entry(scrollable_frame)
+txt_d11.grid(row=7, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_d12 = ttk.Label(scrollable_frame, text="Position Kurzschluss 1 Ende")
+lbl_d12.grid(row=8, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_d12 = ttk.Entry(scrollable_frame)
+txt_d12.grid(row=8, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_d21 = ttk.Label(scrollable_frame, text="Position Kurzschluss 2 Anfang")
+lbl_d21.grid(row=9, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_d21 = ttk.Entry(scrollable_frame)
+txt_d21.grid(row=9, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_d22 = ttk.Label(scrollable_frame, text="Position Kurzschluss 2 Ende")
+lbl_d22.grid(row=10, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_d22 = ttk.Entry(scrollable_frame)
+txt_d22.grid(row=10, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_d31 = ttk.Label(scrollable_frame, text="Position Kurzschluss 3 Anfang")
+lbl_d31.grid(row=11, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_d31 = ttk.Entry(scrollable_frame)
+txt_d31.grid(row=11, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_d32 = ttk.Label(scrollable_frame, text="Position Kurzschluss 3 Ende")
+lbl_d32.grid(row=12, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_d32 = ttk.Entry(scrollable_frame)
+txt_d32.grid(row=12, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_mech_pos = ttk.Label(scrollable_frame, text="Tol. Mech. Winkel Positiv")
+lbl_tol_mech_pos.grid(row=14, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_mech_pos = ttk.Entry(scrollable_frame)
+txt_tol_mech_pos.grid(row=14, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_mech_neg = ttk.Label(scrollable_frame, text="Tol. Mech. Winkel Negativ")
+lbl_tol_mech_neg.grid(row=15, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_mech_neg = ttk.Entry(scrollable_frame)
+txt_tol_mech_neg.grid(row=15, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_elec_pos = ttk.Label(scrollable_frame, text="Tol. Elek. Winkel Positiv")
+lbl_tol_elec_pos.grid(row=16, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_elec_pos = ttk.Entry(scrollable_frame)
+txt_tol_elec_pos.grid(row=16, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_elec_neg = ttk.Label(scrollable_frame, text="Tol. Elek. Winkel Positiv")
+lbl_tol_elec_neg.grid(row=17, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_elec_neg = ttk.Entry(scrollable_frame)
+txt_tol_elec_neg.grid(row=17, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_position_mid_cw_pos = ttk.Label(scrollable_frame, text="Tol. Position Mittelanzapfung CW Positiv")
+lbl_tol_position_mid_cw_pos.grid(row=18, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_position_mid_cw_pos = ttk.Entry(scrollable_frame)
+txt_tol_position_mid_cw_pos.grid(row=18, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_position_mid_cw_neg = ttk.Label(scrollable_frame, text="Tol. Position Mittelanzapfung CW Negativ")
+lbl_tol_position_mid_cw_neg.grid(row=19, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_position_mid_cw_neg = ttk.Entry(scrollable_frame)
+txt_tol_position_mid_cw_neg.grid(row=19, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_position_mid_ccw_pos = ttk.Label(scrollable_frame, text="Tol. Position Mittelanzapfung CCW Positiv")
+lbl_tol_position_mid_ccw_pos.grid(row=20, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_position_mid_ccw_pos = ttk.Entry(scrollable_frame)
+txt_tol_position_mid_ccw_pos.grid(row=20, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_position_mid_ccw_neg = ttk.Label(scrollable_frame, text="Tol. Position Mittelanzapfung CCW Negativ")
+lbl_tol_position_mid_ccw_neg.grid(row=21, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_position_mid_ccw_neg = ttk.Entry(scrollable_frame)
+txt_tol_position_mid_ccw_neg.grid(row=21, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_total_mid_cw_pos = ttk.Label(scrollable_frame, text="Tol. Gesamtwinkel Mittelanzapfung Positiv")
+lbl_tol_total_mid_cw_pos.grid(row=22, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_total_mid_cw_pos = ttk.Entry(scrollable_frame)
+txt_tol_total_mid_cw_pos.grid(row=22, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_total_mid_cw_neg = ttk.Label(scrollable_frame, text="Tol. Gesamtwinkel Mittelanzapfung Negativ")
+lbl_tol_total_mid_cw_neg.grid(row=23, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_total_mid_cw_neg = ttk.Entry(scrollable_frame)
+txt_tol_total_mid_cw_neg.grid(row=23, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_activeCW_pos = ttk.Label(scrollable_frame, text="Tol. Gesamtwinkel AktivCW Positiv")
+lbl_tol_activeCW_pos.grid(row=24, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_activeCW_pos = ttk.Entry(scrollable_frame)
+txt_tol_activeCW_pos.grid(row=24, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_activeCW_neg = ttk.Label(scrollable_frame, text="Tol. Gesamtwinkel AktivCW Negativ")
+lbl_tol_activeCW_neg.grid(row=25, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_activeCW_neg = ttk.Entry(scrollable_frame)
+txt_tol_activeCW_neg.grid(row=25, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_activeCCW_pos = ttk.Label(scrollable_frame, text="Tol. Gesamtwinkel AktivCCW Positiv")
+lbl_tol_activeCCW_pos.grid(row=26, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_activeCCW_pos = ttk.Entry(scrollable_frame)
+txt_tol_activeCCW_pos.grid(row=26, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_activeCCW_neg = ttk.Label(scrollable_frame, text="Tol. Gesamtwinkel AktivCCW Negativ")
+lbl_tol_activeCCW_neg.grid(row=27, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_activeCCW_neg = ttk.Entry(scrollable_frame)
+txt_tol_activeCCW_neg.grid(row=27, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_lin_pos = ttk.Label(scrollable_frame, text="Tol. Linearität Positiv")
+lbl_tol_lin_pos.grid(row=28, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_lin_pos = ttk.Entry(scrollable_frame)
+txt_tol_lin_pos.grid(row=28, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_lin_neg = ttk.Label(scrollable_frame, text="Tol. Linearität Negativ")
+lbl_tol_lin_neg.grid(row=29, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_lin_neg = ttk.Entry(scrollable_frame)
+txt_tol_lin_neg.grid(row=29, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_resist_pos = ttk.Label(scrollable_frame, text="Tol. Widerstand Positiv")
+lbl_tol_resist_pos.grid(row=30, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_resist_pos = ttk.Entry(scrollable_frame)
+txt_tol_resist_pos.grid(row=30, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_tol_resist_neg = ttk.Label(scrollable_frame, text="Tol. Widerstand Negativ")
+lbl_tol_resist_neg.grid(row=31, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_tol_resist_neg = ttk.Entry(scrollable_frame)
+txt_tol_resist_neg.grid(row=31, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_switch_polarity = ttk.Label(scrollable_frame, text="Polarität wechsel?")
+lbl_switch_polarity.grid(row=32, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_switch_polarity = ttk.Entry(scrollable_frame)
+txt_switch_polarity.grid(row=32, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+lbl_comment = ttk.Label(scrollable_frame, text="Kommentar")
+lbl_comment.grid(row=33, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+txt_comment = tk.Text(scrollable_frame, height= 7, width= 20, font="Arial 12")
+txt_comment.grid(row=33, column=1, pady=(5, 5), padx=(20,0), ipadx=10)
+
+
+
+
+
+
+
+
+
+
+
+
+# ------------------ MAIN
+root.mainloop()

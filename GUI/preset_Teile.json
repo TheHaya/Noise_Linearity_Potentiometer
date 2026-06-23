@@ -30,7 +30,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 1,
-        "comment": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt"
+        "comment": "DP37 H2 Poti"
     },
 
     "103821":{
@@ -64,7 +64,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
-        "comment": "Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar Testkommentar"
+        "comment": "360° endlos-drehender Poti"
     },
 
     "104235":{
@@ -98,7 +98,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
-        "comment":""
+        "comment":"320° T18"
     }, 
     "10":{
         "soll_spannung_rauschen": 5.0,

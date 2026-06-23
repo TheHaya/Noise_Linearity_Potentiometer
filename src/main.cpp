@@ -32,6 +32,7 @@ bool but_up = HIGH;
 bool but_press;
 bool endless_poti;
 bool calib_finished;
+bool ping_ok;
 
 // --------------- SETUP AND ASSIST FUNCTIONS
 
@@ -83,7 +84,9 @@ bool abort_if_cancelled(){
   if(!cancelled) return false;
   stop_motion();
   Serial.println("CANCEL");
-  setLEDS(3);
+  if(ping_ok){
+    setLEDS(3);
+  }
   all_relays_off();
   uint8_t error_code = 0;
   bool read_ok = read_hardware_error_status(error_code, DID);
@@ -124,7 +127,7 @@ void loop(){
   if(servo_ping_timer > POLLING_TIMER_PING){
     servo_ping_timer = 0;
 
-    bool ping_ok = dxl.ping(DID);
+    ping_ok = dxl.ping(DID);
 
     if(ping_ok && !servo_online){
       servo_online = true;

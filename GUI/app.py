@@ -952,6 +952,8 @@ def open_tester():
 
 
 # --------------- GUI
+print("Programm wird gestartet...")
+
 root = tk.Tk()
 scr_wid = root.winfo_screenwidth()
 scr_hei = root.winfo_screenheight()
@@ -961,7 +963,7 @@ small_hei = 170
 root.minsize(width=1280, height=800)
 root.geometry("1280x800")
 #root.geometry(f"{scr_wid - scr_wid//5}x{scr_hei - scr_hei//5}+0+0")
-root.title("Rauschprüfung")
+root.title("Prüfprogramm")
 root.resizable(True, True)
 root.configure(bg="#1c1c1c")
 
@@ -1190,6 +1192,7 @@ but_test.grid(row=10, column=3, pady=(12, 5), padx=(10,0))
 root.bind("<Escape>", lambda event: on_root_close())
 root.protocol("WM_DELETE_WINDOW", on_root_close)
 # --------------- MAIN
+
 ser_ard = sc.connect_ard()
 rework_chk()
 ring.build_ring(ring_area)
