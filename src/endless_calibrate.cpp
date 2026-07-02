@@ -116,7 +116,7 @@ void find_endless_starting_point(){
   // drive_to(endless_start_tick + 3750, user_rpm); // ~330°
   // reached_goal(endless_start_tick + 3750, 2);
   drive_and_check(endless_start_tick + 3750, user_rpm);
-  apply_relay_mode(ENDLESS_INIT_RELAY_MODE);
+  apply_relay_mode(POL_INIT_RELAY_MODE);
   delay(200);
   endless_end_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 0);
   apply_relay_mode(INIT_RELAY_MODE);

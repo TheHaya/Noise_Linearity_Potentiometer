@@ -37,6 +37,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
 
         # ser_arduino.reset_input_buffer()
         # ser_arduino.reset_output_buffer()
+        ser_arduino.write(f"rel_sw:{rel_sw}\n".encode())
+        time.sleep(0.2)
         print("MECH_ENDS Sende: INIT_GO")
         sc.prepare_arduino_run(ser_arduino)
         ser_arduino.write(b"INIT_GO\n")

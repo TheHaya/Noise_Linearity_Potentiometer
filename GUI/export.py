@@ -148,6 +148,8 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
 
         if os.path.exists(file):
             wb = xw.Book(file)
+            wb.app.display_alerts = False
+            wb.app.screen_updating = False
 
             if rework_nr is not None:
                 if rework_nr < 1:

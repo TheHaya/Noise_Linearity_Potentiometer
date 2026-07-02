@@ -36,7 +36,7 @@ void tester(){
       tester_val += 1;
       break;
     case 2:
-      apply_relay_mode(ENDLESS_INIT_RELAY_MODE);
+      apply_relay_mode(POL_INIT_RELAY_MODE);
       tester_val = 1;
       break;
     default:

@@ -70,6 +70,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
         time.sleep(0.2)
         ser_arduino.write(f"dead32:{d32}\n".encode())
         time.sleep(0.2)
+        ser_arduino.write(f"rel_sw:{rel_sw}\n".encode())
+        time.sleep(0.2)
         print("LINEAR Sende: GO") #debug
         #print(d11, d12, d21, d22, d31, d32)
         # ser_arduino.reset_input_buffer()

@@ -146,6 +146,8 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None
         # ser_arduino.reset_input_buffer()
         # ser_arduino.reset_output_buffer()
         sc.prepare_arduino_run(ser_arduino)
+        ser_arduino.write(f"rel_sw:{rel_sw}\n".encode())
+        time.sleep(0.2)
         ser_arduino.write(b"NOISE_GO\n")
         print("NOISE Sende: GO")
 

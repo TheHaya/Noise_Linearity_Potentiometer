@@ -16,8 +16,8 @@ void noise_preparation_movement(){
     // reached_goal(sim_mercy_start, 3);
     // drive_to(sim_mercy_end, rpm_intervall);
     // reached_goal(sim_mercy_end, 3);
-    drive_and_check(sim_mercy_start, rpm_intervall);
-    drive_and_check(sim_mercy_end, rpm_intervall);
+    drive_and_check(sim_mercy_start, rpm_intervall,1);
+    drive_and_check(sim_mercy_end, rpm_intervall,1);
   }
 }
 

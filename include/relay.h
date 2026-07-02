@@ -22,11 +22,14 @@ extern const uint16_t RELAY_9_GH;
 
 extern const uint16_t IDLE_RELAY_MODE;
 extern const uint16_t INIT_RELAY_MODE;
-extern const uint16_t ENDLESS_INIT_RELAY_MODE;
+extern const uint16_t POL_INIT_RELAY_MODE;
 extern const uint16_t LINEARITY_RELAY_MODE;
+extern const uint16_t POL_LINEARITY_RELAY_MODE;
 extern const uint16_t NOISE_RELAY_MODE;
 extern const uint16_t NOISE_LOADED_RELAY_MODE;
+extern const uint16_t POL_NOISE_RELAY_MODE;
 extern const uint16_t ELEC_DEG_RELAY_MODE;
+extern const uint16_t POL_ELEC_DEG_RELAY_MODE;
 extern const uint16_t TOTAL_RESISTANCE_RELAY_MODE;
 extern const uint16_t INITIAL_RESISTANCE_RELAY_MODE;
 extern const uint16_t FINAL_RESISTANCE_RELAY_MODE;

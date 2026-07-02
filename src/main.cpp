@@ -161,7 +161,7 @@ void loop(){
     if(command.startsWith("SETV:")){tar_volt = command.substring(5).toFloat();}
     if(command.startsWith("SETW:")){target_deg_total = command.substring(5).toFloat();}
     if(command.startsWith("SETS:")){user_rpm = command.substring(5).toFloat();}
-    if(command.startsWith("REL_SW:")){relay_switch = command.substring(7).toInt();}
+    if(command.startsWith("rel_sw:")){relay_switch = command.substring(7).toInt();}
     if(command.startsWith("goto:")){user_go_to = command.substring(5).toFloat();}
     if(command.startsWith("dead11:")){d11_deg = command.substring(7).toFloat();}
     if(command.startsWith("dead12:")){d12_deg = command.substring(7).toFloat();}
@@ -183,14 +183,22 @@ void loop(){
     
     if(command == "CALIB_GO"){
       if(endless_poti){
-        apply_relay_mode(INIT_RELAY_MODE);
+        if(relay_switch == 0){
+          apply_relay_mode(INIT_RELAY_MODE);
+        } else {
+          apply_relay_mode(POL_INIT_RELAY_MODE);
+        }
         delay(1000);
         find_endless_volt_crossover();
         find_endless_starting_point();
         calib_finished = true;
       }
       else{
-        apply_relay_mode(INIT_RELAY_MODE);
+        if(relay_switch == 0){
+          apply_relay_mode(INIT_RELAY_MODE);
+        } else {
+          apply_relay_mode(POL_INIT_RELAY_MODE);
+        }
         delay(1000);
         if(!endless_poti){
           check_beginning(target_deg_total);
@@ -208,21 +216,25 @@ void loop(){
     }
 
     if(command == "NOISE_GO"){
-      apply_relay_mode(NOISE_RELAY_MODE);
-      if(target_deg_total == 360){
-        endless_noise_preparation_movement();
+      if(relay_switch == 0){
+          apply_relay_mode(NOISE_RELAY_MODE);
+        } else {
+          apply_relay_mode(POL_NOISE_RELAY_MODE);
+        }
+      // if(target_deg_total == 360){
+      //   endless_noise_preparation_movement();
         
-        // drive_to(endless_sim_start, user_rpm);
-        // reached_goal(endless_sim_start, 2, 0, 15000);  
-      }
-      else{
+      //   // drive_to(endless_sim_start, user_rpm);
+      //   // reached_goal(endless_sim_start, 2, 0, 15000);  
+      // }
+      // else{
         noise_preparation_movement();
         // if(cancelled == false){
         // drive_to(sim_mercy_end, user_rpm);
         // reached_goal(sim_mercy_end, 2, 0, 15000); 
         drive_and_check(sim_mercy_end, user_rpm, 0);
 
-        }
+        // }
       if(cancelled == false){
         Serial.println("NOISE_READY");
       } else{
@@ -252,7 +264,11 @@ void loop(){
 
     if(command == "LINEAR_GO"){
       linear_checked = true; if(abort_if_cancelled()) return;
-      apply_relay_mode(LINEARITY_RELAY_MODE);
+      if(relay_switch == 0){
+          apply_relay_mode(LINEARITY_RELAY_MODE);
+        } else {
+          apply_relay_mode(POL_LINEARITY_RELAY_MODE);
+        }
       if(cancelled == false){
         Serial.println("LINEAR_READY");
       } else{
@@ -280,7 +296,11 @@ void loop(){
     if(linear_checked == false){ // Falls elec_deg und linear beide angekreuzt wurden dann einfach elec_deg ignorieren
       if(command == "ELEC_DEG_GO"){
         if(abort_if_cancelled()) return;
-        apply_relay_mode(ELEC_DEG_RELAY_MODE);
+        if(relay_switch == 0){
+          apply_relay_mode(ELEC_DEG_RELAY_MODE);
+        } else {
+          apply_relay_mode(POL_ELEC_DEG_RELAY_MODE);
+        }
         if(cancelled == false){
           Serial.println("ELEC_DEG_READY");
         } else{
