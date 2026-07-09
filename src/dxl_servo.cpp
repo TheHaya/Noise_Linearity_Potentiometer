@@ -21,8 +21,8 @@ const float DEG_PER_TICK = 360.0f / 4096.0f;
 const float TICK_PER_DEG = 4096.0f / 360.0f;
 const float RPM_PER_VEL = 0.229;
 const float START_CURRENT = 800;
-const float CUR_TOLERANCE = 50;
-const float CUR_TOLERANCE_SLOW = 5;
+const float CUR_TOLERANCE = 10;
+const float CUR_TOLERANCE_SLOW = 4; // dp37 4-5, stiel 1-2
 const int POLL_TIMER = 1;
 const float SLOW_RPM = 8;
 using namespace ControlTableItem;

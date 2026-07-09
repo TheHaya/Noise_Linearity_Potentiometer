@@ -287,8 +287,8 @@ void check_ends(){
   //   ist_start_volt = corr_measure();
   //   // ist_end_volt = corr_measure(ist_end_volt);
   // }
-  check_end_start = -deg_to_tick(target_deg_total) * 1.5;
-  check_end_end = deg_to_tick(target_deg_total) * 1.5;
+  check_end_start = ZERO_TICK - deg_to_tick(target_deg_total) * 1.5;
+  check_end_end = ZERO_TICK + deg_to_tick(target_deg_total) * 1.5;
 
   drive_and_check(check_end_end, SLOW_RPM);
   end_tick = stopped_tick;

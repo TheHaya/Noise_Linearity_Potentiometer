@@ -1,8 +1,16 @@
+import threading, time
+from datetime import datetime
+import pandas as pd
 import os
 import pandas as pd
 import xlwings as xw
 from itertools import cycle
 from linear_workflow import daten
+import serial_client as sc
+import mech_ends_workflow
+
+TEST_RUNS = 40
+_tester_running = False
 
 # NUR TESTER FÜR 
 ALIGN_CENTER = -4108
@@ -149,3 +157,143 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
 
 def test_relays(ser_ard):
     ser_ard.write(b"TESTER\n")
+
+def start_mech_angle_repeat_test(ser_ard, meas_volt, meas_angle, meas_speed, relay_switch_pol, soll_volt_linear, stop_event=None, on_finish=None):
+    global _tester_running
+
+    if _tester_running:
+        print("Tester läuft bereits.")
+        return
+
+    _tester_running = True
+
+    thread = threading.Thread(
+    target=_run_mech_angle_repeat_test,
+    args=(ser_ard, meas_volt, meas_angle, meas_speed, relay_switch_pol, soll_volt_linear, stop_event, on_finish),
+    daemon=True
+)
+    thread.start()
+    return thread
+
+def _run_mech_angle_repeat_test(ser_ard, meas_volt, meas_angle, meas_speed, relay_switch_pol, soll_volt_linear, stop_event=None, on_finish=None):
+    global _tester_running
+
+    rows = []
+    ser_psu = None
+    ser_multi = None
+
+    file_name = "MechWinkel_100x_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".xlsx"
+
+    if stop_event is None:
+        stop_event = _DummyStopEvent()
+
+    try:
+        if ser_ard is None:
+            ser_ard = sc.connect_ard()
+
+        ser_psu = sc.connect_psu()
+        ser_multi = sc.connect_multi()
+
+        mech_ends_workflow.config(
+            None,
+            None,
+            ser_ard,
+            ser_psu,
+            ser_multi
+        )
+
+        for i in range(TEST_RUNS):
+            print(f"Tester Messung {i + 1}/{TEST_RUNS}")
+
+            status = "OK"
+            angle = None
+            ticks = None
+            delay1 = None
+            delay2 = None
+            delay3 = None
+
+            try:
+                mech_ends_workflow.measurement(
+                    meas_volt,
+                    meas_angle,
+                    meas_speed,
+                    relay_switch_pol,
+                    soll_volt_linear,
+                    stop_event,
+                    lambda: None
+                )
+
+                angle = getattr(mech_ends_workflow, "total_mech", None)
+                ticks = getattr(mech_ends_workflow, "total_ticks", None)
+                delay1 = getattr(mech_ends_workflow, "delay_time1", None)
+                delay2 = getattr(mech_ends_workflow, "delay_time2", None)
+                delay3 = getattr(mech_ends_workflow, "delay_time3", None)
+
+            except Exception as e:
+                status = f"Fehler: {e}"
+                print(status)
+
+            rows.append({
+                "Lauf": i + 1,
+                "Zeit": datetime.now().strftime("%H:%M:%S"),
+                "Mechanischer Winkel [deg]": angle,
+                "Ticks": ticks,
+                "Delay 0.5x [s]": delay1,
+                "Delay 1.0x [s]": delay2,
+                "Delay 1.5x [s]": delay3,
+                "Status": status,
+            })
+
+            _save_mech_angle_excel(file_name, rows)
+
+    finally:
+        try:
+            if ser_psu is not None:
+                ser_psu.write(b"OUTP OFF\n")
+                ser_psu.close()
+        except Exception:
+            pass
+
+        try:
+            if ser_multi is not None:
+                ser_multi.close()
+        except Exception:
+            pass
+
+        _tester_running = False
+        print("Tester fertig.")
+        if on_finish is not None:
+            on_finish()
+
+class _DummyStopEvent:
+    def is_set(self):
+        return False
+
+    def set(self):
+        pass
+
+
+def _save_mech_angle_excel(file_name, rows):
+    df = pd.DataFrame(rows)
+
+    angles = pd.to_numeric(df["Mechanischer Winkel [deg]"], errors="coerce")
+
+    stats = pd.DataFrame([
+        {"Wert": "Anzahl", "Ergebnis": angles.count()},
+        {"Wert": "Mittelwert", "Ergebnis": angles.mean()},
+        {"Wert": "Minimum", "Ergebnis": angles.min()},
+        {"Wert": "Maximum", "Ergebnis": angles.max()},
+        {"Wert": "Spannweite", "Ergebnis": angles.max() - angles.min()},
+        {"Wert": "Standardabweichung", "Ergebnis": angles.std()},
+    ])
+
+    with pd.ExcelWriter(file_name, engine="xlsxwriter") as writer:
+        df.to_excel(writer, sheet_name="Messwerte", index=False)
+
+        start_row = len(df) + 3
+        stats.to_excel(
+            writer,
+            sheet_name="Messwerte",
+            startrow=start_row,
+            index=False
+        )

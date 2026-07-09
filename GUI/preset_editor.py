@@ -5,6 +5,8 @@ from tkinter import messagebox
 import json, os, shutil, datetime, tempfile, sys
 import sv_ttk
 from PIL import ImageTk, Image
+from tkinter import filedialog
+
 
 # def resource_path(rel_path: str) -> str:
 #     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
@@ -482,7 +484,6 @@ def _update_dropdown(anchor_entry: ttk.Entry, query_var: tk.StringVar, preset_id
     lb.configure(height=min(n, MAX_SUGGESTIONS)) 
     position_dropdown(anchor_entry, n) 
 
-
 def get_schema_keys():
     return [field["key"] for field in FIELD_SCHEMA]
 
@@ -611,7 +612,12 @@ def serialize_presets(presets: dict) -> dict:
     return result
 
 
-
+def browse_files():
+    filename = filedialog.askopenfilename(initialdir="/",
+                                          title = "Datei auswählen",
+                                          filetypes= (".json-Datei",
+                                                      "*.json"))
+    lbl_open_file.configure(text="Datei geöffnet: " + filename)
 # ------------------ FRONTEND FUNCTIONS
 
 print("Programm wird gestartet...")
@@ -696,9 +702,9 @@ right_frame.grid_columnconfigure(1, weight=0)
 
 
 
-but_open_file = ttk.Button(left_frame, text="Öffnen...")
+but_open_file = ttk.Button(left_frame, text="Öffnen...", command=browse_files)
 but_open_file.grid(row=2, column=0, pady=(5, 100), padx=(20,0), ipadx=10)
-lbl_open_file = ttk.Label(left_frame, text="Testdatei.json")
+lbl_open_file = ttk.Label(left_frame, text="Bitte Datei öffnen.")
 lbl_open_file.grid(row=1, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
 
 lbl_partnr = ttk.Label(left_frame, text="Teilnummer")
@@ -756,10 +762,10 @@ def bind_listbox_click():
 
 bind_listbox_click()
 
-but_save = ttk.Button(left_frame, text="Speichern", command=save_presets)
+but_save = ttk.Button(left_frame, text="Preset speichern", command=save_presets)
 but_save.grid(row=8, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
 
-but_saveas = ttk.Button(left_frame, text="Speichern unter...")
+but_saveas = ttk.Button(left_frame, text="Datei speichern unter...")
 but_saveas.grid(row=9, column=0, pady=(5, 5), padx=(20,0), ipadx=10, sticky="s")
 
 

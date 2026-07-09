@@ -172,6 +172,8 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
                 return
 
             wb = xw.Book()
+            wb.app.display_alerts = False
+            wb.app.screen_updating = False
             wb.save(file)
             sheet = wb.sheets[0]
             sh_name = "1"

@@ -795,7 +795,7 @@ def goto_execute():
     threading.Thread(target=worker, daemon=True).start()
 
 def advanced_visible(visible: bool):
-    widgets = (but_go, advanced_warning, txt_go, but_cur_pos, lbl_cur_pos, but_test)
+    widgets = (but_go, advanced_warning, txt_go, but_cur_pos, lbl_cur_pos, but_relais, but_tester)
     if visible:
         open_advanced_window()
         for w in widgets:
@@ -947,9 +947,73 @@ def open_cancelled_window():
     ok_button.focus_set()  
     cancelled_win.bind("<Return>", lambda event: ok_button.invoke())
 
-def open_tester():
+def open_relais():
     tester.test_relays(ser_ard)
 
+
+
+def open_tester():
+    global measurement_thread, measurement_running, active_measurement_stop_event
+
+    wait_win = tk.Toplevel(root)
+    wait_win.title("Datenmessung")
+    wait_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
+    wait_win.transient(root)
+    wait_win.grab_set()
+    wait_win.resizable(False, False)
+
+    status_label = ttk.Label(wait_win, text="Bitte warten...")
+    status_label.pack(pady=(0,20), expand=True)
+
+    stop_event = threading.Event()
+    active_measurement_stop_event = stop_event
+
+    queue_ui(lambda:lbl_mech.config(fg = "#FFFFFF",bg="#1c1c1c"))
+    mech_angle_var.set("Mechanischer Winkel: --")
+    elec_angle_var.set("Elektrischer Winkel: --")
+
+    def cancel():
+        request_measurement_stop()
+        wait_win.destroy()
+
+    wait_win.protocol("WM_DELETE_WINDOW", cancel)
+
+    try:
+        meas_volt = float(txt_volt.get().strip().replace(',', '.'))
+        meas_angle = float(txt_angle.get().strip().replace(',', '.'))
+        meas_speed = float(txt_speed.get().strip().replace(',', '.'))
+    except ValueError:
+        print("Eingabefehler bei Tester-Werten!")
+        return
+
+    def finish_tester():
+        global measurement_running, measurement_thread, active_measurement_stop_event
+
+        write_serial_line(ser_ard, "ALL_END")
+        print("Sende: ALL_END")
+
+        active_measurement_stop_event = None
+        measurement_running = False
+        measurement_thread = None
+
+        if not app_closing:
+            set_measurement_controls(True)
+
+        destroy_window(wait_win)
+
+    set_measurement_controls(False)
+    measurement_running = True
+
+    measurement_thread = tester.start_mech_angle_repeat_test(
+    ser_ard,
+    meas_volt,
+    meas_angle,
+    meas_speed,
+    relay_switch_pol,
+    soll_volt_linear,
+    stop_event,
+    lambda: queue_ui(finish_tester)
+)
 
 # --------------- GUI
 print("Programm wird gestartet...")
@@ -1186,8 +1250,10 @@ but_cur_pos = ttk.Button(right_frame, text="Curr Position", command=show_current
 but_cur_pos.grid(row=8, column=2, pady=(12, 5), padx=(10,0))
 but_go = ttk.Button(right_frame, text="Go To", command=goto_execute)
 but_go.grid(row=10, column=2, pady=(5, 5))
-but_test = ttk.Button(right_frame, text="Tester",  command=open_tester, width=12)
-but_test.grid(row=10, column=3, pady=(12, 5), padx=(10,0))
+but_relais = ttk.Button(right_frame, text="Relais switch",  command=open_relais, width=12)
+but_relais.grid(row=10, column=3, pady=(12, 5), padx=(10,0))
+but_tester = ttk.Button(right_frame, text="Tester",  command=open_tester, width=12)
+but_tester.grid(row=7, column=3, pady=(12, 40), padx=(10,0))
 
 root.bind("<Escape>", lambda event: on_root_close())
 root.protocol("WM_DELETE_WINDOW", on_root_close)
