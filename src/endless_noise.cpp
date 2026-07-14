@@ -4,7 +4,7 @@
 #include <dxl_servo.h>
 #include <relay.h>
 #include <endless_calibrate.h>
-
+#include <progress.h>
 
 float endless_noise_prep_start;
 float endless_noise_prep_end;

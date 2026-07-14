@@ -6,6 +6,7 @@
 #include <elec_deg.h>
 #include <relay.h>
 #include <endless_elec_deg.h>
+#include <progress.h>
 
 // --------------- CONSTANTS
 

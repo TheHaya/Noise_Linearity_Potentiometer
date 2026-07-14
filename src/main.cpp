@@ -13,7 +13,7 @@
 #include <endless_calibrate.h>
 #include <endless_elec_deg.h>
 #include <endless_noise.h>
-
+#include <progress.h>
 
 // --------------- CONSTANTS
 const int BUTTON = 19;
@@ -31,7 +31,7 @@ bool servo_online = false;
 bool but_up = HIGH;
 bool but_press;
 bool endless_poti;
-bool calib_finished;
+// bool calib_finished;
 bool ping_ok;
 
 // --------------- SETUP AND ASSIST FUNCTIONS
@@ -70,7 +70,7 @@ void measurements_init(){
   setLEDS(1);
   endless_poti = false;
   linear_checked = false;
-  calib_finished = false;
+  // calib_finished = false;
   dxl_init();
   calibrate_init();
   endless_init();
@@ -171,12 +171,12 @@ void loop(){
     if(command.startsWith("dead32:")){d32_deg = command.substring(7).toFloat();}
   
     if(command == "INIT_GO"){
+      report_progress("MECH", "INIT_GO", 0);
       measurements_init();
       relays_init();
       calc_rpm();
       if(target_deg_total == 360){
         endless_poti = true;
-        calibrate_currents();
       } 
       Serial.println("INIT_FINISH");
     }
@@ -189,9 +189,13 @@ void loop(){
           apply_relay_mode(POL_INIT_RELAY_MODE);
         }
         delay(1000);
+        report_progress("MECH", "CALIBRATE_CURRENTS", 40);
+        calibrate_currents();
+        report_progress("MECH", "ENDLESS_VOLT_CROSSOVER", 60);
         find_endless_volt_crossover();
+        // report_progress in der Funktion 
         find_endless_starting_point();
-        calib_finished = true;
+        // calib_finished = true;
       }
       else{
         if(relay_switch == 0){
@@ -200,22 +204,26 @@ void loop(){
           apply_relay_mode(POL_INIT_RELAY_MODE);
         }
         delay(1000);
-        if(!endless_poti){
-          check_beginning(target_deg_total);
-          if(abort_if_cancelled()) return;
-        }
+        report_progress("MECH", "CHECK_BEGINNING", 20);
+        check_beginning(target_deg_total);
+        if(abort_if_cancelled()) return;
+
+        report_progress("MECH", "CALIBRATE_CURRENTS", 40);
         calibrate_currents();
         if(abort_if_cancelled()) return;
+        // report_progress ist in check_ends()
         check_ends();
         if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
       }
       // drive_to(ZERO_TICK, user_rpm);
       // reached_goal(ZERO_TICK, 2);
+      report_progress("MECH", "FINISH_CHECK_ENDS", 100);
       drive_and_check(ZERO_TICK, user_rpm);
       Serial.println("CALIB_FINISH");
     }
 
     if(command == "NOISE_GO"){
+      report_progress("NOISE", "NOISE_GO", 0);
       if(relay_switch == 0){
           apply_relay_mode(NOISE_RELAY_MODE);
         } else {
@@ -231,7 +239,8 @@ void loop(){
         noise_preparation_movement();
         // if(cancelled == false){
         // drive_to(sim_mercy_end, user_rpm);
-        // reached_goal(sim_mercy_end, 2, 0, 15000); 
+        // reached_goal(sim_mercy_end, 2, 0, 15000);
+        report_progress("NOISE", "NOISE_WAIT", 40);
         drive_and_check(sim_mercy_end, user_rpm, 0);
 
         // }
@@ -245,6 +254,7 @@ void loop(){
       
     }
     if(command == "NOISE_START"){
+      report_progress("NOISE", "NOISE_MOVEMENT", 50);
       if(target_deg_total == 360){
         endless_noise_movement();
       } else{
@@ -259,10 +269,12 @@ void loop(){
       // reached_goal(ZERO_TICK, 2);
       // all_relays_off();
       // dxl.ledOff(DID);
+      report_progress("NOISE", "NOISE_FINISH", 100);
       Serial.println("NOISE_FINISH");
     }
 
     if(command == "LINEAR_GO"){
+      report_progress("LINEAR", "LINEAR_GO", 0);
       linear_checked = true; if(abort_if_cancelled()) return;
       if(relay_switch == 0){
           apply_relay_mode(LINEARITY_RELAY_MODE);
@@ -278,7 +290,9 @@ void loop(){
       }
     }
     if(command == "LINEAR_START"){
+      report_progress("LINEAR", "LINEAR_START", 0);
       linearity_movement2(); if(abort_if_cancelled()) return;
+      report_progress("LINEAR", "CALC_SUMMARY", 80);
       calc_summary2();
       calc_linearity2();
       calc_errors2();
@@ -290,11 +304,13 @@ void loop(){
       // drive_to(ZERO_TICK, user_rpm);
       // reached_goal(ZERO_TICK, 2);
       // dxl.ledOff(DID);
+      report_progress("LINEAR", "LINEAR_FINISH", 100);
       Serial.println("LINEAR_FINISH");
     }
 
     if(linear_checked == false){ // Falls elec_deg und linear beide angekreuzt wurden dann einfach elec_deg ignorieren
       if(command == "ELEC_DEG_GO"){
+        report_progress("ELEC", "ELEC_GO", 0);
         if(abort_if_cancelled()) return;
         if(relay_switch == 0){
           apply_relay_mode(ELEC_DEG_RELAY_MODE);
@@ -323,6 +339,7 @@ void loop(){
         // drive_to(ZERO_TICK, user_rpm);
         // reached_goal(ZERO_TICK, 2);
         // dxl.ledOff(DID);
+        report_progress("ELEC", "ELEC_FINISH", 100);
         Serial.println("ELEC_DEG_FINISH");
       }
     }

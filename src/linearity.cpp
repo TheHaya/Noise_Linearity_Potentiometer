@@ -4,6 +4,7 @@
 #include <calibrate.h>
 #include <linearity.h>
 #include <relay.h>
+#include <progress.h>
 
 // --------------- CONSTANTS
 const size_t PRINT_ARRAY_SIZE = 13;
@@ -146,7 +147,21 @@ void linearity_movement2(){
   }
 
   for (size_t i = 0; i<PRINT_ARRAY_SIZE; i++) {
-    
+    // Ladebalken
+    if(i == 0){
+      report_progress("LINEAR", "D21_CHECK", 10);
+    } else if(i == 2){
+      report_progress("LINEAR", "D21_BETWEEN", 25);
+    } else if(i == 5){
+      report_progress("LINEAR", "D12_CHECK", 35);
+    } else if(i == 7){
+      report_progress("LINEAR", "D22_CHECK", 50);
+    } else if(i == 8){
+      report_progress("LINEAR", "D22_BETWEEN", 60);
+    } else if(i == 11){
+      report_progress("LINEAR", "D32_CHECK", 80);
+    }
+
     int32_t tick = drive_tick[i];
     //DEBUG_SERIAL.print(tick);
     drive_to(tick, user_rpm);

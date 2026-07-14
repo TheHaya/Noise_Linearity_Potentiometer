@@ -4,7 +4,7 @@
 #include <elapsedMillis.h>
 #include <relay.h>
 #include <calibrate.h>
-
+#include <progress.h>
 
 // --------------- CONSTANTS
 const int32_t ENDLESS_MERCY_TOLERANCE_TICK = 2;
@@ -111,6 +111,7 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
 
 void find_endless_starting_point(){
   float cur_volt;
+  report_progress("MECH", "ENDLESS_START_TICK", 70);
   endless_start_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 1);
   ist_start_volt = corr_measure(1);
   // drive_to(endless_start_tick + 3750, user_rpm); // ~330°
@@ -118,6 +119,8 @@ void find_endless_starting_point(){
   drive_and_check(endless_start_tick + 3750, user_rpm);
   apply_relay_mode(POL_INIT_RELAY_MODE);
   delay(200);
+
+  report_progress("MECH", "ENDLESS_END_TICK", 80);
   endless_end_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 0);
   apply_relay_mode(INIT_RELAY_MODE);
   delay(200);
@@ -130,6 +133,7 @@ void find_endless_starting_point(){
   // uint32_t sim_distance = abs(sim_mercy_end - sim_mercy_start);
   // Serial.print("TICKS");
   // Serial.println(sim_distance);
+  report_progress("MECH", "ZERO_ENDLESS", 90);
   Serial.print("ANGLE");
   Serial.println(tick_to_deg(total_distance));
   for(int i = 0; i < 5; i++){

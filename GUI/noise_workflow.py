@@ -37,16 +37,6 @@ def calc_individual_turns(ges_spd, turn_number, ges_deg):
         else:
             turn_duration += 2 * (60/(div_spd*i)) * (mech.total_ticks/circle_tick)
         total_duration += 4 * turn_duration
-        # match i:
-        #     case 1:
-        #         time1 = total_duration + mech.delay_time1
-        #         turn1 = turn_duration + (mech.delay_time1 / 2)
-        #     case 2:
-        #         time2 = total_duration + mech.delay_time1 + mech.delay_time2
-        #         turn2 = turn_duration + (mech.delay_time2 / 2)
-        #     case 3:
-        #         time3 = total_duration + mech.delay_time1 + mech.delay_time2 + mech.delay_time3
-        #         turn3 = turn_duration + (mech.delay_time3 / 2)
         match i:
             case 1:
                 time1 = total_duration + mech.delay_time1
@@ -106,8 +96,6 @@ def calc_rel_angle(time_arr, turn_arr, angle_arr, ges_deg):
     print(time2)
     print(time3-turn3)
     print(time3)
-    # print(turn_arr)
-    # print(angle_arr)
     return 
 
 
@@ -121,7 +109,7 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
     ser_Multi = ser_multi_app
 
 def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
-                pico_plot_volt=None, pico_plot_time=None, stop_event=None, on_finish=None):
+                pico_plot_volt=None, pico_plot_time=None, stop_event=None, on_finish=None, on_progress=None):
     try:
         global pico_pdf_time
         pico_pdf_time = []
@@ -138,13 +126,8 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None
         PSU_ovp = soll_v+soll_v*0.2
         PSU_ocp = 0.15
         PSU_current = 0.05
-        #ser_arduino = sc.connect_ard()
-        # ser_PSU = sc.connect_psu()
-        sc.set_psu_parameters(ser_PSU, PSU_ovp, PSU_ocp, soll_v, PSU_current) # für dp37
-        # sc.set_psu_parameters(ser_PSU, 2.5, 0.12, 2, 0.008) # für t18
+        sc.set_psu_parameters(ser_PSU, PSU_ovp, PSU_ocp, soll_v, PSU_current)
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
-        # ser_arduino.reset_input_buffer()
-        # ser_arduino.reset_output_buffer()
         sc.prepare_arduino_run(ser_arduino)
         ser_arduino.write(f"rel_sw:{rel_sw}\n".encode())
         time.sleep(0.2)
@@ -165,6 +148,8 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None
 
             line = ser_arduino.readline().decode('utf-8').strip()
 
+            if sc.handle_progress(line, "NOISE", on_progress):
+                continue
             if line == 'NOISE_READY':
                 print("Empfangen: NOISE_READY")
                 print("Config Pico")
@@ -207,8 +192,6 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None
         
         time.sleep(1)
         ser_PSU.write(b"OUTP OFF\n")
-        #ser_arduino.close()
-        #ser_PSU.close()
 
     except Exception as e:
         print("Fehler bei Serial (noise): ", e) #debug

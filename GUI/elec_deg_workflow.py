@@ -16,14 +16,12 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
     ser_Multi = ser_multi_app
 
 def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, d12=None, 
-                d21=None, d22=None, d31=None, stop_event=None, on_finish=None):
+                d21=None, d22=None, d31=None, stop_event=None, on_finish=None, on_progress=None):
     try:
         PSU_ovp = soll_v+soll_v*0.2
-        PSU_ocp = 0.15
+        PSU_ocp = 0.15                 
         PSU_current = 0.05
-        #ser_arduino = sc.connect_ard()
-        # ser_Multi = sc.connect_multi()
-        # ser_PSU = sc.connect_psu()
+
         sc.set_psu_parameters(ser_PSU, PSU_ovp, PSU_ocp, soll_v, PSU_current)
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
 
@@ -39,9 +37,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
         time.sleep(0.2)
         print(f"Deadzones: {d12}, {d21}, {d22}, {d31}")
         print("ELEC_DEG Sende: GO") #debug
-        #print(d11, d12, d21, d22, d31, d32)
-        # ser_arduino.reset_input_buffer()
-        # ser_arduino.reset_output_buffer()
+
         sc.prepare_arduino_run(ser_arduino)
         ser_arduino.write(b"ELEC_DEG_GO\n")
 
@@ -59,6 +55,8 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
 
             line = ser_arduino.readline().decode('utf-8').strip()
             #print("Empfangen:", line) #debug
+            if sc.handle_progress(line, "ELEC", on_progress):
+                continue
             if line.startswith('VOLTR'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 debug_pos = float(line[5::])
@@ -87,11 +85,6 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
                 break
             
         ser_PSU.write(b"OUTP OFF\n")
-        #ser_arduino.close()
-        # ser_Multi.close()
-        # print("[SERIAL] Multimeter close")
-        # ser_PSU.close()
-        # print("[SERIAL] Netzteil close")
                         
     except Exception as e:
         print("Fehler bei Serial (elec_deg): ", e) #debug

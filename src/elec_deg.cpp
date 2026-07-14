@@ -4,6 +4,8 @@
 #include <linearity.h>
 #include <elec_deg.h>
 #include <relay.h>
+#include <progress.h>
+
 
 // --------------- CONSTANTS
 const size_t ELEC_ARRAY_SIZE = 2;
@@ -45,6 +47,11 @@ void elec_deg_movement(){
     }
 
     for (size_t i = 0; i<ELEC_ARRAY_SIZE; i++) {
+        if(i == 0){
+            report_progress("ELEC", "D12_CHECK", 10);
+        } else if(i == 1){
+            report_progress("ELEC", "D31_CHECK", 50);
+        }
         //DEBUG_SERIAL.print(tick);
         int32_t tick = drive_tick[i];
 
@@ -75,6 +82,7 @@ void elec_deg_movement(){
         }
 
     }
+    report_progress("ELEC", "TOTAL_ELEC", 90);
     total_elec_deg = print_elec_deg[0]-print_elec_deg[1];
     Serial.print("TOTAL_ELEC");
     Serial.println(total_elec_deg);

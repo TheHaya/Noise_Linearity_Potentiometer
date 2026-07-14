@@ -3,7 +3,7 @@
 #include <calibrate.h>
 #include <elapsedMillis.h>
 #include <relay.h>
-
+#include <progress.h>
 
 // --------------- CONSTANTS
 const int32_t CHECK_END_MERCY_DEG = 30;
@@ -136,6 +136,12 @@ float correction_movement(float &current_volt, float goal_volt,
       }
       // drive_to(t, user_rpm);
       // reached_goal(t, 2);
+      if(target_deg_total != 360.0f && (t < sim_mercy_start || t > sim_mercy_end)){
+        stop_motion();
+        cancelled = true;
+        Serial.println("CANCEL");
+        return NAN;
+      }
       drive_and_check(t, user_rpm);
       current_volt = corr_measure();
     }
@@ -152,6 +158,12 @@ float correction_movement(float &current_volt, float goal_volt,
       }
       // drive_to(t, user_rpm);
       // reached_goal(t, 2);
+      if(target_deg_total != 360.0f && (t < sim_mercy_start || t > sim_mercy_end)){
+        stop_motion();
+        cancelled = true;
+        Serial.println("CANCEL");
+        return NAN;
+      }
       drive_and_check(t, user_rpm);
       current_volt = corr_measure();
     }
@@ -289,7 +301,7 @@ void check_ends(){
   // }
   check_end_start = ZERO_TICK - deg_to_tick(target_deg_total) * 1.5;
   check_end_end = ZERO_TICK + deg_to_tick(target_deg_total) * 1.5;
-
+  report_progress("MECH", "CHECK_END_END", 60);
   drive_and_check(check_end_end, SLOW_RPM);
   end_tick = stopped_tick;
   ist_start_volt = corr_measure();
@@ -305,6 +317,7 @@ void check_ends(){
 
   // drive_to(test_check_start, user_rpm);
   // reached_goal(test_check_start, 2);
+  report_progress("MECH", "CHECK_END_START", 80);
   drive_and_check(test_check_start, user_rpm);
 
   // drive_to(check_end_start, SLOW_RPM);
@@ -324,6 +337,7 @@ void check_ends(){
   // uint32_t sim_distance = abs(sim_mercy_end - sim_mercy_start);
   // Serial.print("TICKS");
   // Serial.println(sim_distance);
+  report_progress("MECH", "ZERO_CHECK_ENDS", 80);
   Serial.print("ANGLE");
   Serial.println(tick_to_deg(total_distance));
   for(int i = 0; i < 5; i++){

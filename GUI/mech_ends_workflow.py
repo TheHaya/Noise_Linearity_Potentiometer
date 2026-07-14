@@ -21,12 +21,8 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
     ser_PSU = ser_psu_app
     ser_Multi = ser_multi_app
     
-def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, stop_event=None, on_finish=None):
+def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, stop_event=None, on_finish=None, on_progress=None):
     try:
-        #ser_arduino = sc.connect_ard()
-        # ser_Multi = sc.connect_multi()
-        # ser_PSU = sc.connect_psu()
-
         PSU_ovp = soll_v+soll_v*0.2
         PSU_ocp = 0.15
         PSU_current = 0.05
@@ -35,8 +31,6 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
         global safety_cancel
         safety_cancel = False
 
-        # ser_arduino.reset_input_buffer()
-        # ser_arduino.reset_output_buffer()
         ser_arduino.write(f"rel_sw:{rel_sw}\n".encode())
         time.sleep(0.2)
         print("MECH_ENDS Sende: INIT_GO")
@@ -56,12 +50,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
                 break
 
             line = ser_arduino.readline().decode('utf-8').strip()
-            #print("Empfangen:", line) #debug
-    
-            #if line == 'CHECK_PSU':
-            #    sc.set_correct_voltage(ser_Multi, ser_PSU, 10)
 
-            
+            if sc.handle_progress(line, "MECH", on_progress):
+                continue
             if line.startswith('VOLTR_START'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 debug_pos = float(line[11::])
@@ -154,9 +145,6 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
 
         ser_PSU.write(b"OUTP OFF\n")
 
-        #ser_arduino.close()
-        # ser_Multi.close()
-        # ser_PSU.close()
     except Exception as e:
         print("Fehler bei Serial (mech_ends): ", e) #debug
         raise

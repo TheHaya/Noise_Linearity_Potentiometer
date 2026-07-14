@@ -15,17 +15,12 @@ import pico_runner
 import serial_client as sc
 import ring
 
-# --------------- PYINSTALLER FUNCTIONS
-# def resource_path(rel_path: str) -> str:
-#     base = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-#     return os.path.join(base, rel_path)
 
 def resource_path(rel_path: str) -> str:
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, rel_path)
 
 # --------------- APP VARIABLES 
-# ARDUINO_PORTS = ["COM3", "COM5", "COM9"]
 pico_plot_time = []
 pico_plot_volt = []
 pico_time = []
@@ -38,7 +33,6 @@ noise_win = None
 linear_win = None
 zero_win = None
 cancelled_win = None
-# stop_event_global = threading.Event()
 active_measurement_stop_event = None
 ser_ard = None
 measurement_thread = None
@@ -357,11 +351,30 @@ def destroy_window(window):
 
 def update_wait_status(window, label, text: str):
     try:
-        if window is not None and window.winfo_exists() and label.winfo_exists():
+        if (window is not None 
+        and window.winfo_exists() 
+        and label.winfo_exists()):
             label.configure(text=text, justify='center')
     except tk.TclError:
         pass
 
+def update_wait_progress(window, label, progressbar, text, value):
+    try:
+        if (window is not None 
+        and window.winfo_exists()
+        and label.winfo_exists()
+        and progressbar.winfo_exists()):
+            label.configure(
+                text=text,
+                justify="center"
+            )
+
+            progressbar.configure(
+                value=max(0, min(100, value))
+            )
+
+    except tk.TclError:
+        pass
 
 def set_measurement_controls(enabled: bool):
     state = "normal" if enabled else "disabled"
@@ -445,8 +458,11 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
     wait_win.grab_set()
     wait_win.resizable(False, False)
 
-    status_label = ttk.Label(wait_win, text="Bitte warten...")
-    status_label.pack(pady=(0,20), expand=True)
+    status_label = ttk.Label(wait_win, text="Vorbereitung der Messungen...\n\n", justify="center", wraplength=260)
+    status_label.pack(pady=(25, 12), padx=15)
+
+    progress_bar = ttk.Progressbar(wait_win, mode="determinate", maximum=100, value=0, length=250)
+    progress_bar.pack(pady=(0, 25))
 
     stop_event = threading.Event()
     active_measurement_stop_event = stop_event
@@ -470,7 +486,6 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
         noise_angles = []
         retry_requested = False
 
-
         try:
             pico_runner.noise_error = False
             linear_workflow.lin_error = False
@@ -480,8 +495,27 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
             visible_total = sum(1 for m in modes if m[4] is True)
             visible_i = 0
 
+            def make_progress_callback(measurement_no, title, visible):
+                if visible:
+                    display_title = title.replace("\n", " ")
+                    heading = (f"Messung {measurement_no}/{visible_total}: " f"{display_title}")
+                else:
+                    heading = "Vorbereitung der Messungen"
+
+                def report(local_progress, detail):
+                    local_progress = max(0.0, min(1.0, local_progress))
+                    percent = local_progress * 100
+                    text = f"{heading}\n\n{detail}"
+
+                    queue_ui(
+                        lambda text=text, percent=percent:
+                        update_wait_progress(wait_win, status_label, progress_bar, text, percent)
+                    )
+                return report
+
             if not ser_ard:
                 ser_ard = sc.connect_ard()
+
             ser_multi = sc.connect_multi()
             ser_psu = sc.connect_psu()
             set_active_serials(ser_ard, ser_psu, ser_multi)
@@ -491,8 +525,11 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
             for (workflow, workflow_args, title, needs_config, visible) in modes:
                 if visible:
                     visible_i += 1
-                    queue_ui(lambda t=title, i=visible_i, n=visible_total:
-                             update_wait_status(wait_win, status_label, f"Messung {i}/{n}:\n\n{t}"))
+                    progress_callback = make_progress_callback(visible_i, title, True)
+                    progress_callback(0.0, "Messung wird vorbereitet")
+                else:
+                    progress_callback = make_progress_callback(0, title, False)
+                    progress_callback(0.0, "Referenzfahrt wird vorbereitet")
 
                 if needs_config:
                     workflow.config(root, txt_speed, ser_ard, ser_psu, ser_multi)
@@ -504,8 +541,15 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
                     relay_switch_pol,
                     *workflow_args,
                     stop_event,
-                    lambda: None
+                    lambda: None,
+                    progress_callback
                 )
+
+                if not stop_event.is_set():
+                    if visible:
+                        progress_callback(1.0, "Messung abgeschlossen")
+                    else:
+                        progress_callback(1.0, "Vorbereitung abgeschlossen")
 
                 if workflow is noise_workflow:
                     noise_angles = list(getattr(noise_workflow, "pico_angle", []))
@@ -671,11 +715,9 @@ def measurement_chk(retry_used=False):
     if rework_var.get():
         rework_text = txt_rework.get().strip()
         if rework_text == "":
-            # open_rework_error_window("Bitte Tabellennummer für Nacharbeit eingeben.")
             print("Nacharbeit ohne Tabellennummer.")
             return
         if not rework_text.isdigit() or int(rework_text) < 1:
-            # open_rework_error_window("Bitte eine gültige Tabellennummer für Nacharbeit eingeben.")
             print("Ungültige Nacharbeits-Tabellennummer.")
             return
         
@@ -684,7 +726,6 @@ def measurement_chk(retry_used=False):
         print("Keine Messungen gewählt.")
         return
     
-    #send_modes(chk_ends_mode.get(), chk_elec_mode.get(), chk_noise_mode.get(), chk_linear_mode.get())
     start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=retry_used)
 
 def export_pdf():
@@ -695,12 +736,6 @@ def export_excel():
 
     if rework_var.get():
         rework_text = txt_rework.get().strip()
-        # if rework_text == "":
-        #     open_rework_error_window("Bitte Tabellennummer für Nacharbeit eingeben.")
-        #     return
-        # if not rework_text.isdigit() or int(rework_text) < 1:
-        #     open_rework_error_window("Bitte eine gültige Tabellennummer für Nacharbeit eingeben.")
-        #     return
         rework_nr = int(rework_text)
 
     export.save_to_excel2(
@@ -714,18 +749,6 @@ def export_excel():
         *all_lin_tols,
         rework_nr=rework_nr
     )
-
-# def export_excel():
-#     export.save_to_excel2(
-#         txt9,
-#         linear_workflow.result["daten"],
-#         linear_workflow.result["linear_sollV"],
-#         linear_workflow.result["linear_lin"],
-#         linear_workflow.result["summary_vals"],
-#         linear_workflow.result["lin_max"],
-#         linear_workflow.result["lin_min"],
-#         *all_lin_tols
-#     )
 
 def advanced_chk():
     if advanced_mode.get():
@@ -1050,10 +1073,6 @@ panel.image = img
 panel.grid(row=0, column=0, columnspan=2,padx=24, pady=24, sticky="nw")
 
 right_frame.grid_columnconfigure(1, weight=0)
-# right_frame.grid_rowconfigure(0, weight=0)
-
-#ser_arduino = serial_manager(root, on_button=measurement_chk)
-#ser_arduino.connect()
 
 vcmd = (root.register(lambda P: (P.count(',') <= 1 and all(ch.isdigit() or ch == ',' or ch == '-' for ch in P))), "%P")
 

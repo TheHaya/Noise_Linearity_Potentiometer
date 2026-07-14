@@ -3,7 +3,7 @@
 #include <calibrate.h>
 #include <dxl_servo.h>
 #include <relay.h>
-
+#include <progress.h>
 
 // --------------- NOISE MOVEMENT
 void noise_preparation_movement(){

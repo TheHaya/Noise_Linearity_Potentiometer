@@ -8,26 +8,11 @@ from PIL import ImageTk, Image
 from tkinter import filedialog
 
 
-# def resource_path(rel_path: str) -> str:
-#     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-#     return os.path.join(base, rel_path)
-
-# ------------------ BACKEND FUNCTIONS
-
-# def get_preset_file_path() -> str:
-#     if getattr(sys, "frozen", False):
-#         base_dir = os.path.dirname(sys.executable)
-#     else:
-#         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-#     return os.path.join(base_dir, "preset_Teile.json")
-
-# if __name__ == "__main__": pass
 
 
 def resource_path(rel_path: str) -> str:
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, rel_path)
-# PRESET_PATH = get_preset_file_path()
 
 # --------------- PRESETS LADEN
 tol_total_mech_deg_pos = None

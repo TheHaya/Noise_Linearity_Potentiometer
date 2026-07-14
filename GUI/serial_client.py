@@ -4,12 +4,12 @@ import serial.tools.list_ports
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
 # ------ PRÜFVORRICHTUNG FIRMA
-# ARDUINO_PORT = "COM3"
+# ARDUINO_PORT = "COM7"
 # MULTI_PORT = "COM4"
 # PSU_PORT = "COM5"
 
 # ------ ALWIN LAPTOP
-ARDUINO_PORT = "COM18"
+ARDUINO_PORT = "COM20"
 MULTI_PORT = "COM6"
 PSU_PORT = "COM7"
 
@@ -89,6 +89,109 @@ def prepare_arduino_run(ser_arduino):
     ser_arduino.flush()
     ser_arduino.reset_input_buffer()
 
+PROGRESS_TEXTS = {
+    # Mechanischer Endwinkel
+    ("MECH", "INIT_GO"):
+        "Messsystem wird initialisiert",
+    ("MECH", "CHECK_BEGINNING"):
+        "Ausgangslage wird geprüft",
+    ("MECH", "CALIBRATE_CURRENTS"):
+        "Servostrom wird kalibriert",
+    ("MECH", "CHECK_END_END"):
+        "Erfassung von mechanischen Endanschlag CW",
+    ("MECH", "CHECK_END_START"):
+        "Erfassung von mechanischen Endanschlag CCW",
+    ("MECH", "ZERO_CHECK_ENDS"):
+        "Rückfahrt auf Nullposition",
+    ("MECH", "FINISH_CHECK_ENDS"):
+        "Endanschlagsmessung beendet",
+    ("MECH", "ENDLESS_VOLT_CROSSOVER"):
+        "Nullbereich wird ermittelt",
+    ("MECH", "ENDLESS_START_TICK"):
+        "Startpunkt wird gesucht",
+    ("MECH", "ENDLESS_END_TICK"):
+        "Endpunkt wird gesucht",
+    ("MECH", "ZERO_ENDLESS"):
+        "Rückfahrt auf Nullposition",
+
+    # Rauschen
+    ("NOISE", "NOISE_GO"):
+        "Motor fährt auf Startposition",
+    ("NOISE", "NOISE_WAIT"):
+        "Rauschprüfung wird vorbereitet",
+    ("NOISE", "NOISE_MOVEMENT"):
+        "Rauschprüfung startet",
+    ("NOISE", "NOISE_FINISH"):
+        "Rauschprüfung abgeschlossen",
+
+    # Elektrischer Winkel
+    ("ELEC", "ELEC_GO"):
+        "Elektrische Winkelprüfung wird vorbereitet",
+    ("ELEC", "D12_CHECK"):
+        "Erfassung von elektrischer Winkel CW",
+    ("ELEC", "D31_CHECK"):
+        "Erfassung von elektrischer Winkel CCW",
+    ("ELEC", "ELEC_FINISH"):
+        "Elektrische Winkelprüfung abgeschlossen",
+
+    # Linearität
+    ("LINEAR", "LINEAR_START"):
+        "Linearitätsprüfung wird vorbereitet",
+    ("LINEAR", "D21_CHECK"):
+        "Erfassung von Mittelanzapfung CW",
+    ("LINEAR", "D21_BETWEEN"):
+        "Erfassung von CW Zwischenpunkte",
+    ("LINEAR", "D12_CHECK"):
+        "Erfassung von Kurzschlusstrecke CW",
+    ("LINEAR", "D22_CHECK"):
+        "Erfassung von Mittelanzapfung CCW",
+    ("LINEAR", "D22_BETWEEN"):
+        "Erfassung von CCW Zwischenpunkte",
+    ("LINEAR", "D32_CHECK"):
+        "Erfassung von Kurzschlusstrecke CCW",
+    ("LINEAR", "CALC_SUMMARY"):
+        "Linearität wird ausgewertet",
+    ("LINEAR", "LINEAR_FINISH"):
+        "Linearitätsprüfung abgeschlossen",
+    }
+
+def handle_progress(line, expected_mode, on_progress):
+    if not line.startswith("PROGRESS;"):
+        return False
+
+    try:
+        parts = line.split(";", 3)
+
+        if len(parts) != 4:
+            print("Ungültige Fortschrittsmeldung:", line)
+            return True
+
+        _, mode, percent_text, phase = parts
+
+        if mode != expected_mode:
+            print(
+                f"Unerwarteter Fortschrittsmodus: "
+                f"{mode}, erwartet: {expected_mode}"
+            )
+            return True
+
+        percent = int(percent_text)
+        percent = max(0, min(100, percent))
+
+        text = PROGRESS_TEXTS.get(
+            (mode, phase),
+            phase.replace("_", " ").title()
+        )
+
+        if on_progress is not None:
+            on_progress(percent / 100.0, text)
+
+        return True
+
+    except ValueError:
+        print("Ungültiger Prozentwert:", line)
+        return True
+
 def RegexMultimeter(output):
     match = re.search(r"[-+]?\d\.\d+(?:[Ee][-+]\d+)", output)
     #match = re.search("[+\-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?", output)
@@ -123,33 +226,6 @@ def get_multi_voltage(ser_arduino, ser_Multi):
         print("Problem bei DMM Response")
         ser_arduino.write(f"ISTV:ERR\n".encode())
         None
-
-# def set_correct_voltage(ser_Multi, ser_PSU, sollspannung):
-#     ser_Multi.reset_input_buffer()
-#     ser_Multi.reset_output_buffer()
-#     ser_Multi.write(b':MEAS:VOLT:DC?\n')
-
-#     #print("geschrieben")
-#     time.sleep(0.05)
-#     #print("sleep 0.2 sek")
-#     response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
-#     #print("geantwortet")
-#     if(RegexMultimeter(response)):
-#         #print("check1")
-#         voltage = float(RegexMultimeter(response))
-#         voltage_round = round(voltage)
-#         #print("check2")
-#         print(f"Erfasste Spannung: {voltage}")
-#         if round(voltage_round) < sollspannung:
-#             regulate_voltage = 10 + sollspannung - voltage_round
-#             ser_PSU.write(f"VOLT {regulate_voltage}\n".encode())
-#             print(f"[PSU] Spannung Ausgang: {regulate_voltage}")
-#             time.sleep(0.2)
-
-#         #print("check3")
-#     else:
-#         print("Problem bei DMM Response")
-#         None
 
 def serial_ports():
     if sys.platform.startswith('win'):

@@ -11,7 +11,6 @@ summary_vals = {}
 # --------------- LINEAR FUNCTIONS
 def RegexMultimeter(output):
     match = re.search(r"[-+]?\d\.\d+(?:[Ee][-+]\d+)", output)
-    #match = re.search("[+\-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?", output)
     if match:
         return match.group(0)
     return None
@@ -25,7 +24,7 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
     ser_Multi = ser_multi_app
 
 def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, d11=None, d12=None, 
-                d21=None, d22=None, d31=None, d32=None, stop_event=None, on_finish=None):
+                d21=None, d22=None, d31=None, d32=None, stop_event=None, on_finish=None, on_progress=None):
     try:
         global lin_error
         lin_error = False
@@ -52,9 +51,6 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
         PSU_ocp = 0.15
         PSU_current = 0.05
 
-        #ser_arduino = sc.connect_ard()
-        # ser_Multi = sc.connect_multi()
-        # ser_PSU = sc.connect_psu()
         sc.set_psu_parameters(ser_PSU, PSU_ovp, PSU_ocp, soll_v, PSU_current)
         sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
 
@@ -73,14 +69,10 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
         ser_arduino.write(f"rel_sw:{rel_sw}\n".encode())
         time.sleep(0.2)
         print("LINEAR Sende: GO") #debug
-        #print(d11, d12, d21, d22, d31, d32)
-        # ser_arduino.reset_input_buffer()
-        # ser_arduino.reset_output_buffer()
 
         sc.prepare_arduino_run(ser_arduino)
         ser_arduino.write(b"LINEAR_GO\n")
 
-        #ser_arduino.timeout = 0.1
         while True:
             if stop_event.is_set():
                 ser_arduino.write(b"STOP\n")
@@ -93,17 +85,14 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
                 break
 
             line = ser_arduino.readline().decode('utf-8').strip()
-            #print("Empfangen:", line) #debug
+            if sc.handle_progress(line, "LINEAR", on_progress):
+                continue
             if line.startswith('VOLTR'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 debug_pos = float(line[5::])
                 print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
                 print("_____")
                 continue
-            # elif line.startswith('DEBUG_POS'):
-            #     debug_pos = float(line[9::])
-            #     print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
-            #     print("_____")
             elif line.startswith('DEAD_CCW1'):
                 dead_ccw1 = float(line[9::])
                 print(f"--Deadzone CCW links: {dead_ccw1}")
@@ -189,11 +178,6 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
                 break
             
         ser_PSU.write(b"OUTP OFF\n")
-        #ser_arduino.close()
-        # ser_Multi.close()
-        # print("[SERIAL] Multimeter close")
-        # ser_PSU.close()
-        # print("[SERIAL] Netzteil close")
                         
     except Exception as e:
         print("Fehler bei Serial (linear): ", e) #debug
