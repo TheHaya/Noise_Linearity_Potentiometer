@@ -4,12 +4,17 @@ import serial.tools.list_ports
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
 # ------ PRÜFVORRICHTUNG FIRMA
-# ARDUINO_PORT = "COM7"
+# ARDUINO_PORT = "COM3"
 # MULTI_PORT = "COM4"
 # PSU_PORT = "COM5"
 
+# ------ ALWIN FIRMA
+# ARDUINO_PORT = "COM20"
+# MULTI_PORT = "COM17"
+# PSU_PORT = "COM15"
+
 # ------ ALWIN LAPTOP
-ARDUINO_PORT = "COM20"
+ARDUINO_PORT = "COM18"
 MULTI_PORT = "COM6"
 PSU_PORT = "COM7"
 
@@ -226,6 +231,34 @@ def get_multi_voltage(ser_arduino, ser_Multi):
         print("Problem bei DMM Response")
         ser_arduino.write(f"ISTV:ERR\n".encode())
         None
+
+def get_multi_resistance(ser_arduino, ser_Multi):
+    ser_Multi.reset_input_buffer()
+    ser_Multi.reset_output_buffer()
+
+    ser_Multi.write(b':MEAS:RES?\n')
+    # ser_Multi.write(b"*IDN?\n")
+    # ser_Multi.write(b':READ?\n')
+    #print("geschrieben")
+    time.sleep(0.05)
+    #print("sleep 0.2 sek")
+    response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
+    # print("DMM Antwort:", response)
+    if response == "":
+        print("DMM leere Antwort")
+    #print("geantwortet")
+    if(RegexMultimeter(response)):
+        #print("check1")
+        resistance = float(RegexMultimeter(response))
+        #print("check2")
+        print(f"Erfasster Widerstand: {resistance}")
+        ser_arduino.write(f"ISTR:{resistance}\n".encode())
+        #print("check3")
+    else:
+        print("Problem bei DMM Response")
+        ser_arduino.write(f"ISTR:ERR\n".encode())
+        None
+
 
 def serial_ports():
     if sys.platform.startswith('win'):

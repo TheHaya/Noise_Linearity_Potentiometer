@@ -17,7 +17,7 @@ extern bool error_midDead;
 extern bool error_lin_index[];
 
 extern int32_t real_tick_total, soll_tick_total;
-extern float d11_deg, d12_deg, d21_deg, d22_deg, d31_deg, d32_deg;
+
 extern int32_t d11_tick, d12_tick, d21_tick, d22_tick, d31_tick, d32_tick;
 
 extern float ccw_links, ccw_rechts, cw_links, cw_rechts, aktiv_ccw, aktiv_cw, ges_aktiv;

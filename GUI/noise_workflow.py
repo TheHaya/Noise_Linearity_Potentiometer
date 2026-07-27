@@ -127,7 +127,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None
         PSU_ocp = 0.15
         PSU_current = 0.05
         sc.set_psu_parameters(ser_PSU, PSU_ovp, PSU_ocp, soll_v, PSU_current)
-        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
+        # sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
         sc.prepare_arduino_run(ser_arduino)
         ser_arduino.write(f"rel_sw:{rel_sw}\n".encode())
         time.sleep(0.2)
@@ -169,9 +169,9 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None
                 pico_runner.run_pico(ser_arduino, pico_time, pico_volt, pico_pdf_time, pico_plot_volt, pico_plot_time, stop_event)
 
             elif line == 'NOISE_MOVE_FINISH':
-                finish_time = time.time()
-                total_duration = finish_time - pico_runner.start_time
-                print(f"Empfangen: NOISE_MOVE_FINISH, total Dauer: {total_duration}")
+                # finish_time = time.time()
+                # total_duration = finish_time - pico_runner.start_time
+                # print(f"Empfangen: NOISE_MOVE_FINISH, total Dauer: {total_duration}")
                 calc_rel_angle(pico_time, pico_turn, pico_angle, ges_w)
                 if ges_w == 0:
                     mark_ends(4096)

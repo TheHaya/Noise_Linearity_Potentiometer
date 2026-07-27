@@ -71,6 +71,24 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
                 print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
                 print("_____")
                 continue
+            if line.startswith('RESR_START'):
+                sc.get_multi_resistance(ser_arduino, ser_Multi)
+                debug_pos = float(line[10::])
+                print(f"Ist_Start Position: {debug_pos} // {debug_pos*0.087890625}")
+                print("_____")
+                continue
+            elif line.startswith('RESR_END'):
+                sc.get_multi_resistance(ser_arduino, ser_Multi)
+                debug_pos = float(line[8::])
+                print(f"Ist_End Position: {debug_pos} // {debug_pos*0.087890625}")
+                print("_____")
+                continue
+            elif line.startswith('RESR_TOTAL'):
+                sc.get_multi_resistance(ser_arduino, ser_Multi)
+                debug_pos = float(line[10::])
+                print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
+                print("_____")
+                continue
             elif line.startswith("ANGLE"):
                 global total_mech
                 total_mech = float(line[5::])
@@ -135,6 +153,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
             elif line == 'CALIB_FINISH':
                 print("Empfangen: CALIB_FINISH")
                 break
+
+            elif line == 'INIT_CHECK_FAILED':
+                print("INIT Check fehlgeschlagen.")
 
             elif line == 'CANCEL':
                 print("Empfangen: CANCEL")

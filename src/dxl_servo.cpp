@@ -84,6 +84,7 @@ void drive_to(int32_t tick, float rpm, uint8_t DYN_ID){
   dxl.torqueOff(DYN_ID);
   dxl.writeControlTableItem(PROFILE_VELOCITY, DYN_ID, rpm_to_time(tick, rpm)); 
   dxl.writeControlTableItem(PROFILE_ACCELERATION, DYN_ID, 0);
+  // dxl.setGoalPosition(DYN_ID, tick, UNIT_RAW);
   dxl.torqueOn(DYN_ID);
   dxl.setGoalPosition(DYN_ID, tick, UNIT_RAW);
 }
@@ -198,7 +199,7 @@ void calc_rpm(){
   }
 }
 
-void drive_and_check(int32_t tick, float rpm, int measure_mode){
+void drive_and_check(int32_t tick, float rpm, int measure_mode, bool check_input){
   int measure_spd = 2;
   int counter = 1;
   int32_t starting_tick = get_tick_position();
@@ -222,8 +223,13 @@ void drive_and_check(int32_t tick, float rpm, int measure_mode){
     int32_t div_tick = difference_tick / counter;
     
   for(int i = 1; i<= counter; i++){
+    if(check_input){
+      Serial.println(starting_tick + div_tick * i);
+    }
     drive_to(starting_tick + div_tick * i, rpm);
-    reached_goal(starting_tick  + div_tick * i, measure_spd, measure_mode, 30000);
+    if(reached_goal(starting_tick  + div_tick * i, measure_spd, measure_mode, 30000) == false){
+      break;
+    }
   }
 
 }

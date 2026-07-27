@@ -21,7 +21,7 @@ void elec_deg_init(){
         print_elec_deg[i] = 0;
         print_elec_volt[i] = 0;
     }
-    bool smaller_steps = false;
+    smaller_steps = false;
 }
 
 void elec_deg_movement(){
@@ -31,11 +31,20 @@ void elec_deg_movement(){
     
     int32_t offset_von_soll = (real_tick_total-soll_tick_total) / 2;
     
+    // Falls keine deadzones und mech = elec
+    if(d12_deg == 0){
+        d12_tick = sim_mercy_start - start_tick - offset_von_soll;
+    } else {
+        d12_tick = deg_to_tick(d12_deg);
+    }
+    if(d31_deg == 0){
+        d31_tick = sim_mercy_end - start_tick - offset_von_soll;
+    } else {
+        d31_tick = deg_to_tick(d31_deg);
+    }
 
-    d12_tick = deg_to_tick(d12_deg);
-    d31_tick = deg_to_tick(d31_deg);
 
-    if(fabsf(end_tick - start_tick - d31_tick) < 30){
+    if(fabsf(end_tick - start_tick - d31_tick) < 30 || d12_deg == 0 || d31_deg == 0){
         smaller_steps = true;
     }
 
@@ -65,22 +74,40 @@ void elec_deg_movement(){
         drive_and_check(tick, user_rpm);
         
         int32_t rel_tick = tick - start_tick;
-        if(rel_tick == d31_tick + offset_von_soll){
-            if(smaller_steps){
-                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1, true) - tick_to_deg(start_tick) - real_mid_deg;
-            } else{
-                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1) - tick_to_deg(start_tick) - real_mid_deg;
-            }
+        if(relay_switch){
+            if(rel_tick == d31_tick + offset_von_soll){
+                if(smaller_steps){
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1, true) - tick_to_deg(start_tick) - real_mid_deg;
+                } else{
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1) - tick_to_deg(start_tick) - real_mid_deg;
+                }
             cw_rechts = print_elec_deg[i];
-        } else if(rel_tick == d12_tick + offset_von_soll){
-            if(smaller_steps){
-                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0, true) - tick_to_deg(start_tick) - real_mid_deg;
-            } else{
-                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0) - tick_to_deg(start_tick) - real_mid_deg;
+            } else if(rel_tick == d12_tick + offset_von_soll){
+                if(smaller_steps){
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0, true) - tick_to_deg(start_tick) - real_mid_deg;
+                } else{
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0) - tick_to_deg(start_tick) - real_mid_deg;
+                }
+                ccw_links = print_elec_deg[i];
             }
-            ccw_links = print_elec_deg[i];
+        } else {
+            if(rel_tick == d31_tick + offset_von_soll){
+                if(smaller_steps){
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1, true) - tick_to_deg(start_tick) - real_mid_deg;
+                } else{
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1) - tick_to_deg(start_tick) - real_mid_deg;
+                }
+            cw_rechts = print_elec_deg[i];
+            } else if(rel_tick == d12_tick + offset_von_soll){
+                if(smaller_steps){
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0, true) - tick_to_deg(start_tick) - real_mid_deg;
+                } else{
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0) - tick_to_deg(start_tick) - real_mid_deg;
+                }
+                ccw_links = print_elec_deg[i];
+            }
         }
-
+        
     }
     report_progress("ELEC", "TOTAL_ELEC", 90);
     total_elec_deg = print_elec_deg[0]-print_elec_deg[1];

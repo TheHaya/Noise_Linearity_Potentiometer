@@ -23,7 +23,7 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
         PSU_current = 0.05
 
         sc.set_psu_parameters(ser_PSU, PSU_ovp, PSU_ocp, soll_v, PSU_current)
-        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
+        # sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
 
         ser_arduino.write(f"dead12:{d12}\n".encode())
         time.sleep(0.2)

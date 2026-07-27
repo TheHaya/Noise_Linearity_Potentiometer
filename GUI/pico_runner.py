@@ -9,7 +9,8 @@ picoEXE = resource_path("pico_demo.exe")
 
 # --------------- PICOSCOPE VARIABLES
 delay_compensation = 0.15   # damit Pico und Servo position synchron sind ohne Blockierung
-start_time = 0.0
+# start_time = 0.0
+start_time = None
 
 txt_speed_getter = None
 calc_duration_f = None
@@ -45,6 +46,7 @@ def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr,
     out_found = False
     plot_volt = False
     plot_time = False
+    pico_started = False
 
     txt_geschw = float(txt_speed_getter().strip().replace(',', '.'))
     pico_time = calc_duration_f(txt_geschw)
@@ -66,13 +68,16 @@ def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr,
                     break
             
             line = line.strip()
+            # print(f"[PICO RAW] {line!r}")
 
-            if line.startswith("PICO_START"):
+            if line.startswith("PICO_START") and not pico_started:
+                pico_started = True
                 print("Sende: PICO_START") #debug
                 ser_Ard.write(b"NOISE_START\n")
                 ser_Ard.flush()
                 
-                start_time = time.time()
+                # start_time = time.time()
+                start_time = time.monotonic()
                 print("NACH: PICO_START")
             
             if out_volt is True:
@@ -103,10 +108,23 @@ def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr,
 
             if line.startswith("PLOT_TIME"):
                 plot_time = True
+
+        if not pico_started and not stop_event.is_set():
+            raise RuntimeError(
+                f"pico_demo ohne PICO_START beendet, Returncode: {p.returncode}"
+            )
     finally:
-        end_time = time.time()
+        if start_time is None:
+            print("Pico-Messung wurde nicht gestartet")
+        else:
+            print(
+                "Gemessene Zeit:",
+                time.monotonic() - start_time
+            )
+        # end_time = time.time()
         print("Time Array:")
         print(time_arr)
-        finish_time = end_time - start_time
-        print(f"Gemessene Zeit: {finish_time}")
+        # finish_time = end_time - start_time
+        # print(f"Gemessene Zeit: {finish_time}")
+        
         stop_active_run()
