@@ -4,7 +4,10 @@
 
 // --------------- RELAY CONSTANTS
 const int RELAY_AMOUNT = 14;
-const int RELAY_PINS[RELAY_AMOUNT] = {3,4,5,6,7,8,9,10,11,12,13,14,15,20}; // Pins am Arduino
+const int RELAY_PINS[RELAY_AMOUNT] = {3,4,5,6,7,8,9,10,11,12,13,21,22,20}; 
+// Pins am Arduino, wird knapp
+// Pins sind zu knapp, glaube 9er werden nichts
+
 
 const uint16_t RELAY_1 = 1UL << 0;   // RELAY_1 ist in bit-schreibweise 0b0000000000000001
 const uint16_t RELAY_2 = 1UL << 1;   // RELAY_2 ist in bit-schreibweise 0b0000000000000010

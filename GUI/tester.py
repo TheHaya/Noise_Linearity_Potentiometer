@@ -156,7 +156,7 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
         print("Fehler bei Linearitäts-Export: ", e)
 
 def test_relays(ser_ard):
-    ser_ard.write(b"TESTER\n")
+    ser_ard.write(b"REL_TESTER\n")
 
 def start_mech_angle_repeat_test(ser_ard, meas_volt, meas_angle, meas_speed, relay_switch_pol, soll_volt_linear, stop_event=None, on_finish=None):
     global _tester_running

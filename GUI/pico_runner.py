@@ -124,6 +124,8 @@ def run_pico(ser_Ard, time_arr, volt_arr, pdf_time_arr, plot_volt_arr, plot_arr,
         # end_time = time.time()
         print("Time Array:")
         print(time_arr)
+        print("Volt Array:")
+        print(volt_arr)
         # finish_time = end_time - start_time
         # print(f"Gemessene Zeit: {finish_time}")
         

@@ -46,7 +46,7 @@ void stop_motion(uint8_t DYN_ID = 1);
 
 // --------------- DRIVE FUNCTIONS
 void drive_to(int32_t tick, float rpm, uint8_t DYN_ID = 1);
-bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode = 0, int timeout = 8000,
-                    uint8_t error_tick = 3, uint8_t DYN_ID = 1);
+bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode = 0, int timeout = 10000,
+                    uint8_t error_tick = 1, uint8_t DYN_ID = 1);
 void calc_rpm();
 void drive_and_check(int32_t tick, float rpm, int measure_mode = 0, bool check_input = false);

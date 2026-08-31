@@ -21,7 +21,7 @@ const float DEG_PER_TICK = 360.0f / 4096.0f;
 const float TICK_PER_DEG = 4096.0f / 360.0f;
 const float RPM_PER_VEL = 0.229;
 const float START_CURRENT = 800;
-const float CUR_TOLERANCE = 15;
+const float CUR_TOLERANCE = 25;
 const float CUR_TOLERANCE_SLOW = 4; // dp37 4-5, stiel 1-2
 const int POLL_TIMER = 1;
 const float SLOW_RPM = 8;
@@ -55,7 +55,8 @@ float get_deg_position(){
 
 uint32_t rpm_to_time(int32_t goal_tick, float rpm){
   uint32_t out_time = 60/rpm*1000;
-  int32_t diff_pos = abs(dxl.getPresentPosition(DID, UNIT_RAW) - goal_tick);
+  int32_t current_tick = dxl.getPresentPosition(DID, UNIT_RAW);
+  int32_t diff_pos = abs(current_tick - goal_tick);
   out_time = out_time * diff_pos/4096;
   return out_time;
 }
@@ -81,11 +82,11 @@ void stop_motion(uint8_t DYN_ID){
 
 // --------------- DRIVE FUNCTIONS
 void drive_to(int32_t tick, float rpm, uint8_t DYN_ID){
-  dxl.torqueOff(DYN_ID);
+  // dxl.torqueOff(DYN_ID);
   dxl.writeControlTableItem(PROFILE_VELOCITY, DYN_ID, rpm_to_time(tick, rpm)); 
   dxl.writeControlTableItem(PROFILE_ACCELERATION, DYN_ID, 0);
   // dxl.setGoalPosition(DYN_ID, tick, UNIT_RAW);
-  dxl.torqueOn(DYN_ID);
+  // dxl.torqueOn(DYN_ID);
   dxl.setGoalPosition(DYN_ID, tick, UNIT_RAW);
 }
 

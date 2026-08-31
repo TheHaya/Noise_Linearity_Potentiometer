@@ -28,7 +28,7 @@ def save_to_pdf(txt, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt, r
     try:
         pdf_time = np.concatenate([pico_plot_time, pico_pdf_time])
         pdf_volt = np.concatenate([pico_plot_volt, pico_volt])
-        i = np.argsort(pdf_time)
+        i = np.argsort(pdf_time, kind="stable")
         pdf_time = pdf_time[i]
         pdf_volt = pdf_volt[i]
 
@@ -40,6 +40,17 @@ def save_to_pdf(txt, pico_plot_time, pico_pdf_time, pico_plot_volt, pico_volt, r
 
         fig = plt.figure(figsize=(11, 6.5), dpi=550)
         plt.plot(pdf_time, pdf_volt, linewidth=0.1)
+        if len(pico_pdf_time) == len(pico_volt) and len(pico_pdf_time) > 0:
+            plt.scatter(
+                pico_pdf_time,
+                pico_volt,
+                color="red",
+                marker="o",
+                s=4,
+                zorder=5,
+
+            )
+
         plt.title(("Rauschkurve "+ file))
         plt.xlabel("Zeit")
         plt.ylabel("Spannung")

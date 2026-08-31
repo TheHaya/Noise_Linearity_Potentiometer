@@ -20,12 +20,14 @@ extern int32_t sim_mercy_start, sim_mercy_end;
 extern int32_t safety_start, safety_end;
 extern int32_t check_end_start;
 extern int32_t check_end_end;
+extern int32_t beginning_tick;
 // extern float user_rpm, rpm1, rpm2, rpm3;
 extern float d11_deg, d12_deg, d21_deg, d22_deg, d31_deg, d32_deg;
 extern float real_time1, real_time2, real_time3;
 extern float theo_time1, theo_time2, theo_time3;
 extern float target_deg_total;
 extern float delay1, delay2, delay3;
+extern bool measure_start_resistance, measure_end_resistance, measure_total_resistance;
 extern float ist_start_volt, ist_end_volt, ist_mid_volt;
 extern float safety_pos_volt;
 extern float tar_volt;
@@ -34,7 +36,7 @@ extern float endless_start_volt, endless_end_volt, endless_start_deg, endless_en
 void calibrate_init();
 float corr_measure(int start_end = 0);
 float corr_measure_res(int start_end = 0);
-void calibrate_currents();
+bool calibrate_currents();
 void check_ends();
 float correction_movement(float &current_volt, float goal_volt, 
                           int dead_direction, int dead_half, bool smaller_steps = false, int timeout=30000);

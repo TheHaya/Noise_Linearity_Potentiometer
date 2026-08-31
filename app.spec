@@ -1,12 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_all
+
+datas = [('GUI\\AMLogo.jpg', '.'), ('GUI\\preset_Teile.json', '.'), ('GUI\\sounds', 'sounds')]
+binaries = [('GUI\\ps2000a.dll', '.'), ('GUI\\picoipp.dll', '.'), ('GUI\\pico_demo.exe', '.')]
+hiddenimports = ['matplotlib.backends.backend_pdf']
+tmp_ret = collect_all('matplotlib')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('sv_ttk')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
     ['GUI\\app.py'],
     pathex=[],
-    binaries=[('GUI\\ps2000a.dll', '.'), ('GUI\\picoipp.dll', '.')],
-    datas=[('GUI\\AMLogo.jpg', '.'), ('GUI\\preset_Teile.json', '.'), ('GUI\\pico_demo.exe', '.')],
-    hiddenimports=['matplotlib.backends.backend_pdf'],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

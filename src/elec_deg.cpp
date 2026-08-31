@@ -44,7 +44,7 @@ void elec_deg_movement(){
     }
 
 
-    if(fabsf(end_tick - start_tick - d31_tick) < 30 || d12_deg == 0 || d31_deg == 0){
+    if(fabsf(end_tick - start_tick - d31_tick) < 30 || d12_deg == 0 || d31_deg == 0 || d12_deg <= 5){
         smaller_steps = true;
     }
 
@@ -64,14 +64,14 @@ void elec_deg_movement(){
         //DEBUG_SERIAL.print(tick);
         int32_t tick = drive_tick[i];
 
-        // drive_to(tick, user_rpm);
-        // if (!reached_goal(tick, 2)) {
-        // // Strom-Trip -> sofort raus
-        // Serial.println("CANCEL");
-        // cancelled = true;
-        // break;
-        // }
-        drive_and_check(tick, user_rpm);
+        drive_to(tick, user_rpm);
+        if (!reached_goal(tick, 2)) {
+        // Strom-Trip -> sofort raus
+        Serial.println("CANCEL");
+        cancelled = true;
+        break;
+        }
+        // drive_and_check(tick, user_rpm);
         
         int32_t rel_tick = tick - start_tick;
         if(relay_switch){

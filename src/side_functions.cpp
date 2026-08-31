@@ -9,7 +9,7 @@ int32_t tester_val = 1;
 void go_zero()
 {
   drive_to(ZERO_TICK, user_rpm);
-  reached_goal(ZERO_TICK, 1, 1);
+  reached_goal(ZERO_TICK, 1, 1, 10000, 3);
   // Serial.print("CHECK_INPUT");
   // drive_and_check(ZERO_TICK, user_rpm, 1, true);
   Serial.println("ZERO_READY");
@@ -30,7 +30,7 @@ void show_cur_pos()
   Serial.println(show_pos);
 }
 
-void tester(){
+void rel_tester(){
   switch(tester_val){
     case 1:
       apply_relay_mode(INIT_RELAY_MODE);
@@ -46,6 +46,5 @@ void tester(){
       break;
     default:
       break;
-  }
-  
+  } 
 }

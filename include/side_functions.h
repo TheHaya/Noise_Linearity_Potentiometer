@@ -9,4 +9,5 @@ extern int32_t tester_val;
 void go_to();
 void go_zero();
 void show_cur_pos();
-void tester();
+void rel_tester();
+// void tester();

@@ -8,6 +8,11 @@ ser_Arduino = None
 # MULTI_PORT = "COM4"
 # PSU_PORT = "COM5"
 
+# ------ TEMPORÄR HARM
+# ARDUINO_PORT = "COM7"
+# MULTI_PORT = "COM4"
+# PSU_PORT = "COM5"
+
 # ------ ALWIN FIRMA
 # ARDUINO_PORT = "COM20"
 # MULTI_PORT = "COM17"
@@ -32,15 +37,44 @@ def connect_ard(baud=115200, timeout=0.1, port=ARDUINO_PORT):
         except Exception as e:
             print("Mikrocontroller kein Port")
 
-def connect_multi(baud=19200, timeout=2, port=MULTI_PORT):
+def connect_multi(baud=19200, timeout=3, port=MULTI_PORT):
     try:
-        ser_multi = serial.Serial(port, baudrate=baud, timeout=timeout)
-        print(f"[SERIAL] Multimeter verbunden: {MULTI_PORT}")
-        time.sleep(0.5)
+        ser_multi = serial.Serial(
+            port=port,
+            baudrate=baud,
+            bytesize=serial.EIGHTBITS,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            timeout=timeout,
+            xonxoff=False,
+            rtscts=False,
+            dsrdtr=False,
+        )
 
+        print("[DMM] Einstellungen:", ser_multi.get_settings())
+        time.sleep(0.2)
+
+        ser_multi.reset_input_buffer()
+        ser_multi.write(b"*IDN?\r")
+        ser_multi.flush()
+        time.sleep(0.2)
+        response = ser_multi.read_all()
+        print(f"[DMM] IDN RAW: {response!r}")
         return ser_multi
+
     except Exception as e:
-        print("Multimeter kein Port")
+        print("Multimeter kein Port:", e)
+        return None
+
+# def connect_multi(baud=19200, timeout=2, port=MULTI_PORT):
+#     try:
+#         ser_multi = serial.Serial(port, baudrate=baud, timeout=timeout)
+#         print(f"[SERIAL] Multimeter verbunden: {MULTI_PORT}")
+#         time.sleep(0.5)
+
+#         return ser_multi
+#     except Exception as e:
+#         print("Multimeter kein Port")
 
 def connect_psu(baud=115200, timeout=2, port=PSU_PORT):
     try:
@@ -87,6 +121,25 @@ def set_part_parameters(ser_arduino, part_voltage, part_angle, part_speed, rel_s
     ser_arduino.write(f"REL_SW:{rel_sw}\n".encode())
     time.sleep(0.2)
     print("[PRESET] relay_switch_pol =", rel_sw)
+
+def set_res_parameters(ser_arduino, res_init, res_final, res_total):
+    ser_arduino.write(f"RES_I:{res_init}\n".encode())
+    if(res_init==1):
+        print("[MCU] Anfangswiderstand: Ja")
+    else:
+        print("[MCU] Anfangswiderstand: Nein")
+    time.sleep(0.2)
+    ser_arduino.write(f"RES_F:{res_final}\n".encode())
+    if(res_final==1):
+            print("[MCU] Endwiderstand: Ja")
+    else:
+            print("[MCU] Endwiderstand: Nein")
+    time.sleep(0.2)
+    ser_arduino.write(f"RES_T:{res_total}\n".encode())
+    if(res_total==1):
+            print("[MCU] Gesamtwiderstand: Ja")
+    else:
+            print("[MCU] Gesamtwiderstand: Nein")
     
 def prepare_arduino_run(ser_arduino):
     if ser_arduino is None:
@@ -204,35 +257,44 @@ def RegexMultimeter(output):
         return match.group(0)
     return None
 
-
 def get_multi_voltage(ser_arduino, ser_Multi):
+    time.sleep(0.5)
     ser_Multi.reset_input_buffer()
-    ser_Multi.reset_output_buffer()
+    # ser_Multi.write(b"*IDN?\r")
+    # ser_Multi.flush()
 
-    ser_Multi.write(b':MEAS:VOLT:DC?\n')
-    # ser_Multi.write(b"*IDN?\n")
-    # ser_Multi.write(b':READ?\n')
-    #print("geschrieben")
-    time.sleep(0.05)
-    #print("sleep 0.2 sek")
-    response = ser_Multi.readline().decode('utf-8', errors='ignore').strip()
-    # print("DMM Antwort:", response)
-    if response == "":
-        print("DMM leere Antwort")
-    #print("geantwortet")
-    if(RegexMultimeter(response)):
-        #print("check1")
-        voltage = float(RegexMultimeter(response))
-        #print("check2")
+    # idn_raw = ser_Multi.read_until(b"\r")
+    # print(f"[DMM] IDN während CALIB: {idn_raw!r}")
+
+    # # Eventuelle Reste der IDN-Antwort entfernen
+    # time.sleep(0.1)
+    # ser_Multi.reset_input_buffer()
+
+    ser_Multi.write(b":MEAS:VOLT:DC?\r")
+    ser_Multi.flush()
+
+    response_raw = ser_Multi.read_until(b"\r")
+    # print(f"[DMM] Spannung RAW: {response_raw!r}")
+
+    try:
+        response = response_raw.decode("ascii").strip()
+    except UnicodeDecodeError:
+        print("[DMM] Beschädigte Nicht-ASCII-Antwort")
+        ser_arduino.write(b"ISTV:ERR\n")
+        return
+
+    value = RegexMultimeter(response)
+
+    if value is not None:
+        voltage = float(value)
         print(f"Erfasste Spannung: {voltage}")
         ser_arduino.write(f"ISTV:{voltage}\n".encode())
-        #print("check3")
     else:
-        print("Problem bei DMM Response")
-        ser_arduino.write(f"ISTV:ERR\n".encode())
-        None
+        print("Problem bei DMM Response:", repr(response))
+        ser_arduino.write(b"ISTV:ERR\n")
 
-def get_multi_resistance(ser_arduino, ser_Multi):
+
+def get_multi_resistance(ser_arduino, ser_Multi, variation):
     ser_Multi.reset_input_buffer()
     ser_Multi.reset_output_buffer()
 
@@ -251,9 +313,24 @@ def get_multi_resistance(ser_arduino, ser_Multi):
         #print("check1")
         resistance = float(RegexMultimeter(response))
         #print("check2")
-        print(f"Erfasster Widerstand: {resistance}")
+        print("---------------")
+        if variation == 1:
+            print(f"Erfasster Anfangswiderstand: {resistance}")
+        elif variation == 2:
+            print(f"Erfasster Endwiderstand: {resistance}")
+        elif variation == 3:
+            print(f"Erfasster Gesamtwiderstand: {resistance}")
+        # elif variation == 4:
+        #     print(f"Erfasster Anfangswiderstand: {resistance}")
+        # elif variation == 5:
+        #     print(f"Erfasster Endwiderstand: {resistance}")
+        # elif variation == 6:
+        #     print(f"Erfasster Gesamtwiderstand: {resistance}")
+        else:
+            print(f"Erfasster Widerstand: {resistance}")
         ser_arduino.write(f"ISTR:{resistance}\n".encode())
         #print("check3")
+        return resistance
     else:
         print("Problem bei DMM Response")
         ser_arduino.write(f"ISTR:ERR\n".encode())

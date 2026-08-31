@@ -21,12 +21,14 @@ const int BUT_TIMER = 200;
 const int LED_R = 18;
 const int LED_Y = 17;
 const int LED_G = 16;
+const int BUZZER = 14;
 
 // --------------- VARIABLES
 const int POLLING_TIMER_PING = 200;
 bool linear_checked;
 elapsedMillis but_millis;
 elapsedMillis servo_ping_timer;
+bool measurement_active = false;
 bool servo_online = false;
 bool but_up = HIGH;
 bool but_press;
@@ -194,6 +196,7 @@ bool check_measurements_init(){
   return ok;
 }
 
+
 bool abort_if_cancelled(){
   if(!cancelled) return false;
   stop_motion();
@@ -287,6 +290,8 @@ void setup(){
   pinMode(LED_R, OUTPUT);
   pinMode(LED_Y, OUTPUT);
   pinMode(LED_G, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+  digitalWrite(BUZZER, LOW);
 
   // dxl_ready = initialize_dxl_safely();
 
@@ -305,11 +310,17 @@ void loop(){
 
     if(ping_ok && !servo_online){
       servo_online = true;
-      setLEDS(3);
+
+      if(!measurement_active){
+        setLEDS(3);
+      }
     }
     else if(!ping_ok && servo_online){
       servo_online = false;
-      setLEDS(0);
+
+      if(!measurement_active){
+        setLEDS(0);
+      }
     }
   }
 
@@ -343,8 +354,11 @@ void loop(){
     if(command.startsWith("dead22:")){d22_deg = command.substring(7).toFloat();}
     if(command.startsWith("dead31:")){d31_deg = command.substring(7).toFloat();}
     if(command.startsWith("dead32:")){d32_deg = command.substring(7).toFloat();}
-  
+    if(command.startsWith("RES_I:")){measure_start_resistance = command.substring(6).toInt();}
+    if(command.startsWith("RES_F:")){measure_end_resistance = command.substring(6).toInt();}
+    if(command.startsWith("RES_T:")){measure_total_resistance = command.substring(6).toInt();}
     if(command == "INIT_GO"){
+      measurement_active = true;
       report_progress("MECH", "INIT_GO", 0);
       measurements_init();
 
@@ -392,16 +406,21 @@ void loop(){
         if(abort_if_cancelled()) return;
 
         report_progress("MECH", "CALIBRATE_CURRENTS", 40);
-        calibrate_currents();
-        if(abort_if_cancelled()) return;
+        if(!calibrate_currents()){
+          cancelled = true;
+          abort_if_cancelled();
+          return;
+        }
+        
         // report_progress ist in check_ends()
         check_ends();
         if(abort_if_cancelled()) return; //  ÄNDERN: NUR MIT DMM = TRUE
       }
-      // drive_to(ZERO_TICK, user_rpm);
-      // reached_goal(ZERO_TICK, 2);
+      drive_to(beginning_tick, user_rpm);
+      reached_goal(beginning_tick, 2);
       report_progress("MECH", "FINISH_CHECK_ENDS", 100);
-      drive_and_check(ZERO_TICK, user_rpm);
+      // drive_and_check(ZERO_TICK, user_rpm);
+      // drive_and_check(beginning_tick, user_rpm);
       Serial.println("CALIB_FINISH");
     }
 
@@ -419,13 +438,15 @@ void loop(){
       //   // reached_goal(endless_sim_start, 2, 0, 15000);  
       // }
       // else{
+        drive_to(sim_mercy_start, user_rpm);
+        reached_goal(sim_mercy_start, 2, 1);
         report_progress("NOISE", "NOISE_WAIT", 40);
         noise_preparation_movement();
         // if(cancelled == false){
-        // drive_to(sim_mercy_end, user_rpm);
-        // reached_goal(sim_mercy_end, 2, 0, 15000);
+        drive_to(sim_mercy_end, user_rpm);
+        reached_goal(sim_mercy_end, 2, 0, 15000);
         
-        drive_and_check(sim_mercy_end, user_rpm, 0);
+        // drive_and_check(sim_mercy_end, user_rpm, 0);
 
         // }
       if(cancelled == false){
@@ -529,35 +550,44 @@ void loop(){
     }
 
     if(command == "ALL_END"){
-      // drive_to(ZERO_TICK, user_rpm);
-      // reached_goal(ZERO_TICK, 2);
-      drive_and_check(ZERO_TICK, user_rpm);
+      drive_to(beginning_tick, user_rpm);
+      reached_goal(beginning_tick, 2);
+      // drive_and_check(ZERO_TICK, user_rpm);
+      // drive_and_check(beginning_tick, user_rpm);
 
       all_relays_off();
       dxl.ledOff(DID);
+      measurement_active = false;
       setLEDS(3);
       cancelled = false;
       linear_checked = false;
     }
 
     if(command == "NOISE_END"){
-      // drive_to(ZERO_TICK, user_rpm);
-      // reached_goal(ZERO_TICK, 2);
-      drive_and_check(ZERO_TICK, user_rpm);
+      drive_to(beginning_tick, user_rpm);
+      reached_goal(beginning_tick, 2);
+      // drive_and_check(ZERO_TICK, user_rpm);
+      // drive_and_check(beginning_tick, user_rpm);
       all_relays_off();
       dxl.ledOff(DID);
+      measurement_active = false;
       setLEDS(2);
+
       cancelled = false;
       linear_checked = false;
     }
+    
 
     if(command == "LIN_END"){
-      // drive_to(ZERO_TICK, user_rpm);
-      // reached_goal(ZERO_TICK, 2);
-      drive_and_check(ZERO_TICK, user_rpm);
+      drive_to(beginning_tick, user_rpm);
+      reached_goal(beginning_tick, 2);
+      // drive_and_check(ZERO_TICK, user_rpm);
+      // drive_and_check(beginning_tick, user_rpm);
       all_relays_off();
       dxl.ledOff(DID);
+      measurement_active = false;
       setLEDS(2);
+
       cancelled = false;
       linear_checked = false;
     }
@@ -584,9 +614,11 @@ void loop(){
       setLEDS(3);
     }
 
-    if(command == "TESTER"){
-      tester();
+    if(command == "REL_TESTER"){
+      rel_tester();
     }
     
+    if(command == "TESTER"){
+    }
   }
 }

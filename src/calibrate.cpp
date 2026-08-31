@@ -23,8 +23,10 @@ int32_t calibrate_current_ccw = 1750;
 int32_t calibrate_current_cw = 2350;
 int32_t check_end_start = -120000;
 int32_t check_end_end = 120000;
+int32_t beginning_tick;
 
 float ist_start_volt, ist_end_volt, ist_mid_volt;
+bool measure_start_resistance, measure_end_resistance, measure_total_resistance;
 float ist_start_resistance, ist_end_resistance, ist_total_resistance;
 // float user_rpm, rpm1, rpm2, rpm3;
 float d11_deg, d12_deg, d21_deg, d22_deg, d31_deg, d32_deg;
@@ -39,6 +41,9 @@ float tar_volt;
 
 // --------------- CALIBRATIONS
 void calibrate_init(){
+dxl.torqueOff(DID);
+dxl.torqueOn(DID);
+beginning_tick = 2050;
 start_tick = 0;
 end_tick = 0;
 real_mid_tick = 0;
@@ -114,26 +119,39 @@ float corr_measure(int start_end){
 }
 
 float corr_measure_res(int start_end){
-  
   float current_res = NAN;
   elapsedMillis timer;
   int t = 8000;
   Serial.setTimeout(50);
   switch(start_end){
-    case 0:
-      apply_relay_mode(TOTAL_RESISTANCE_RELAY_MODE);
-      Serial.print("RESR_TOTAL");
-      Serial.println(dxl.getPresentPosition(DID,UNIT_RAW));
-      break;
     case 1:
-      apply_relay_mode(INITIAL_RESISTANCE_RELAY_MODE);
-      Serial.print("RESR_START");
-      Serial.println(dxl.getPresentPosition(DID,UNIT_RAW));
-      break;    
+      if(relay_switch){
+        apply_relay_mode(FINAL_RESISTANCE_RELAY_MODE);
+        delay(100);
+        // Serial.println("RESR_INIT_SWITCHED");
+      } else{
+        apply_relay_mode(INITIAL_RESISTANCE_RELAY_MODE);
+        delay(100);
+        
+      }
+      Serial.println("RESR_INIT");
+      break;   
     case 2:
-      apply_relay_mode(FINAL_RESISTANCE_RELAY_MODE);
-      Serial.print("RESR_END");
-      Serial.println(dxl.getPresentPosition(DID,UNIT_RAW));
+      if(relay_switch){
+        apply_relay_mode(INITIAL_RESISTANCE_RELAY_MODE);
+        delay(100);
+        // Serial.println("RESR_FINAL_SWITCHED");
+      } else{
+        apply_relay_mode(FINAL_RESISTANCE_RELAY_MODE);
+        delay(100);
+        
+      }
+      Serial.println("RESR_FINAL");
+      break;
+    case 3:
+      apply_relay_mode(TOTAL_RESISTANCE_RELAY_MODE);
+      delay(100);
+      Serial.println("RESR_TOTAL");
       break;
     default:
       break;
@@ -178,7 +196,7 @@ float correction_movement(float &current_volt, float goal_volt,
   }
                             
   const int32_t PUSHBACK = 200;
-  // const float V_TOL = 0.001f;     
+  // const float V_TOL = 0.001f;     // Bei dp37
   const float V_TOL = 0.001f;    
   const int32_t TICK_TOL = 1;
   elapsedMillis error_timer;
@@ -202,7 +220,8 @@ float correction_movement(float &current_volt, float goal_volt,
           return tick_to_deg(start_tick);
         }
       } else{
-        if(target_deg_total != 360.0f && t < sim_mercy_start){
+        // if(target_deg_total != 360.0f && t < sim_mercy_start){
+        if(target_deg_total != 360.0f && t < safety_start){
           stop_motion();
           cancelled = true;
           Serial.println("CANCEL");
@@ -215,7 +234,8 @@ float correction_movement(float &current_volt, float goal_volt,
           return tick_to_deg(end_tick);
         }
       } else{
-        if(target_deg_total != 360.0f && t > sim_mercy_end){
+        // if(target_deg_total != 360.0f && t > sim_mercy_end){
+        if(target_deg_total != 360.0f && t > safety_end){
           stop_motion();
           cancelled = true;
           Serial.println("CANCEL");
@@ -247,7 +267,8 @@ float correction_movement(float &current_volt, float goal_volt,
           return tick_to_deg(start_tick);
         }
       } else{
-        if(target_deg_total != 360.0f && t < sim_mercy_start){
+        // if(target_deg_total != 360.0f && t < sim_mercy_start){
+        if(target_deg_total != 360.0f && t < safety_start){
           stop_motion();
           cancelled = true;
           Serial.println("CANCEL");
@@ -260,7 +281,8 @@ float correction_movement(float &current_volt, float goal_volt,
           return tick_to_deg(end_tick);
         }
       } else{
-        if(target_deg_total != 360.0f && t > sim_mercy_end){
+        // if(target_deg_total != 360.0f && t > sim_mercy_end){
+        if(target_deg_total != 360.0f && t > safety_end){
           stop_motion();
           cancelled = true;
           Serial.println("CANCEL");
@@ -303,17 +325,17 @@ float correction_movement(float &current_volt, float goal_volt,
   return NAN;
 }
 
-void calibrate_currents(){
+bool calibrate_currents(){
   calibrate_current_cw = get_tick_position() + 300;
   calibrate_current_ccw = get_tick_position() - 300;
   drive_to(calibrate_current_cw, SLOW_RPM);
-  if(!reached_goal(calibrate_current_cw, 0, 1)) return;
+  if(!reached_goal(calibrate_current_cw, 0, 1, 10000, 10)) return false;
   
   drive_to(calibrate_current_ccw, SLOW_RPM);
-  if(!reached_goal(calibrate_current_ccw, 0, 1)) return;
+  if(!reached_goal(calibrate_current_ccw, 0, 1, 10000, 10)) return false;
   
   drive_to(calibrate_current_cw, SLOW_RPM);
-  if(!reached_goal(calibrate_current_cw, 0, 1)) return;
+  if(!reached_goal(calibrate_current_cw, 0, 1, 10000, 10)) return false;
   // drive_and_check(calibrate_current_cw, SLOW_RPM, 1);
   // drive_and_check(calibrate_current_ccw, SLOW_RPM, 1);
   // drive_and_check(calibrate_current_cw, SLOW_RPM, 1);
@@ -322,15 +344,15 @@ void calibrate_currents(){
     float rpm_intervall = user_rpm/2;
     float cal_rpm = rpm_intervall*i;
     elapsedMillis cur_millis;
-    // drive_to(calibrate_current_ccw, cal_rpm);
-    // // reached_goal(calibrate_current_ccw, i, 1);
-    // if(!reached_goal(calibrate_current_ccw, i, 1)) return;
+    drive_to(calibrate_current_ccw, cal_rpm);
+    // reached_goal(calibrate_current_ccw, i, 1);
+    if(!reached_goal(calibrate_current_ccw, i, 1, 10000, 10)) return false;
 
-    // drive_to(calibrate_current_cw, cal_rpm);
-    // // reached_goal(calibrate_current_cw, i, 1);
-    // if(!reached_goal(calibrate_current_cw, i, 1)) return;
-    drive_and_check(calibrate_current_ccw, cal_rpm, 1);
-    drive_and_check(calibrate_current_cw, cal_rpm, 1);
+    drive_to(calibrate_current_cw, cal_rpm);
+    // reached_goal(calibrate_current_cw, i, 1);
+    if(!reached_goal(calibrate_current_cw, i, 1, 10000, 10)) return false;
+    // drive_and_check(calibrate_current_ccw, cal_rpm, 1);
+    // drive_and_check(calibrate_current_cw, cal_rpm, 1);
 
 
     switch(i){
@@ -370,6 +392,8 @@ void calibrate_currents(){
   Serial.println(cal_cur2);
   Serial.print("CUR3");
   Serial.println(cal_cur3);
+
+  return true;
 }
 
 void check_beginning(float total_deg){
@@ -377,6 +401,8 @@ void check_beginning(float total_deg){
   const float HIGH_SAFETY = tar_volt*0.9;
   int32_t low_to_mid = 2050;
   int32_t high_to_mid = 2050;
+
+  beginning_tick = get_tick_position();
   safety_pos_volt = corr_measure();
   if(safety_pos_volt <= LOW_SAFETY){
     if(relay_switch){
@@ -386,9 +412,9 @@ void check_beginning(float total_deg){
     }
     Serial.print("SAFETY_L");
     Serial.println(safety_pos_volt);
-    // drive_to(low_to_mid, SLOW_RPM);
-    // reached_goal(low_to_mid, 0, 1);
-    drive_and_check(low_to_mid,SLOW_RPM, 1);
+    drive_to(low_to_mid, SLOW_RPM);
+    reached_goal(low_to_mid, 0, 1);
+    // drive_and_check(low_to_mid,SLOW_RPM, 1);
 
   } else if(safety_pos_volt >= HIGH_SAFETY){
     if(relay_switch){
@@ -422,7 +448,17 @@ void check_ends(){
   reached_goal(check_end_end, 0);
   end_tick = stopped_tick;
   ist_start_volt = corr_measure();
-  // ist_total_resistance = corr_measure_res();
+  if(measure_start_resistance){
+    ist_start_resistance = corr_measure_res(1);
+  }
+
+  if(relay_switch){
+    if(measure_total_resistance){
+      ist_total_resistance = corr_measure_res(3);
+    }
+  }
+  
+  
 
   for(int i = 0; i < 5; i++){
   dxl.ledOff(1);
@@ -436,17 +472,22 @@ void check_ends(){
   drive_to(test_check_start, user_rpm);
   reached_goal(test_check_start, 2);
   
-  // drive_and_check(test_check_start, user_rpm);
 
   drive_to(check_end_start, SLOW_RPM);
   if(reached_goal(check_end_start, 0, 0, 30000) == false){
     start_tick = stopped_tick;
     ist_end_volt = corr_measure();
-    // ist_start_volt = corr_measure(ist_start_volt);
+    
+    if(measure_end_resistance){
+      ist_end_resistance = corr_measure_res(2);
+    }
+    if(!relay_switch){
+      if(measure_total_resistance){
+        ist_total_resistance = corr_measure_res(3);
+      }
+    }
   }
-  // drive_and_check(check_end_start, SLOW_RPM);
-  // start_tick = stopped_tick;
-  // ist_end_volt = corr_measure();
+
 
   sim_mercy_start = start_tick + MERCY_TOLERANCE_TICK;
   sim_mercy_end = end_tick - MERCY_TOLERANCE_TICK;

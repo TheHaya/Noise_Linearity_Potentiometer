@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import ImageTk, Image
 import sv_ttk
-import threading, json, os, sys, time, serial
+import threading, json, os, sys, time, serial, winsound
 
 import export
 import noise_workflow
@@ -19,6 +19,29 @@ import ring
 def resource_path(rel_path: str) -> str:
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, rel_path)
+
+SOUND_FILES = {
+    "success": resource_path(os.path.join("sounds", "success.wav")),
+    "cancel": resource_path(os.path.join("sounds", "cancel.wav")),
+    "error": resource_path(os.path.join("sounds", "error.wav")),
+}
+
+def play_sound(file):
+    path = SOUND_FILES.get(file)
+
+    if not path or not os.path.isfile(path):
+        print(f"Sounddatei fehlt: {path}")
+        return
+
+    try:
+        winsound.PlaySound(
+            path,
+            winsound.SND_FILENAME |
+            winsound.SND_ASYNC |
+            winsound.SND_NODEFAULT
+        )
+    except RuntimeError as e:
+        print(f"Sound konnte nicht abgespielt werden: {e}")
 
 # --------------- APP VARIABLES 
 pico_plot_time = []
@@ -113,6 +136,7 @@ def insert_preset(p):
     set_entry(txt_d31, p["d31"])
     set_entry(txt_d32, p["d32"])
 
+    global soll_resistance_total
     global tol_total_mech_deg_neg, tol_total_mech_deg_pos
     global tol_total_elec_deg_pos, tol_total_elec_deg_neg
     global tol_position_deadzone_cw_pos, tol_position_deadzone_cw_neg
@@ -123,6 +147,7 @@ def insert_preset(p):
     global tol_linearity_pos, tol_linearity_neg
     global tol_resistance_pos, tol_resistance_neg
     global relay_switch_pol
+    soll_resistance_total = p.get("soll_gesamt_widerstand")
     tol_total_mech_deg_pos = p.get("tol_drehwinkel_mech_pos")
     tol_total_mech_deg_neg = p.get("tol_drehwinkel_mech_neg")
     tol_total_elec_deg_pos = p.get("tol_drehwinkel_elec_pos")
@@ -470,6 +495,9 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
     queue_ui(lambda:lbl_mech.config(fg = "#FFFFFF",bg="#1c1c1c"))
     mech_angle_var.set("Mechanischer Winkel: --")
     elec_angle_var.set("Elektrischer Winkel: --")
+    res_val_init_var.set("Anfangswiderstand: --")
+    res_val_final_var.set("Endwiderstand: --")
+    res_val_total_var.set("Gesamtwiderstand: --")
 
     def cancel():
         request_measurement_stop()
@@ -583,6 +611,27 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
                     else:
                         queue_ui(lambda: mech_angle_var.set("Mechanischer Winkel: --"))
 
+                if workflow is mech_ends_workflow and res_total_checked:
+                    val = getattr(mech_ends_workflow, "res_total_val", None)
+                    if isinstance(val, (int, float)):
+                        if val < soll_resistance_total + soll_resistance_total*tol_resistance_neg or val > soll_resistance_total + soll_resistance_total*tol_resistance_pos:
+                            queue_ui(lambda:lbl_res_val_total.config(fg = "#FF0000", bg="#1c1c1c"))
+                        else:
+                            queue_ui(lambda:lbl_res_val_total.config(fg = "#00FF00",bg="#1c1c1c"))
+                        queue_ui(lambda v=val: res_val_total_var.set(f"Gesamtwiderstand: {v:.2f} Ohm"))
+                    else:
+                        queue_ui(lambda: res_val_total_var.set("Gesamtwiderstand: --"))
+
+                if workflow is mech_ends_workflow and res_init_checked:
+                    val = getattr(mech_ends_workflow, "res_init_val", None)
+                    if isinstance(val, (int, float)):
+                        queue_ui(lambda v=val: res_val_init_var.set(f"Anfangswiderstand: {v:.2f} Ohm"))
+
+                if workflow is mech_ends_workflow and res_final_checked:
+                    val = getattr(mech_ends_workflow, "res_final_val", None)
+                    if isinstance(val, (int, float)):
+                        queue_ui(lambda v=val: res_val_final_var.set(f"Endwiderstand: {v:.2f} Ohm"))
+
                 if workflow is elec_deg_workflow or end_lin_checked is True:
                     val = getattr(elec_deg_workflow, "total_elec", None)
                     if isinstance(val, (int, float)):
@@ -621,12 +670,17 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
             if pico_runner.noise_error:
                 write_serial_line(ser_ard, "NOISE_END")
                 print("Sende: NOISE_END")
-            if linear_workflow.lin_error:
+                queue_ui(lambda: play_sound("error"))
+            elif linear_workflow.lin_error:
                 write_serial_line(ser_ard, "LIN_END")
                 print("Sende: LIN_END")
+                queue_ui(lambda: play_sound("error"))
+            elif stop_event.is_set():
+                queue_ui(lambda: play_sound("cancel"))
             else:
                 write_serial_line(ser_ard, "ALL_END")
                 print("Sende: ALL_END")
+                queue_ui(lambda: play_sound("success"))
             write_serial_line(ser_psu, "OUTP OFF")
             close_serial_port(ser_multi, "Multimeter")
             close_serial_port(ser_psu, "PSU")
@@ -648,16 +702,36 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
     measurement_thread.start()
 
 def measurement_chk(retry_used=False):
-    if measurement_is_running():
-        return
     global end_lin_checked
     global endless_noise
+    global ends_checked, noise_checked, elec_checked, linear_checked, res_init_checked, res_final_checked, res_total_checked
     endless_noise = False
     end_lin_checked = False
     mech_ends_workflow.safety_cancel = False
     pico_runner.out_volt = False
     mech_ends_workflow.endless_noise_init = False
-    # stop_event_global.clear()
+
+    if measurement_is_running():
+        return
+
+    part_number = preset_entry.get().strip()
+
+    if part_number not in presets:
+        open_nopartnumber_window()
+        preset_entry.focus_set()
+        print(f"Keine gültige Teilnummer gewählt: {part_number!r}")
+        return
+    insert_preset(presets[part_number])
+    
+    if rework_var.get():
+        rework_text = txt_rework.get().strip()
+        if rework_text == "":
+            print("Nacharbeit ohne Tabellennummer.")
+            return
+        if not rework_text.isdigit() or int(rework_text) < 1:
+            print("Ungültige Nacharbeits-Tabellennummer.")
+            return
+
     try:
         meas_volt = float(txt_volt.get().strip().replace(',', '.'))
         meas_angle = float(txt_angle.get().strip().replace(',', '.'))
@@ -674,11 +748,15 @@ def measurement_chk(retry_used=False):
     d32 = decimal_conversion(d32_var.get())
 
     modes = []
-    global ends_checked, noise_checked, elec_checked, linear_checked
+    
     ends_checked = chk_ends_mode.get()
     noise_checked = chk_noise_mode.get()
     elec_checked = chk_elec_mode.get()
     linear_checked = chk_linear_mode.get()
+
+    res_init_checked = int(chk_resistance_mode_init.get())
+    res_final_checked = int(chk_resistance_mode_final.get())
+    res_total_checked = int(chk_resistance_mode_total.get())
     target_angle = float(txt_angle.get().strip().replace(',', '.'))
 
     # SPEZIALFALL 360° und NUR Rauschmessung
@@ -686,8 +764,9 @@ def measurement_chk(retry_used=False):
         endless_noise = True
         mech_ends_workflow.endless_noise_init = True
 
-    modes.append((mech_ends_workflow, (soll_volt_linear,), "Mech. Endwinkel", True, ends_checked))
+    modes.append((mech_ends_workflow, (soll_volt_linear, res_init_checked, res_final_checked, res_total_checked), "Mech. Endwinkel", True, ends_checked))
     if ends_checked: print("[CHECKBOX] Mech. Ends")
+
 
     if noise_checked:
         pico_plot_time.clear()
@@ -708,19 +787,6 @@ def measurement_chk(retry_used=False):
         modes.append((linear_workflow, (soll_volt_linear, d11, d12, d21, d22, d31, d32), "Linearitätsprüfung", True, True))
         print("[CHECKBOX] Linearität")
 
-    
-        
-
-
-    if rework_var.get():
-        rework_text = txt_rework.get().strip()
-        if rework_text == "":
-            print("Nacharbeit ohne Tabellennummer.")
-            return
-        if not rework_text.isdigit() or int(rework_text) < 1:
-            print("Ungültige Nacharbeits-Tabellennummer.")
-            return
-        
     if len(modes) == 1 and ends_checked is False:
         open_nocheck_window()
         print("Keine Messungen gewählt.")
@@ -776,6 +842,15 @@ def rework_chk():
         txt_rework.delete(0, tk.END)
         txt_rework.config(state="readonly")
     
+def res_chk():
+    if chk_resistance_mode.get():
+        res_visible(True)
+    else:
+        for variable in (chk_resistance_mode_init, chk_resistance_mode_final, chk_resistance_mode_total,):
+            variable.set(False)
+
+        res_visible(False)
+
 
 def update_deadzone_ring(*_):
     global deadzone_after_id
@@ -827,6 +902,14 @@ def advanced_visible(visible: bool):
         for w in widgets:
             w.grid_remove()
 
+def res_visible(visible: bool):
+    widgets = (chk_resistance_init, chk_resistance_final, chk_resistance_total)
+    if visible:
+        for w in widgets:
+            w.grid()
+    else:
+        for w in widgets:
+            w.grid_remove()
 # --------------- SAFETY WARNING WIPER TOO CLOSE
 def open_safety_win():
     global safety_cancel_win
@@ -865,6 +948,25 @@ def open_noise_found_win():
     ok_button.focus_set()  
     noise_found_win.bind("<Return>", lambda event: ok_button.invoke())
 
+# --------------- NO PARTNUMBER WARNING
+def open_nopartnumber_window():
+    global nopartnumber_win
+    nopartnumber_win = tk.Toplevel(root)
+    nopartnumber_win.title("Fehler")
+    nopartnumber_win.geometry(f"{small_wid}x{small_hei}+{scr_wid//2}+{scr_hei//2}")
+    nopartnumber_win.grid_rowconfigure(0, weight=1)
+    nopartnumber_win.grid_rowconfigure(1, weight=1)
+    nopartnumber_win.grid_columnconfigure(0, weight=1)
+    nopartnumber_win.resizable(False, False)
+    nopartnumber_win.transient(root)
+    nopartnumber_win.grab_set()
+
+    ttk.Label(nopartnumber_win, text="Bitte eine Teilnummer auswählen\noder Werte eingeben.", 
+              anchor="center", justify="center").grid(row=0, column=0, pady=(20,0))
+    ok_button = ttk.Button(nopartnumber_win, text="OK", command=nopartnumber_win.destroy)
+    ok_button.grid(row=1, column=0, pady=(0, 0), ipadx=20)
+    ok_button.focus_set()  
+    nopartnumber_win.bind("<Return>", lambda event: ok_button.invoke())
 
 # --------------- NO CHECKBOXES WARNING
 def open_nocheck_window():
@@ -976,67 +1078,69 @@ def open_relais():
 
 
 def open_tester():
-    global measurement_thread, measurement_running, active_measurement_stop_event
+    write_serial_line(ser_ard, "TESTER")
+    print("TESTER: Geschrieben")
+    # global measurement_thread, measurement_running, active_measurement_stop_event
 
-    wait_win = tk.Toplevel(root)
-    wait_win.title("Datenmessung")
-    wait_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
-    wait_win.transient(root)
-    wait_win.grab_set()
-    wait_win.resizable(False, False)
+    # wait_win = tk.Toplevel(root)
+    # wait_win.title("Datenmessung")
+    # wait_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
+    # wait_win.transient(root)
+    # wait_win.grab_set()
+    # wait_win.resizable(False, False)
 
-    status_label = ttk.Label(wait_win, text="Bitte warten...")
-    status_label.pack(pady=(0,20), expand=True)
+    # status_label = ttk.Label(wait_win, text="Bitte warten...")
+    # status_label.pack(pady=(0,20), expand=True)
 
-    stop_event = threading.Event()
-    active_measurement_stop_event = stop_event
+    # stop_event = threading.Event()
+    # active_measurement_stop_event = stop_event
 
-    queue_ui(lambda:lbl_mech.config(fg = "#FFFFFF",bg="#1c1c1c"))
-    mech_angle_var.set("Mechanischer Winkel: --")
-    elec_angle_var.set("Elektrischer Winkel: --")
+    # queue_ui(lambda:lbl_mech.config(fg = "#FFFFFF",bg="#1c1c1c"))
+    # mech_angle_var.set("Mechanischer Winkel: --")
+    # elec_angle_var.set("Elektrischer Winkel: --")
 
-    def cancel():
-        request_measurement_stop()
-        wait_win.destroy()
+    # def cancel():
+    #     request_measurement_stop()
+    #     wait_win.destroy()
 
-    wait_win.protocol("WM_DELETE_WINDOW", cancel)
+    # wait_win.protocol("WM_DELETE_WINDOW", cancel)
 
-    try:
-        meas_volt = float(txt_volt.get().strip().replace(',', '.'))
-        meas_angle = float(txt_angle.get().strip().replace(',', '.'))
-        meas_speed = float(txt_speed.get().strip().replace(',', '.'))
-    except ValueError:
-        print("Eingabefehler bei Tester-Werten!")
-        return
+    # try:
+    #     meas_volt = float(txt_volt.get().strip().replace(',', '.'))
+    #     meas_angle = float(txt_angle.get().strip().replace(',', '.'))
+    #     meas_speed = float(txt_speed.get().strip().replace(',', '.'))
+    # except ValueError:
+    #     print("Eingabefehler bei Tester-Werten!")
+    #     return
 
-    def finish_tester():
-        global measurement_running, measurement_thread, active_measurement_stop_event
+    # def finish_tester():
+    #     global measurement_running, measurement_thread, active_measurement_stop_event
 
-        write_serial_line(ser_ard, "ALL_END")
-        print("Sende: ALL_END")
+    #     write_serial_line(ser_ard, "ALL_END")
+    #     print("Sende: ALL_END")
 
-        active_measurement_stop_event = None
-        measurement_running = False
-        measurement_thread = None
+    #     active_measurement_stop_event = None
+    #     measurement_running = False
+    #     measurement_thread = None
 
-        if not app_closing:
-            set_measurement_controls(True)
+    #     if not app_closing:
+    #         set_measurement_controls(True)
 
-        destroy_window(wait_win)
+    #     destroy_window(wait_win)
 
-    set_measurement_controls(False)
-    measurement_running = True
+    # set_measurement_controls(False)
+    # measurement_running = True
 
-    measurement_thread = tester.start_mech_angle_repeat_test(
-    ser_ard,
-    meas_volt,
-    meas_angle,
-    meas_speed,
-    relay_switch_pol,
-    soll_volt_linear,
-    stop_event,
-    lambda: queue_ui(finish_tester)
-)
+    # measurement_thread = tester.start_mech_angle_repeat_test(
+    # ser_ard,
+    # meas_volt,
+    # meas_angle,
+    # meas_speed,
+    # relay_switch_pol,
+    # soll_volt_linear,
+    # stop_event,
+    # lambda: queue_ui(finish_tester)
+# )
 
 # --------------- GUI
 print("Programm wird gestartet...")
@@ -1047,8 +1151,8 @@ scr_hei = root.winfo_screenheight()
 small_wid = 300
 small_hei = 170
 
-root.minsize(width=1280, height=800)
-root.geometry("1280x800")
+root.minsize(width=1300, height=800)
+root.geometry("1300x800")
 #root.geometry(f"{scr_wid - scr_wid//5}x{scr_hei - scr_hei//5}+0+0")
 root.title("Prüfprogramm")
 root.resizable(True, True)
@@ -1062,10 +1166,14 @@ sv_ttk.set_theme("dark")
 
 left_frame  = ttk.Frame(root)
 right_frame = ttk.Frame(root)
+resistance_frame = ttk.Frame(right_frame)
+measure_but_frame = ttk.Frame(right_frame)
+ring_area = ttk.Frame(root)
 left_frame.grid(row=1, column=0, sticky="nw", padx=12, pady=12)
 right_frame.grid(row=1, column=1, sticky="nw",  padx=12, pady=12)
-ring_area = ttk.Frame(root)
-ring_area.grid(row=1, column=2, sticky="nw", padx=(0,30), pady=12)
+resistance_frame.grid(row=5, column=4, rowspan=3, sticky="nw", padx=(0,0), pady=(0))
+measure_but_frame.grid(row=8, column=4, rowspan=3, sticky="nw", padx=(0,0), pady=(0))
+ring_area.grid(row=1, column=3, sticky="nw", padx=(0,30), pady=12)
 
 img = ImageTk.PhotoImage(smallLogo)
 panel = tk.Label(root, image=img)
@@ -1077,18 +1185,18 @@ right_frame.grid_columnconfigure(1, weight=0)
 vcmd = (root.register(lambda P: (P.count(',') <= 1 and all(ch.isdigit() or ch == ',' or ch == '-' for ch in P))), "%P")
 
 ttk.Label(left_frame, text="Auftragsnummer:").grid(row=4, column=0, sticky="w", pady=(20, 0), padx=(20,0))
-txt9 = ttk.Entry(left_frame, width=20)
-txt9.grid(row=5, column=0, pady=(0, 10), padx=(13,0))
+txt9 = ttk.Entry(left_frame, width=12)
+txt9.grid(row=5, column=0, pady=(0, 10),sticky="w" ,padx=(20,0))
 
 rework_var = tk.BooleanVar(value=False)
 chk_rework = ttk.Checkbutton(left_frame, text="Nacharbeit?", variable=rework_var, command=rework_chk)
 chk_rework.grid(row=6, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
 
-txt_rework = ttk.Entry(left_frame, width=20)
-txt_rework.grid(row=7, column=0, pady=(0, 10), padx=(13,0))
+txt_rework = ttk.Entry(left_frame, width=12)
+txt_rework.grid(row=7, column=0, pady=(0, 10), sticky="w", padx=(20,0))
 
 autosave_var = tk.BooleanVar(value=True)
-chk_autosave = ttk.Checkbutton(left_frame, text="Automatisches Speichern", variable=autosave_var, command=autosave_chk)
+chk_autosave = ttk.Checkbutton(left_frame, text="Automatisches\nSpeichern", variable=autosave_var, command=autosave_chk)
 chk_autosave.grid(row=9, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
 
 advanced_mode = tk.BooleanVar(value=False)
@@ -1101,61 +1209,61 @@ msg = tk.Message(left_frame, width=200, bg="#CCCCCC", fg="#C00000", font='Arial 
 ttk.Label(right_frame, text="Sollspannung in V").grid(row=1, column=0, sticky="w", pady=(40, 0), padx=(10,0))
 txt_volt = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
 txt_volt.grid(row=2, column=0, pady=(0, 0), padx=(20,0))
-txt_volt.insert(0, "10,0")
+txt_volt.insert(0, "0")
 txt_volt.configure(state=text_rw_state)
 
 ttk.Label(right_frame, text="Gesamtwinkel in °").grid(row=3, column=0, sticky="w", pady=(40, 0), padx=(10,0))
 txt_angle = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
 txt_angle.grid(row=4, column=0, pady=(0, 0), padx=(20,0))
-txt_angle.insert(0, "330,0")
+txt_angle.insert(0, "0")
 txt_angle.configure(state=text_rw_state)
 
 ttk.Label(right_frame, text="Max. Geschw. in U/min:").grid(row=5, column=0, sticky="w", pady=(40, 0), padx=(10,0))
 txt_speed = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
 txt_speed.grid(row=6, column=0, pady=(0, 0), padx=(20,0))
-txt_speed.insert(0, "60,0")
+txt_speed.insert(0, "0")
 txt_speed.configure(state=text_rw_state)
 
-d11_var = tk.StringVar(value="0,0")
+d11_var = tk.StringVar(value="0")
 ttk.Label(right_frame, text="Totzone 1 Links in °").grid(row=1, column=1, sticky="w", pady=(40, 0), padx=(10,0))
 txt_d11 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d11_var)
 txt_d11.grid(row=2, column=1, pady=(0, 0), padx=(20,0))
-txt_d11.insert(0, "0,0")
+txt_d11.insert(0, "0")
 txt_d11.configure(state=text_rw_state)
 
-d12_var = tk.StringVar(value="40,0")
+d12_var = tk.StringVar(value="0")
 ttk.Label(right_frame, text="Totzone 1 Rechts in °").grid(row=1, column=2, sticky="w", pady=(40, 0), padx=(18,0))
 txt_d12 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d12_var)
 txt_d12.grid(row=2, column=2, pady=(0, 0), padx=(30,0))
-txt_d12.insert(0, "40,0")
+txt_d12.insert(0, "0")
 txt_d12.configure(state=text_rw_state)
 
-d21_var = tk.StringVar(value="140,0")
+d21_var = tk.StringVar(value="0")
 ttk.Label(right_frame, text="Totzone 2 Links in °").grid(row=3, column=1, sticky="w", pady=(40, 0), padx=(10,0))
 txt_d21 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d21_var)
 txt_d21.grid(row=4, column=1, pady=(0, 0), padx=(20,0))
-txt_d21.insert(0, "140,0")
+txt_d21.insert(0, "0")
 txt_d21.configure(state=text_rw_state)
 
-d22_var = tk.StringVar(value="190,0")
+d22_var = tk.StringVar(value="0")
 ttk.Label(right_frame, text="Totzone 2 Rechts in °").grid(row=3, column=2, sticky="w", pady=(40, 0), padx=(18,0))
 txt_d22 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d22_var)
 txt_d22.grid(row=4, column=2, pady=(0, 0), padx=(30,0))
-txt_d22.insert(0, "190,0")
+txt_d22.insert(0, "0")
 txt_d22.configure(state=text_rw_state)
 
-d31_var = tk.StringVar(value="290,0")
+d31_var = tk.StringVar(value="0")
 ttk.Label(right_frame, text="Totzone 3 Links in °").grid(row=5, column=1, sticky="w", pady=(40, 0), padx=(10,0))
 txt_d31 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d31_var)
 txt_d31.grid(row=6, column=1, pady=(0, 0), padx=(20,0))
-txt_d31.insert(0, "290,0")
+txt_d31.insert(0, "0")
 txt_d31.configure(state=text_rw_state)
 
-d32_var = tk.StringVar(value="330,0")
+d32_var = tk.StringVar(value="0")
 ttk.Label(right_frame, text="Totzone 3 Rechts in °").grid(row=5, column=2, sticky="w", pady=(40, 0), padx=(18,0))
 txt_d32 = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd, textvariable=d32_var)
 txt_d32.grid(row=6, column=2, pady=(0, 0), padx=(30,0))
-txt_d32.insert(0, "330,0")
+txt_d32.insert(0, "0")
 txt_d32.configure(state=text_rw_state)
 
 
@@ -1167,7 +1275,7 @@ for var in (d11_var, d12_var, d21_var, d22_var, d31_var, d32_var):
 
 ttk.Label(left_frame, text="Teilenummer:").grid(row=0, column=0, sticky="w", pady=(10, 0), padx=(20,0))
 search_var = tk.StringVar()
-preset_entry = ttk.Entry(left_frame, textvariable=search_var, width=16)
+preset_entry = ttk.Entry(left_frame, textvariable=search_var, width=12)
 preset_entry.grid(row=1, column=0, sticky="w", padx=(20,0))
 preset_entry.focus_set()
 preset_ids = list(presets.keys())
@@ -1222,6 +1330,10 @@ chk_ends_mode = tk.BooleanVar(value=False)
 chk_elec_mode = tk.BooleanVar(value=False)
 chk_noise_mode = tk.BooleanVar(value=False)
 chk_linear_mode = tk.BooleanVar(value=False)
+chk_resistance_mode = tk.BooleanVar(value=False)
+chk_resistance_mode_init = tk.BooleanVar(value=False)
+chk_resistance_mode_final = tk.BooleanVar(value=False)
+chk_resistance_mode_total = tk.BooleanVar(value=False)
 chk_meas_ends = ttk.Checkbutton(right_frame, text="Mech. Enden", variable=chk_ends_mode)
 chk_meas_ends.grid(row=7, column=0, sticky="w", pady=(60, 0), padx=(20, 0))
 chk_elec_deg = ttk.Checkbutton(right_frame, text="Elektr. Winkel", variable=chk_elec_mode)
@@ -1230,49 +1342,71 @@ chk_noise = ttk.Checkbutton(right_frame, text="Rauschen", variable=chk_noise_mod
 chk_noise.grid(row=7, column=1, sticky="w", pady=(60, 0), padx=(20, 0))
 chk_linearity = ttk.Checkbutton(right_frame, text="Linearität", variable=chk_linear_mode)
 chk_linearity.grid(row=7, column=3, sticky="w", pady=(60, 0), padx=(20, 0))
+chk_resistance = ttk.Checkbutton(resistance_frame, text="Widerstand", variable=chk_resistance_mode, command=res_chk)
+chk_resistance.grid(row=3, column=0, sticky="w", pady=(16, 0), padx=(20))
+chk_resistance_init = ttk.Checkbutton(resistance_frame, text="Anfangs-", variable=chk_resistance_mode_init)
+chk_resistance_init.grid(row=0, column=0, sticky="w", pady=(50, 0), padx=(20, 0))
+chk_resistance_final = ttk.Checkbutton(resistance_frame, text="End-", variable=chk_resistance_mode_final)
+chk_resistance_final.grid(row=1, column=0, sticky="w", pady=(0, 0), padx=(20, 0))
+chk_resistance_total = ttk.Checkbutton(resistance_frame, text="Gesamt-", variable=chk_resistance_mode_total)
+chk_resistance_total.grid(row=2, column=0, sticky="w", pady=(0, 0), padx=(20, 0))
+
+# Damit die checkboxen über Widerstand nicht die Höhe nerven
+resistance_frame.grid_rowconfigure(0, minsize=chk_resistance_init.winfo_reqheight() + 50)
+resistance_frame.grid_rowconfigure(1, minsize=chk_resistance_final.winfo_reqheight())
+resistance_frame.grid_rowconfigure(2, minsize=chk_resistance_total.winfo_reqheight())
 
 mech_angle_var = tk.StringVar(value="Mechanischer Winkel: --")
 lbl_mech = tk.Label(right_frame, textvariable=mech_angle_var, font="Verdana 12 bold")
 lbl_mech.grid(row=8, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
 
-
-
-
 elec_angle_var = tk.StringVar(value="Elektrischer Winkel: --")
-lbl_elec = ttk.Label(right_frame, textvariable=elec_angle_var, font="Verdana 12 bold")
-lbl_elec.grid(row=9, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
+lbl_elec = tk.Label(right_frame, textvariable=elec_angle_var, font="Verdana 12 bold")
+lbl_elec.grid(row=9, column=0, columnspan=4, sticky="w", padx=(22, 0), pady=(10, 0))
 
 cur_pos_var = tk.StringVar(value="Position Tick: --")
-lbl_cur_pos = ttk.Label(right_frame, textvariable=cur_pos_var, font="Verdana 12 bold")
-lbl_cur_pos.grid(row=10, column=0, columnspan=4, sticky="w", padx=(20, 0), pady=(12, 0))
+lbl_cur_pos = tk.Label(right_frame, textvariable=cur_pos_var, font="Verdana 12 bold")
+lbl_cur_pos.grid(row=8, column=2, columnspan=4, sticky="w", padx=(22, 0), pady=(12,0))
+
+res_val_init_var = tk.StringVar(value="Anfangswiderstand: --")
+lbl_res_val_init = tk.Label(right_frame, textvariable=res_val_init_var, font="Verdana 12 bold")
+lbl_res_val_init.grid(row=10, column=0, columnspan=4, sticky="w", padx=(22, 0), pady=(25,0))
+
+res_val_final_var = tk.StringVar(value="Endwiderstand: --")
+lbl_res_val_final = tk.Label(right_frame, textvariable=res_val_final_var, font="Verdana 12 bold")
+lbl_res_val_final.grid(row=11, column=0, columnspan=4, sticky="w", padx=(22, 0), pady=(12,0))
+
+res_val_total_var = tk.StringVar(value="Gesamtwiderstand: --")
+lbl_res_val_total = tk.Label(right_frame, textvariable=res_val_total_var, font="Verdana 12 bold")
+lbl_res_val_total.grid(row=12, column=0, columnspan=4, sticky="w", padx=(22, 0), pady=(12,0))
 
 # lbl_go = ttk.Label(right_frame, text="Anfahrt:")
 # lbl_go.grid(row=8, column=2, pady=(20,0))
 txt_go = ttk.Entry(right_frame, width=5, validate="key", validatecommand=vcmd)
-txt_go.grid(row=9, column=2)
+txt_go.grid(row=3, column=3)
 
 advanced_warning = tk.Message( width=350, bg="#FF0000", fg="#E3E3E3", font='Arial 16 bold')
 advanced_warning.grid(row=0, column=1, pady=(10, 10), padx=(200,0))
 advanced_warning.config(text="ACHTUNG:\nERWEITERTER MODUS AKTIVIERT")
 
-ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=18).grid(row=11, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
-ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=18).grid(row=12, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=15).grid(row=11, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=15).grid(row=12, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Netzteil Test", command=tests,width=12).grid(row=9, column=3, pady=(20, 5), padx=(20,0))
-but_measure = ttk.Button(right_frame, text="Messen", command=measurement_chk, width=12)
-but_measure.grid(row=8, column=3, pady=(12, 5), padx=(10,0))
-but_zero = ttk.Button(right_frame, text="Position 0",  command=open_zero_window, width=12)
-but_zero.grid(row=9, column=3, pady=(12, 5), padx=(10,0))
+but_measure = ttk.Button(measure_but_frame, text="Messen", command=measurement_chk, width=12)
+but_measure.grid(row=0, column=0, pady=(12, 5), padx=(14,0))
+but_zero = ttk.Button(measure_but_frame, text="Position 0",  command=open_zero_window, width=12)
+but_zero.grid(row=1, column=0, pady=(12, 5), padx=(14,0))
 but_cur_pos = ttk.Button(right_frame, text="Curr Position", command=show_current_position)
-but_cur_pos.grid(row=8, column=2, pady=(12, 5), padx=(10,0))
+but_cur_pos.grid(row=2, column=3, pady=(12, 5), padx=(10,0))
 but_go = ttk.Button(right_frame, text="Go To", command=goto_execute)
-but_go.grid(row=10, column=2, pady=(5, 5))
-but_relais = ttk.Button(right_frame, text="Relais switch",  command=open_relais, width=12)
-but_relais.grid(row=10, column=3, pady=(12, 5), padx=(10,0))
-but_tester = ttk.Button(right_frame, text="Tester",  command=open_tester, width=12)
-but_tester.grid(row=7, column=3, pady=(12, 40), padx=(10,0))
+but_go.grid(row=4, column=3, pady=(0))
+but_relais = ttk.Button(right_frame, text="Relais switch",  command=open_relais, width=10)
+but_relais.grid(row=5, column=3, padx=(10,0))
+but_tester = ttk.Button(right_frame, text="Tester",  command=open_tester, width=10)
+but_tester.grid(row=6, column=3, padx=(10,0))
 
 root.bind("<Escape>", lambda event: on_root_close())
 root.protocol("WM_DELETE_WINDOW", on_root_close)
@@ -1283,6 +1417,7 @@ rework_chk()
 ring.build_ring(ring_area)
 ring.init_circle_text()
 advanced_visible(False)
+res_visible(False)
 instant_deadzone_ring()
 polling_push_button()
 
