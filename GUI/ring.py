@@ -121,11 +121,12 @@ def init_circle_text():
     canv_x = (x0 + x1) / 2
     canv_y = (y0 + y1) / 2
     text_font = font.Font(family="Arial", size=20, weight="bold")
+    # Rauschen
     iid = ring_canvas.create_text(
                 canv_x, canv_y+30, text="Bereit", fill="#d7d7d7",
                 font=text_font, anchor="center")
     noise_times.append(iid)
-    
+    # Linearität
     iid = ring_canvas.create_text(
                 canv_x, canv_y+300, text="Bereit", fill="#d7d7d7",
                 font=text_font, anchor="center")
@@ -143,7 +144,7 @@ def set_circle_text(pico_angle, stop:bool, noise_meas = False, noise_error = Fal
                 font=text_font, anchor="center")
     elif stop:
         iid = ring_canvas.create_text(
-                canv_x, canv_y+305, text="Bereit", fill="#d7d7d7",
+                canv_x, canv_y+30, text="Bereit", fill="#d7d7d7",
                 font=text_font, anchor="center")
     elif noise_error:
         iid = ring_canvas.create_text(

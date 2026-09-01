@@ -31,6 +31,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 1,
+        "hohlwelle": 1,
         "comment": "DP37 H2 Poti"
     },
 
@@ -66,6 +67,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment": "360° endlos-drehender Poti"
     },
 
@@ -101,6 +103,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment":"T18 (500) - M:320°/E:316°"
     }, 
     "10":{
@@ -135,6 +138,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment": "Bournes 10 rotations - M:3600/E:3600"
     },
     "20":{
@@ -169,6 +173,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment": "DP18 - M:330°/E:330°"
     },
 
@@ -204,6 +209,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment":"DP18 St - M:124°/E:120°"
     },
 
@@ -239,6 +245,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment":"DP18 St Mi - M:330°/E:330°"
     },
 
@@ -274,6 +281,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment":"T18-182 Ltz - M:320°/E:320°"
     },
 
@@ -309,6 +317,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment":"DP120-47 Lt Mi - M:345°/E:285°"
     },
 
@@ -344,6 +353,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment":"LPT18 St - M:280°/E:270°/R:5K"
     },
 
@@ -379,6 +389,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment":"LPT18 St - M:280°/E:270°/R:10K"
     },
 
@@ -414,6 +425,7 @@
         "tol_widerstand_pos": 0.05,
         "tol_widerstand_neg": -0.05,
         "relay_polarity_switch": 0,
+        "hohlwelle": 0,
         "comment": "Tester"
     }
 

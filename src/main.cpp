@@ -347,6 +347,7 @@ void loop(){
     if(command.startsWith("SETW:")){target_deg_total = command.substring(5).toFloat();}
     if(command.startsWith("SETS:")){user_rpm = command.substring(5).toFloat();}
     if(command.startsWith("REL_SW:")){relay_switch = command.substring(7).toInt();}
+    if(command.startsWith("hohlwelle:")){hohlwelle = command.substring(10).toInt();}
     if(command.startsWith("goto:")){user_go_to = command.substring(5).toFloat();}
     if(command.startsWith("dead11:")){d11_deg = command.substring(7).toFloat();}
     if(command.startsWith("dead12:")){d12_deg = command.substring(7).toFloat();}
@@ -550,6 +551,7 @@ void loop(){
     }
 
     if(command == "ALL_END"){
+      cancelled = false;
       drive_to(beginning_tick, user_rpm);
       reached_goal(beginning_tick, 2);
       // drive_and_check(ZERO_TICK, user_rpm);
@@ -559,11 +561,11 @@ void loop(){
       dxl.ledOff(DID);
       measurement_active = false;
       setLEDS(3);
-      cancelled = false;
       linear_checked = false;
     }
 
     if(command == "NOISE_END"){
+      cancelled = false;
       drive_to(beginning_tick, user_rpm);
       reached_goal(beginning_tick, 2);
       // drive_and_check(ZERO_TICK, user_rpm);
@@ -572,13 +574,12 @@ void loop(){
       dxl.ledOff(DID);
       measurement_active = false;
       setLEDS(2);
-
-      cancelled = false;
       linear_checked = false;
     }
     
 
     if(command == "LIN_END"){
+      cancelled = false;
       drive_to(beginning_tick, user_rpm);
       reached_goal(beginning_tick, 2);
       // drive_and_check(ZERO_TICK, user_rpm);
@@ -587,8 +588,6 @@ void loop(){
       dxl.ledOff(DID);
       measurement_active = false;
       setLEDS(2);
-
-      cancelled = false;
       linear_checked = false;
     }
 

@@ -21,14 +21,15 @@ def config(app_root, txt_speed_entry, ser_arduino_app=None, ser_psu_app=None, se
     ser_PSU = ser_psu_app
     ser_Multi = ser_multi_app
     
-def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw=None, soll_v=None, 
-                res_init_bool=None, res_final_bool=None, res_total_bool=None, stop_event=None, on_finish=None, on_progress=None):
+def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw=None, hohlwelle=None, 
+                soll_v=None, res_init_bool=None, res_final_bool=None, res_total_bool=None, 
+                stop_event=None, on_finish=None, on_progress=None):
     try:
         PSU_ovp = soll_v+soll_v*0.2
-        PSU_ocp = 0.15
-        PSU_current = 0.05
+        PSU_ocp = 0.25
+        PSU_current = 0.15
         sc.set_psu_parameters(ser_PSU, PSU_ovp, PSU_ocp, soll_v, PSU_current)
-        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw)
+        sc.set_part_parameters(ser_arduino, ges_v, ges_w, ges_s, rel_sw, hohlwelle)
         sc.set_res_parameters(ser_arduino, res_init_bool, res_final_bool, res_total_bool)
         global safety_cancel
         safety_cancel = False

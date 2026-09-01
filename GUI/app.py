@@ -1,3 +1,5 @@
+print("Programm wird gestartet...", flush = True)
+
 import tkinter as tk
 from tkinter import ttk
 from PIL import ImageTk, Image
@@ -68,6 +70,16 @@ but_zero = None
 but_cur_pos = None
 but_go = None
 
+sounds_on = True
+measurements_finished = False
+measurements_noise_found = False
+ends_checked = False
+noise_checked = False
+elec_checked = False
+linear_checked = False
+res_init_checked = 0
+res_final_checked = 0
+res_total_checked = 0
 
 AMLogo = Image.open(resource_path("AMLogo.jpg"))
 scale = 0.8
@@ -78,7 +90,6 @@ deadzone_after_id = None
 debounce_id = {"id": None}
 output_ends = False
 arduino_serial_lock = threading.Lock()
-
 
 # --------------- PRESETS LADEN
 tol_total_mech_deg_pos = None
@@ -146,7 +157,8 @@ def insert_preset(p):
     global tol_active_ccw_pos, tol_active_ccw_neg
     global tol_linearity_pos, tol_linearity_neg
     global tol_resistance_pos, tol_resistance_neg
-    global relay_switch_pol
+    global relay_switch_pol, ist_hohlwelle
+
     soll_resistance_total = p.get("soll_gesamt_widerstand")
     tol_total_mech_deg_pos = p.get("tol_drehwinkel_mech_pos")
     tol_total_mech_deg_neg = p.get("tol_drehwinkel_mech_neg")
@@ -167,6 +179,7 @@ def insert_preset(p):
     tol_resistance_pos = p.get("tol_widerstand_pos")
     tol_resistance_neg = p.get("tol_widerstand_neg")
     relay_switch_pol = p.get("relay_polarity_switch")
+    ist_hohlwelle = p.get("hohlwelle")
     
     global soll_volt_linear, soll_volt_noise, soll_volt_resistance
     soll_volt_linear = p.get("soll_spannung_linear")
@@ -497,6 +510,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
     elec_angle_var.set("Elektrischer Winkel: --")
     res_val_init_var.set("Anfangswiderstand: --")
     res_val_final_var.set("Endwiderstand: --")
+    queue_ui(lambda:lbl_res_val_total.config(fg = "#FFFFFF",bg="#1c1c1c"))
     res_val_total_var.set("Gesamtwiderstand: --")
 
     def cancel():
@@ -593,7 +607,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
                         queue_ui(open_cancelled_window)
                     break
 
-                if pico_runner.out_volt is True and any(wf in (elec_deg_workflow, linear_workflow) for (wf, *_rest) in modes):
+                if pico_runner.noise_error is True and any(wf in (elec_deg_workflow, linear_workflow) for (wf, *_rest) in modes):
                     stop_event.set()
                     measurements_noise_found = True
                     if not app_closing:
@@ -632,8 +646,8 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
                     if isinstance(val, (int, float)):
                         queue_ui(lambda v=val: res_val_final_var.set(f"Endwiderstand: {v:.2f} Ohm"))
 
-                if workflow is elec_deg_workflow or end_lin_checked is True:
-                    val = getattr(elec_deg_workflow, "total_elec", None)
+                if workflow is linear_workflow and end_lin_checked is True:
+                    val = getattr(linear_workflow, "total_elec", None)
                     if isinstance(val, (int, float)):
                         queue_ui(lambda v=val: elec_angle_var.set(f"Elektrischer Winkel: {v:.2f}°"))
 
@@ -654,10 +668,11 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
                         linear_workflow.lin_error = True
                 
             ring.set_linearity_text(linear_workflow.lin_error, linear_checked, stop_event.is_set())
-            ring.set_circle_text(noise_angles, stop_event.is_set(), noise_checked, pico_runner.out_volt)
+            ring.set_circle_text(noise_angles, stop_event.is_set(), noise_checked, pico_runner.noise_error)
 
             if not stop_event.is_set() or measurements_noise_found:
                 measurements_finished = True   
+
 
         except Exception as e:
             print("Fehler bei measurements:", e)
@@ -670,17 +685,22 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
             if pico_runner.noise_error:
                 write_serial_line(ser_ard, "NOISE_END")
                 print("Sende: NOISE_END")
-                queue_ui(lambda: play_sound("error"))
+                if sounds_on:
+                    queue_ui(lambda: play_sound("error"))
             elif linear_workflow.lin_error:
                 write_serial_line(ser_ard, "LIN_END")
                 print("Sende: LIN_END")
-                queue_ui(lambda: play_sound("error"))
+                if sounds_on:
+                    queue_ui(lambda: play_sound("error"))
             elif stop_event.is_set():
-                queue_ui(lambda: play_sound("cancel"))
+                if sounds_on:
+                    queue_ui(lambda: play_sound("cancel"))
             else:
                 write_serial_line(ser_ard, "ALL_END")
                 print("Sende: ALL_END")
-                queue_ui(lambda: play_sound("success"))
+                if sounds_on:
+                    queue_ui(lambda: play_sound("success"))
+
             write_serial_line(ser_psu, "OUTP OFF")
             close_serial_port(ser_multi, "Multimeter")
             close_serial_port(ser_psu, "PSU")
@@ -708,7 +728,7 @@ def measurement_chk(retry_used=False):
     endless_noise = False
     end_lin_checked = False
     mech_ends_workflow.safety_cancel = False
-    pico_runner.out_volt = False
+    pico_runner.noise_error = False
     mech_ends_workflow.endless_noise_init = False
 
     if measurement_is_running():
@@ -764,7 +784,7 @@ def measurement_chk(retry_used=False):
         endless_noise = True
         mech_ends_workflow.endless_noise_init = True
 
-    modes.append((mech_ends_workflow, (soll_volt_linear, res_init_checked, res_final_checked, res_total_checked), "Mech. Endwinkel", True, ends_checked))
+    modes.append((mech_ends_workflow, (ist_hohlwelle, soll_volt_linear, res_init_checked, res_final_checked, res_total_checked), "Mech. Endwinkel", True, ends_checked))
     if ends_checked: print("[CHECKBOX] Mech. Ends")
 
 
@@ -829,10 +849,17 @@ def advanced_chk():
         
 def autosave_chk():
     if autosave_var.get():
-        if measurements_finished and linear_checked is True and not pico_runner.out_volt:
+        if measurements_finished and linear_checked is True and not pico_runner.noise_error:
             export_excel()
         if measurements_finished and noise_checked is True:
             export_pdf()
+
+def signal_sound_chk():
+    if signal_sound_var.get():
+        global sounds_on
+        sounds_on = True
+    else:
+        sounds_on = False
 
 def rework_chk():
     if rework_var.get():
@@ -961,7 +988,7 @@ def open_nopartnumber_window():
     nopartnumber_win.transient(root)
     nopartnumber_win.grab_set()
 
-    ttk.Label(nopartnumber_win, text="Bitte eine Teilnummer auswählen\noder Werte eingeben.", 
+    ttk.Label(nopartnumber_win, text="Bitte eine Teilnummer auswählen.", 
               anchor="center", justify="center").grid(row=0, column=0, pady=(20,0))
     ok_button = ttk.Button(nopartnumber_win, text="OK", command=nopartnumber_win.destroy)
     ok_button.grid(row=1, column=0, pady=(0, 0), ipadx=20)
@@ -1143,8 +1170,6 @@ def open_tester():
 # )
 
 # --------------- GUI
-print("Programm wird gestartet...")
-
 root = tk.Tk()
 scr_wid = root.winfo_screenwidth()
 scr_hei = root.winfo_screenheight()
@@ -1199,12 +1224,15 @@ autosave_var = tk.BooleanVar(value=True)
 chk_autosave = ttk.Checkbutton(left_frame, text="Automatisches\nSpeichern", variable=autosave_var, command=autosave_chk)
 chk_autosave.grid(row=9, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
 
+signal_sound_var = tk.BooleanVar(value=True)
+chk_signal_sound = ttk.Checkbutton(left_frame, text="Signalton an", variable=signal_sound_var, command=signal_sound_chk)
+chk_signal_sound.grid(row=10, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+
 advanced_mode = tk.BooleanVar(value=False)
 chk_advanced_mode = ttk.Checkbutton(left_frame, text="Erweiteter Modus", variable=advanced_mode, command=advanced_chk)
-chk_advanced_mode.grid(row=10, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
+chk_advanced_mode.grid(row=11, column=0, sticky="w", pady=(20, 0), padx=(20, 0))
 
 msg = tk.Message(left_frame, width=200, bg="#CCCCCC", fg="#C00000", font='Arial 10 bold')
-
 
 ttk.Label(right_frame, text="Sollspannung in V").grid(row=1, column=0, sticky="w", pady=(40, 0), padx=(10,0))
 txt_volt = ttk.Entry(right_frame, width=12, validate="key", validatecommand=vcmd)
@@ -1389,8 +1417,8 @@ advanced_warning = tk.Message( width=350, bg="#FF0000", fg="#E3E3E3", font='Aria
 advanced_warning.grid(row=0, column=1, pady=(10, 10), padx=(200,0))
 advanced_warning.config(text="ACHTUNG:\nERWEITERTER MODUS AKTIVIERT")
 
-ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=15).grid(row=11, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
-ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=15).grid(row=12, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Linearität speichern", command=export_excel,width=15).grid(row=12, column=0, pady=(20, 5), padx=(20,0), ipadx=10)
+ttk.Button(left_frame, text="Rauschkurve speichern", command=export_pdf, width=15).grid(row=13, column=0, pady=(5, 5), padx=(20,0), ipadx=10)
 #ttk.Button(right_frame, text="Mech. Enden", command=start_mech_ends_measurement,width=12).grid(row=8, column=0, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Elektr. Winkel", command=start_elec_deg_measurement,width=12).grid(row=8, column=1, pady=(180, 5), padx=(20,0))
 #ttk.Button(right_frame, text="Rauschen", command=start_noise_measurement,width=12).grid(row=8, column=2, pady=(180, 5), padx=(20,0))

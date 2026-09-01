@@ -253,8 +253,12 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
         if float(sheet['B18'].value) > tol_ccw_p or float(sheet['B18'].value) < tol_ccw_n:
             sheet['B18'].color = "#FF5454"
 
+        wb.app.calculate()
         wb.save(file)
-        #wb.close()
+
+        sheet.activate()
+        wb.app.screen_updating = True
+        wb.app.display_alerts = True
 
     except Exception as e:
         print("Fehler bei Linearitäts-Export: ", e)

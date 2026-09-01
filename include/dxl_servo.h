@@ -22,7 +22,6 @@ extern const float RPM_PER_VEL;
 extern const int POLL_TIMER;
 extern const float START_CURRENT;
 extern const float CUR_TOLERANCE;
-extern const float CUR_TOLERANCE_SLOW;
 extern const float SLOW_RPM;
 
 // --------------- SERVO VARIABLES
@@ -32,6 +31,8 @@ extern bool cancelled;
 extern int32_t cur_pos;
 extern float cur_cur;
 extern float user_rpm, rpm1, rpm2, rpm3;
+extern bool hohlwelle;
+extern float cur_tolerance_slow;
 
 // --------------- HELPER FUNCTIONS
 int32_t deg_to_tick(float deg);

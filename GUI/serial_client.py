@@ -4,9 +4,9 @@ import serial.tools.list_ports
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
 # ------ PRÜFVORRICHTUNG FIRMA
-# ARDUINO_PORT = "COM3"
-# MULTI_PORT = "COM4"
-# PSU_PORT = "COM5"
+ARDUINO_PORT = "COM3"
+MULTI_PORT = "COM4"
+PSU_PORT = "COM5"
 
 # ------ TEMPORÄR HARM
 # ARDUINO_PORT = "COM7"
@@ -19,15 +19,15 @@ ser_Arduino = None
 # PSU_PORT = "COM15"
 
 # ------ ALWIN LAPTOP
-ARDUINO_PORT = "COM18"
-MULTI_PORT = "COM6"
-PSU_PORT = "COM7"
+# ARDUINO_PORT = "COM18"
+# MULTI_PORT = "COM6"
+# PSU_PORT = "COM7"
 
 
 # --------------- SERIAL MIT SERVO
 def connect_ard(baud=115200, timeout=0.1, port=ARDUINO_PORT):
     serial_ports()
-    err_time = time.monotonic() + 15
+    err_time = time.monotonic() + 10
     while time.monotonic() < err_time:
         try:
             ser_ard = serial.Serial(port, baudrate=baud, timeout=timeout)
@@ -108,7 +108,7 @@ def set_psu_parameters(ser_PSU, v_lim, c_lim, v_set, c_set):
     return
 
 
-def set_part_parameters(ser_arduino, part_voltage, part_angle, part_speed, rel_sw):
+def set_part_parameters(ser_arduino, part_voltage, part_angle, part_speed, rel_sw, hohlwelle):
     ser_arduino.write(f"SETV:{part_voltage}\n".encode())
     print("[MCU] Spannung: ", part_voltage)
     time.sleep(0.2)
@@ -121,6 +121,9 @@ def set_part_parameters(ser_arduino, part_voltage, part_angle, part_speed, rel_s
     ser_arduino.write(f"REL_SW:{rel_sw}\n".encode())
     time.sleep(0.2)
     print("[PRESET] relay_switch_pol =", rel_sw)
+    ser_arduino.write(f"hohlwelle:{hohlwelle}\n".encode())
+    time.sleep(0.2)
+    print("[PRESET] hohlwelle =", hohlwelle)
 
 def set_res_parameters(ser_arduino, res_init, res_final, res_total):
     ser_arduino.write(f"RES_I:{res_init}\n".encode())

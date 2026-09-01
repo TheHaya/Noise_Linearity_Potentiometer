@@ -57,9 +57,6 @@ ist_mid_volt = 0;
 ist_start_resistance = 0;
 ist_end_resistance = 0; 
 ist_total_resistance = 0;
-// rpm1 = 0;
-// rpm2 = 0;
-// rpm3 = 0;
 
 real_time1 = 0;
 real_time2 = 0;
@@ -326,6 +323,11 @@ float correction_movement(float &current_volt, float goal_volt,
 }
 
 bool calibrate_currents(){
+  if(hohlwelle == 1){
+    cur_tolerance_slow = 4;
+  } else{
+    cur_tolerance_slow = 2;
+  }
   calibrate_current_cw = get_tick_position() + 300;
   calibrate_current_ccw = get_tick_position() - 300;
   drive_to(calibrate_current_cw, SLOW_RPM);
@@ -433,17 +435,9 @@ void check_beginning(float total_deg){
 
 // --------------- MECHANICAL ENDS
 void check_ends(){
-  
-  // drive_to(check_end_end, SLOW_RPM);
-  // if(reached_goal(check_end_end, 0, 0, 30000) == false){
-  //   end_tick = stopped_tick;
-  //   ist_start_volt = corr_measure();
-  //   // ist_end_volt = corr_measure(ist_end_volt);
-  // }
   check_end_start = ZERO_TICK - deg_to_tick(target_deg_total) * 1.5;
   check_end_end = ZERO_TICK + deg_to_tick(target_deg_total) * 1.5;
   report_progress("MECH", "CHECK_END_END", 60);
-  // drive_and_check(check_end_end, SLOW_RPM);
   drive_to(check_end_end, SLOW_RPM);
   reached_goal(check_end_end, 0);
   end_tick = stopped_tick;
@@ -457,22 +451,17 @@ void check_ends(){
       ist_total_resistance = corr_measure_res(3);
     }
   }
-  
-  
-
   for(int i = 0; i < 5; i++){
   dxl.ledOff(1);
   delay(100);
     dxl.ledOn(1);
   delay(100);
   } 
-
-  int32_t test_check_start = get_tick_position() - deg_to_tick(target_deg_total-CHECK_END_MERCY_DEG);
+  int32_t quick_pre_check_start = get_tick_position() - deg_to_tick(target_deg_total-CHECK_END_MERCY_DEG);
   report_progress("MECH", "CHECK_END_START", 80);
-  drive_to(test_check_start, user_rpm);
-  reached_goal(test_check_start, 2);
+  drive_to(quick_pre_check_start, user_rpm);
+  reached_goal(quick_pre_check_start, 2, 0, 10000, 10);
   
-
   drive_to(check_end_start, SLOW_RPM);
   if(reached_goal(check_end_start, 0, 0, 30000) == false){
     start_tick = stopped_tick;
@@ -487,7 +476,6 @@ void check_ends(){
       }
     }
   }
-
 
   sim_mercy_start = start_tick + MERCY_TOLERANCE_TICK;
   sim_mercy_end = end_tick - MERCY_TOLERANCE_TICK;

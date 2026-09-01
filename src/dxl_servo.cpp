@@ -22,7 +22,6 @@ const float TICK_PER_DEG = 4096.0f / 360.0f;
 const float RPM_PER_VEL = 0.229;
 const float START_CURRENT = 800;
 const float CUR_TOLERANCE = 25;
-const float CUR_TOLERANCE_SLOW = 4; // dp37 4-5, stiel 1-2
 const int POLL_TIMER = 1;
 const float SLOW_RPM = 8;
 using namespace ControlTableItem;
@@ -30,11 +29,13 @@ using namespace ControlTableItem;
 // --------------- VARIABLES
 int32_t stopped_tick;
 float cal_cur0, cal_cur1, cal_cur2, cal_cur3;
+float cur_tolerance_slow = 4; // dp37 4-5, stiel 1-2
 bool cancelled;
 int32_t cur_pos;
 float cur_cur;
 float user_rpm = 60;
 float rpm1, rpm2, rpm3;
+bool hohlwelle;
 
 // --------------- HELPER FUNCTIONS
 int32_t deg_to_tick(float deg){
@@ -73,6 +74,7 @@ void dxl_init(){
   rpm1 = 0;
   rpm2 = 0;
   rpm3 = 0;
+  hohlwelle = 0;
 }
 
 void stop_motion(uint8_t DYN_ID){
@@ -112,7 +114,7 @@ bool reached_goal(int32_t target_tick, uint8_t measure_spd, uint8_t measure_mode
       }
       if(measure_mode == 0){
         switch(measure_spd){
-          case 0: if(cur_cur > cal_cur0 + CUR_TOLERANCE_SLOW){
+          case 0: if(cur_cur > cal_cur0 + cur_tolerance_slow){
             stopped_tick = get_tick_position();
             dxl.setGoalPosition(DID, cur_pos, UNIT_RAW);
             return false;} 

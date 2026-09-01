@@ -342,7 +342,7 @@ void calc_summary2(){
   ges_aktiv = aktiv_ccw + aktiv_cw;
 
   Serial.print("TOTAL_ELEC");
-  Serial.println(ges_aktiv);
+  Serial.println(ges_aktiv+totzone);
   Serial.print("SUMMARY;");
   Serial.print("Totzone:");   
   Serial.print(totzone, 1);
