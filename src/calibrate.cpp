@@ -324,7 +324,7 @@ float correction_movement(float &current_volt, float goal_volt,
 
 bool calibrate_currents(){
   if(hohlwelle == 1){
-    cur_tolerance_slow = 4;
+    cur_tolerance_slow = 6;
   } else{
     cur_tolerance_slow = 2;
   }

@@ -1105,69 +1105,9 @@ def open_relais():
 
 
 def open_tester():
-    write_serial_line(ser_ard, "TESTER")
-    print("TESTER: Geschrieben")
-    # global measurement_thread, measurement_running, active_measurement_stop_event
-
-    # wait_win = tk.Toplevel(root)
-    # wait_win.title("Datenmessung")
-    # wait_win.geometry(f"{small_wid}x{170}+{scr_wid//2}+{scr_hei//2}")
-    # wait_win.transient(root)
-    # wait_win.grab_set()
-    # wait_win.resizable(False, False)
-
-    # status_label = ttk.Label(wait_win, text="Bitte warten...")
-    # status_label.pack(pady=(0,20), expand=True)
-
-    # stop_event = threading.Event()
-    # active_measurement_stop_event = stop_event
-
-    # queue_ui(lambda:lbl_mech.config(fg = "#FFFFFF",bg="#1c1c1c"))
-    # mech_angle_var.set("Mechanischer Winkel: --")
-    # elec_angle_var.set("Elektrischer Winkel: --")
-
-    # def cancel():
-    #     request_measurement_stop()
-    #     wait_win.destroy()
-
-    # wait_win.protocol("WM_DELETE_WINDOW", cancel)
-
-    # try:
-    #     meas_volt = float(txt_volt.get().strip().replace(',', '.'))
-    #     meas_angle = float(txt_angle.get().strip().replace(',', '.'))
-    #     meas_speed = float(txt_speed.get().strip().replace(',', '.'))
-    # except ValueError:
-    #     print("Eingabefehler bei Tester-Werten!")
-    #     return
-
-    # def finish_tester():
-    #     global measurement_running, measurement_thread, active_measurement_stop_event
-
-    #     write_serial_line(ser_ard, "ALL_END")
-    #     print("Sende: ALL_END")
-
-    #     active_measurement_stop_event = None
-    #     measurement_running = False
-    #     measurement_thread = None
-
-    #     if not app_closing:
-    #         set_measurement_controls(True)
-
-    #     destroy_window(wait_win)
-
-    # set_measurement_controls(False)
-    # measurement_running = True
-
-    # measurement_thread = tester.start_mech_angle_repeat_test(
-    # ser_ard,
-    # meas_volt,
-    # meas_angle,
-    # meas_speed,
-    # relay_switch_pol,
-    # soll_volt_linear,
-    # stop_event,
-    # lambda: queue_ui(finish_tester)
-# )
+    # write_serial_line(ser_ard, "TESTER")
+    # print("TESTER: Geschrieben")
+    tester.tester_func()
 
 # --------------- GUI
 root = tk.Tk()

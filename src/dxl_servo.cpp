@@ -21,7 +21,7 @@ const float DEG_PER_TICK = 360.0f / 4096.0f;
 const float TICK_PER_DEG = 4096.0f / 360.0f;
 const float RPM_PER_VEL = 0.229;
 const float START_CURRENT = 800;
-const float CUR_TOLERANCE = 25;
+const float CUR_TOLERANCE = 35;
 const int POLL_TIMER = 1;
 const float SLOW_RPM = 8;
 using namespace ControlTableItem;
@@ -29,7 +29,7 @@ using namespace ControlTableItem;
 // --------------- VARIABLES
 int32_t stopped_tick;
 float cal_cur0, cal_cur1, cal_cur2, cal_cur3;
-float cur_tolerance_slow = 4; // dp37 4-5, stiel 1-2
+float cur_tolerance_slow = 6; // dp37 4-5, stiel 1-2
 bool cancelled;
 int32_t cur_pos;
 float cur_cur;
