@@ -435,8 +435,8 @@ void check_beginning(float total_deg){
 
 // --------------- MECHANICAL ENDS
 void check_ends(){
-  check_end_start = ZERO_TICK - deg_to_tick(target_deg_total) * 1.5;
-  check_end_end = ZERO_TICK + deg_to_tick(target_deg_total) * 1.5;
+  check_end_start = ZERO_TICK - deg_to_tick(target_deg_total) * 1.2;
+  check_end_end = ZERO_TICK + deg_to_tick(target_deg_total) * 1.2;
   report_progress("MECH", "CHECK_END_END", 60);
   drive_to(check_end_end, SLOW_RPM);
   reached_goal(check_end_end, 0);

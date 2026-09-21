@@ -31,7 +31,6 @@ extern bool measure_start_resistance, measure_end_resistance, measure_total_resi
 extern float ist_start_volt, ist_end_volt, ist_mid_volt;
 extern float safety_pos_volt;
 extern float tar_volt;
-extern float endless_start_volt, endless_end_volt, endless_start_deg, endless_end_deg;
 
 void calibrate_init();
 float corr_measure(int start_end = 0);

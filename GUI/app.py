@@ -45,6 +45,25 @@ def play_sound(file):
     except RuntimeError as e:
         print(f"Sound konnte nicht abgespielt werden: {e}")
 
+def load_com_ports():
+    path = resource_path("COM_PORTS.json")
+
+    with open(path, "r", encoding="utf-8") as file:
+        config = json.load(file)
+
+    required = ("arduino", "multimeter", "psu")
+
+    for name in required:
+        if not config.get(name):
+            raise ValueError(f"COM-Port für {name} fehlt.")
+
+    ports = [config[name] for name in required]
+
+    if len(ports) != len(set(ports)):
+        raise ValueError("Ein COM-Port wurde mehrfach zugewiesen.")
+
+    return config
+
 # --------------- APP VARIABLES 
 pico_plot_time = []
 pico_plot_volt = []
@@ -506,11 +525,14 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
     active_measurement_stop_event = stop_event
 
     queue_ui(lambda:lbl_mech.config(fg = "#FFFFFF",bg="#1c1c1c"))
+    queue_ui(lambda: lbl_elec.config(fg="#FFFFFF", bg="#1c1c1c"))
+    queue_ui(lambda:lbl_res_val_init.config(fg = "#FFFFFF",bg="#1c1c1c"))
+    queue_ui(lambda:lbl_res_val_final.config(fg = "#FFFFFF",bg="#1c1c1c"))
+    queue_ui(lambda:lbl_res_val_total.config(fg = "#FFFFFF",bg="#1c1c1c"))
     mech_angle_var.set("Mechanischer Winkel: --")
     elec_angle_var.set("Elektrischer Winkel: --")
     res_val_init_var.set("Anfangswiderstand: --")
     res_val_final_var.set("Endwiderstand: --")
-    queue_ui(lambda:lbl_res_val_total.config(fg = "#FFFFFF",bg="#1c1c1c"))
     res_val_total_var.set("Gesamtwiderstand: --")
 
     def cancel():
@@ -558,8 +580,8 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
             if not ser_ard:
                 ser_ard = sc.connect_ard()
 
-            ser_multi = sc.connect_multi()
-            ser_psu = sc.connect_psu()
+            ser_multi = sc.connect_multi(port=com_ports["multimeter"])
+            ser_psu = sc.connect_psu(port=com_ports["psu"])
             set_active_serials(ser_ard, ser_psu, ser_multi)
 
             ring.clear_noise_marks()
@@ -624,6 +646,17 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
                         queue_ui(lambda v=val: mech_angle_var.set(f"Mechanischer Winkel: {v:.2f}°"))
                     else:
                         queue_ui(lambda: mech_angle_var.set("Mechanischer Winkel: --"))
+
+                if workflow is elec_deg_workflow:
+                    val = getattr(elec_deg_workflow, "total_elec", None)
+                    if isinstance(val, (int, float)):
+                        if val < tol_total_elec_deg_neg or val > tol_total_elec_deg_pos:
+                            queue_ui(lambda:lbl_elec.config(fg = "#FF0000", bg="#1c1c1c"))
+                        else:
+                            queue_ui(lambda:lbl_elec.config(fg = "#00FF00",bg="#1c1c1c"))
+                        queue_ui(lambda v=val: elec_angle_var.set(f"Elektrischer Winkel: {v:.2f}°"))
+                    else:
+                        queue_ui(lambda: elec_angle_var.set("Elektrischer Winkel: --"))
 
                 if workflow is mech_ends_workflow and res_total_checked:
                     val = getattr(mech_ends_workflow, "res_total_val", None)
@@ -1379,8 +1412,8 @@ but_tester.grid(row=6, column=3, padx=(10,0))
 root.bind("<Escape>", lambda event: on_root_close())
 root.protocol("WM_DELETE_WINDOW", on_root_close)
 # --------------- MAIN
-
-ser_ard = sc.connect_ard()
+com_ports = load_com_ports()
+ser_ard = sc.connect_ard(port=com_ports["arduino"])
 rework_chk()
 ring.build_ring(ring_area)
 ring.init_circle_text()

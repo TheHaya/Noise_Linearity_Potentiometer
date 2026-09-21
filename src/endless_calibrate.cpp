@@ -3,7 +3,6 @@
 #include <calibrate.h>
 #include <elapsedMillis.h>
 #include <relay.h>
-#include <calibrate.h>
 #include <progress.h>
 
 // --------------- CONSTANTS
@@ -11,9 +10,10 @@ const int32_t ENDLESS_MERCY_TOLERANCE_TICK = 2;
 
 
 // --------------- VARIABLES
-float endless_start_volt, endless_end_volt, endless_start_tick, endless_end_tick;
+float endless_start_volt, endless_end_volt;
+int32_t endless_start_tick, endless_end_tick;
 int32_t endless_sim_start, endless_sim_end;
-
+extern float endless_start_volt, endless_end_volt, endless_start_deg, endless_end_deg;
 
 // --------------- FUNCTIONS
 
@@ -36,7 +36,6 @@ void find_endless_volt_crossover(){
     next_segment = get_tick_position() + deg_to_tick(60);
     drive_to(next_segment, user_rpm);
     reached_goal(next_segment, 2, 1);
-    // drive_and_check(next_segment, user_rpm, 1);
     after_volt = corr_measure();
     if(abs(after_volt-before_volt) > 5){
       endless_end_volt = before_volt;
@@ -67,7 +66,6 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
       }
       drive_to(t, user_rpm);
       reached_goal(t, 2);
-      // drive_and_check(t, user_rpm);
       current_volt = corr_measure();
     }
     high = get_tick_position();
@@ -82,7 +80,6 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
       }
       drive_to(t, user_rpm);
       reached_goal(t, 2);
-      // drive_and_check(t, user_rpm);
       current_volt = corr_measure();
     }
     low = get_tick_position();
@@ -94,8 +91,7 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
       reached_goal(back, 2);
       drive_to(mid, user_rpm);
       reached_goal(mid, 2);
-      // drive_and_check(back, user_rpm);
-      // drive_and_check(mid, user_rpm);
+
       current_volt = corr_measure();
       if(fabsf(current_volt - goal_volt) > V_TOL) {
         high = mid;
@@ -116,7 +112,6 @@ void find_endless_starting_point(){
   ist_start_volt = corr_measure(1);
   drive_to(endless_start_tick + 3750, user_rpm); // ~330°
   reached_goal(endless_start_tick + 3750, 2);
-  // drive_and_check(endless_start_tick + 3750, user_rpm);
   apply_relay_mode(POL_INIT_RELAY_MODE);
   delay(200);
 

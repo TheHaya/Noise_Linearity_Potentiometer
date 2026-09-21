@@ -5,8 +5,8 @@
 
 
 // --------------- VARIABLES
-extern float endless_noise_prep_start;
-extern float endless_noise_prep_end;
+extern int32_t endless_noise_prep_start;
+extern int32_t endless_noise_prep_end;
 
 // --------------- FUNCTIONS
 void endless_noise_init();

@@ -14,6 +14,7 @@
 #include <endless_elec_deg.h>
 #include <endless_noise.h>
 #include <progress.h>
+#include <endless_linearity.h>
 
 // --------------- CONSTANTS
 const int BUTTON = 19;
@@ -432,13 +433,13 @@ void loop(){
         } else {
           apply_relay_mode(POL_NOISE_RELAY_MODE);
         }
-      // if(target_deg_total == 360){
-      //   endless_noise_preparation_movement();
+      if(endless_poti){
+        endless_noise_preparation_movement();
         
-      //   // drive_to(endless_sim_start, user_rpm);
-      //   // reached_goal(endless_sim_start, 2, 0, 15000);  
-      // }
-      // else{
+        drive_to(endless_sim_start, user_rpm);
+        reached_goal(endless_sim_start, 2, 0, 15000);  
+      }
+      else{
         drive_to(sim_mercy_start, user_rpm);
         reached_goal(sim_mercy_start, 2, 1);
         report_progress("NOISE", "NOISE_WAIT", 40);
@@ -449,7 +450,7 @@ void loop(){
         
         // drive_and_check(sim_mercy_end, user_rpm, 0);
 
-        // }
+        }
       if(cancelled == false){
         Serial.println("NOISE_READY");
       } else{
@@ -462,7 +463,7 @@ void loop(){
     if(command == "NOISE_START"){
       report_progress("NOISE", "NOISE_MOVEMENT", 50);
       if(endless_poti){
-        // endless_noise_movement();
+        endless_noise_movement();
       } else{
         noise_movement(); 
       }
@@ -497,16 +498,30 @@ void loop(){
     }
     if(command == "LINEAR_START"){
       report_progress("LINEAR", "LINEAR_START", 0);
-      linearity_movement2(); if(abort_if_cancelled()) return;
-      report_progress("LINEAR", "CALC_SUMMARY", 80);
-      calc_summary2();
-      calc_linearity2();
-      calc_errors2();
-      if(cancelled == true){
-        Serial.println("CANCEL");
-        return;
-        // cancelled = false;
+      if(endless_poti){
+        endless_linearity_movement(); if(abort_if_cancelled()) return;
+        report_progress("LINEAR", "CALC_SUMMARY", 80);
+        endless_calc_summary();
+        endless_calc_linearity();
+        endless_calc_errors();
+        if(cancelled == true){
+          Serial.println("CANCEL");
+          return;
+          // cancelled = false;
+        }
+      } else{
+        linearity_movement2(); if(abort_if_cancelled()) return;
+        report_progress("LINEAR", "CALC_SUMMARY", 80);
+        calc_summary2();
+        calc_linearity2();
+        calc_errors2();
+        if(cancelled == true){
+          Serial.println("CANCEL");
+          return;
+          // cancelled = false;
+        }
       }
+      
       // drive_to(ZERO_TICK, user_rpm);
       // reached_goal(ZERO_TICK, 2);
       // dxl.ledOff(DID);

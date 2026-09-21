@@ -151,17 +151,16 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw=None, hohlwelle=None,
 
             elif line == 'INIT_FINISH':
                 print("Empfangen: INIT_FINISH")
+                ser_arduino.write(b"CALIB_GO\n")
+                print("MECH_ENDS Sende: CALIB_GO")
+                
+            elif line == 'CALIB_FINISH':
                 if(endless_noise_init):
                     total_mech = 360
                     total_ticks = round(total_mech*(4096/360))
                     print(f"Gesamtwinkel ist: {total_mech}")
                     print("endless_noise_init is True")
                     break
-                else:
-                    ser_arduino.write(b"CALIB_GO\n")
-                    print("MECH_ENDS Sende: CALIB_GO")
-                
-            elif line == 'CALIB_FINISH':
                 print("Empfangen: CALIB_FINISH")
                 break
 

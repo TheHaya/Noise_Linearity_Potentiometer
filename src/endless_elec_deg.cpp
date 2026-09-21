@@ -50,7 +50,6 @@ void endless_elec_deg_movement(){
         cancelled = true;
         break;
         }
-        // drive_and_check(tick, user_rpm);
 
         int32_t rel_tick = tick - endless_start_tick;
         if(rel_tick == d31_tick + offset_von_soll){

@@ -158,7 +158,7 @@ ALIGN_LEFT = -4131
 def test_relays(ser_ard):
     ser_ard.write(b"REL_TESTER\n")
 
-def tester_func(baud=19200, timeout=3, port=sc.MULTI_PORT):
+def tester_func(port, baud=19200, timeout=3):
     try:
         ser_multi = serial.Serial(
             port=port,

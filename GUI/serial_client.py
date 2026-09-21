@@ -1,6 +1,5 @@
 import serial, time, sys, re
 import serial.tools.list_ports
-
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
 # ------ PRÜFVORRICHTUNG FIRMA
@@ -19,14 +18,14 @@ ser_Arduino = None
 # PSU_PORT = "COM15"
 
 # ------ ALWIN LAPTOP
-ARDUINO_PORT = "COM18"
-MULTI_PORT = "COM6"
-PSU_PORT = "COM7"
+# ARDUINO_PORT = "COM18"
+# MULTI_PORT = "COM6"
+# PSU_PORT = "COM7"
 # MULTI_PORT = "COM9"
 
 
 # --------------- SERIAL MIT SERVO
-def connect_ard(baud=115200, timeout=0.1, port=ARDUINO_PORT):
+def connect_ard(port, baud=115200, timeout=0.1):
     serial_ports()
     err_time = time.monotonic() + 10
     while time.monotonic() < err_time:
@@ -38,7 +37,7 @@ def connect_ard(baud=115200, timeout=0.1, port=ARDUINO_PORT):
         except Exception as e:
             print("Mikrocontroller kein Port")
 
-def connect_multi(baud=19200, timeout=3, port=MULTI_PORT):
+def connect_multi(port, baud=19200, timeout=3):
     try:
         ser_multi = serial.Serial(
             port=port,
@@ -77,10 +76,10 @@ def connect_multi(baud=19200, timeout=3, port=MULTI_PORT):
 #     except Exception as e:
 #         print("Multimeter kein Port")
 
-def connect_psu(baud=115200, timeout=2, port=PSU_PORT):
+def connect_psu(port, baud=115200, timeout=2):
     try:
         ser_psu = serial.Serial(port, baudrate=baud, timeout=timeout)
-        print(f"[SERIAL] Netzteil verbunden: {PSU_PORT}")
+        print(f"[SERIAL] Netzteil verbunden: {port}")
         time.sleep(0.5)
         return ser_psu
     except Exception as e:

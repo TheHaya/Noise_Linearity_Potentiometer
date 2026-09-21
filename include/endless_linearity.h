@@ -24,7 +24,6 @@ extern float ccw_links, ccw_rechts, cw_links, cw_rechts, aktiv_ccw, aktiv_cw, ge
 extern float real_mid_deg;
 extern float lin_min, lin_max;
 
-
 // --------------- LINEARITY FUNCTIONS
 void lin_init();
 float lerp_dead(int32_t x, int32_t d1, int32_t d2);
@@ -33,7 +32,8 @@ float dead_soll_volt_deg(float deg, float tar_volt,
 
 //float correction_movement(float &current_volt, float goal_volt, 
 //                          int dead_direction = 0, int timeout = 8000);
-void linearity_movement2();
-void calc_summary2();
-void calc_linearity2();
-void calc_errors2();
+
+void endless_linearity_movement();
+void endless_calc_summary();
+void endless_calc_linearity();
+void endless_calc_errors();

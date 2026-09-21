@@ -201,38 +201,3 @@ void calc_rpm(){
     }
   }
 }
-
-void drive_and_check(int32_t tick, float rpm, int measure_mode, bool check_input){
-  int measure_spd = 2;
-  int counter = 1;
-  int32_t starting_tick = get_tick_position();
-  int32_t difference_tick = tick - starting_tick;
-  if(rpm == SLOW_RPM){
-    measure_spd = 0;
-  }
-  if(rpm == rpm1){
-    measure_spd = 1;
-  }
-  if(rpm == rpm2){
-    measure_spd = 2;
-  }
-  if(rpm == rpm3){
-    measure_spd = 3;
-  }
-  
-  while(rpm_to_time(starting_tick + difference_tick/counter, rpm) > 25000){
-    counter += 1;
-  }
-    int32_t div_tick = difference_tick / counter;
-    
-  for(int i = 1; i<= counter; i++){
-    if(check_input){
-      Serial.println(starting_tick + div_tick * i);
-    }
-    drive_to(starting_tick + div_tick * i, rpm);
-    if(reached_goal(starting_tick  + div_tick * i, measure_spd, measure_mode, 30000) == false){
-      break;
-    }
-  }
-
-}

@@ -1,0 +1,5 @@
+{
+  "arduino": "COM18",
+  "multimeter": "COM6",
+  "psu": "COM7"
+}
