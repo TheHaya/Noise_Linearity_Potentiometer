@@ -74,6 +74,7 @@ void elec_deg_movement(){
         // drive_and_check(tick, user_rpm);
         
         int32_t rel_tick = tick - start_tick;
+
         if(relay_switch){
             if(rel_tick == d31_tick + offset_von_soll){
                 if(smaller_steps){
@@ -82,31 +83,33 @@ void elec_deg_movement(){
                     print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1) - tick_to_deg(start_tick) - real_mid_deg;
                 }
             cw_rechts = print_elec_deg[i];
-            } else if(rel_tick == d12_tick + offset_von_soll){
+            }
+            else if(rel_tick == d12_tick + offset_von_soll){
                 if(smaller_steps){
                     print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0, true) - tick_to_deg(start_tick) - real_mid_deg;
                 } else{
                     print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0) - tick_to_deg(start_tick) - real_mid_deg;
                 }
-                ccw_links = print_elec_deg[i];
+            ccw_links = print_elec_deg[i];
             }
-        } else {
+        } else{
             if(rel_tick == d31_tick + offset_von_soll){
                 if(smaller_steps){
-                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1, true) - tick_to_deg(start_tick) - real_mid_deg;
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 1, 1, true) - tick_to_deg(start_tick) - real_mid_deg;
                 } else{
-                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1) - tick_to_deg(start_tick) - real_mid_deg;
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 1, 1) - tick_to_deg(start_tick) - real_mid_deg;
                 }
             cw_rechts = print_elec_deg[i];
             } else if(rel_tick == d12_tick + offset_von_soll){
                 if(smaller_steps){
-                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0, true) - tick_to_deg(start_tick) - real_mid_deg;
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 0, 0, true) - tick_to_deg(start_tick) - real_mid_deg;
                 } else{
-                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0) - tick_to_deg(start_tick) - real_mid_deg;
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 0, 0) - tick_to_deg(start_tick) - real_mid_deg;
                 }
                 ccw_links = print_elec_deg[i];
             }
         }
+        
         
     }
     report_progress("ELEC", "TOTAL_ELEC", 90);

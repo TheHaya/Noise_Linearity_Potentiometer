@@ -73,7 +73,6 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
                 total_elec = float(line[10::])
                 print("Gesamt Elektr. Winkel:")
                 print(total_elec)
-
             elif line == 'ELEC_DEG_FINISH':
                 print("Empfangen: ELEC_DEG_FINISH")
                 break

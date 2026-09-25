@@ -23,6 +23,8 @@ extern int32_t d11_tick, d12_tick, d21_tick, d22_tick, d31_tick, d32_tick;
 extern float ccw_links, ccw_rechts, cw_links, cw_rechts, aktiv_ccw, aktiv_cw, ges_aktiv;
 extern float real_mid_deg;
 extern float lin_min, lin_max;
+extern int32_t real_mid, mid_steps;
+extern float mid_degs;
 
 
 // --------------- LINEARITY FUNCTIONS

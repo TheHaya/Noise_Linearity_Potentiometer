@@ -389,7 +389,12 @@ void loop(){
         }
         delay(1000);
         report_progress("MECH", "CALIBRATE_CURRENTS", 40);
-        calibrate_currents();
+        if(!calibrate_currents()){
+          Serial.println("CALIBRATE_CURRENTS_FAILED");
+          cancelled = true;
+          abort_if_cancelled();
+          return;
+        }
         report_progress("MECH", "ENDLESS_VOLT_CROSSOVER", 60);
         find_endless_volt_crossover();
         // report_progress in der Funktion 
@@ -433,13 +438,13 @@ void loop(){
         } else {
           apply_relay_mode(POL_NOISE_RELAY_MODE);
         }
-      if(endless_poti){
-        endless_noise_preparation_movement();
+      // if(endless_poti){
+      //   endless_noise_preparation_movement();
         
-        drive_to(endless_sim_start, user_rpm);
-        reached_goal(endless_sim_start, 2, 0, 15000);  
-      }
-      else{
+      //   drive_to(endless_sim_start, user_rpm);
+      //   reached_goal(endless_sim_start, 2, 0, 15000);  
+      // }
+      // else{
         drive_to(sim_mercy_start, user_rpm);
         reached_goal(sim_mercy_start, 2, 1);
         report_progress("NOISE", "NOISE_WAIT", 40);
@@ -450,7 +455,7 @@ void loop(){
         
         // drive_and_check(sim_mercy_end, user_rpm, 0);
 
-        }
+        // }
       if(cancelled == false){
         Serial.println("NOISE_READY");
       } else{
@@ -462,11 +467,11 @@ void loop(){
     }
     if(command == "NOISE_START"){
       report_progress("NOISE", "NOISE_MOVEMENT", 50);
-      if(endless_poti){
-        endless_noise_movement();
-      } else{
+      // if(endless_poti){
+      //   endless_noise_movement();
+      // } else{
         noise_movement(); 
-      }
+      // }
       if(cancelled == true){
         Serial.println("CANCEL");
         return;

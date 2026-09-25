@@ -25,10 +25,8 @@ extern float real_mid_deg;
 extern float lin_min, lin_max;
 
 // --------------- LINEARITY FUNCTIONS
-void lin_init();
-float lerp_dead(int32_t x, int32_t d1, int32_t d2);
-float dead_soll_volt_deg(float deg, float tar_volt,
-                      float d12_deg, float d21_deg, float d22_deg, float d31_deg);
+void endless_lin_init();
+
 
 //float correction_movement(float &current_volt, float goal_volt, 
 //                          int dead_direction = 0, int timeout = 8000);

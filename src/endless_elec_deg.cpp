@@ -23,10 +23,18 @@ void endless_elec_deg_movement(){
     real_tick_total = endless_end_tick - endless_start_tick;
     
     int32_t offset_von_soll = (real_tick_total-soll_tick_total) / 2;
-    
 
-    d12_tick = deg_to_tick(d12_deg);
-    d31_tick = deg_to_tick(d31_deg);
+    // Falls keine deadzones und mech = elec
+    if(d12_deg == 0){
+        d12_tick = sim_mercy_start - endless_start_tick - offset_von_soll;
+    } else {
+        d12_tick = deg_to_tick(d12_deg);
+    }
+    if(d31_deg == 0){
+        d31_tick = sim_mercy_end - endless_start_tick - offset_von_soll;
+    } else {
+        d31_tick = deg_to_tick(d31_deg);
+    }
 
     if(fabsf(endless_end_tick - endless_start_tick - d31_tick) < 30){
         smaller_steps = true;
@@ -41,6 +49,11 @@ void endless_elec_deg_movement(){
 
     for (size_t i = 0; i<ELEC_ARRAY_SIZE; i++) {
         //DEBUG_SERIAL.print(tick);
+        if(i == 0){
+            report_progress("ELEC", "D12_CHECK", 10);
+        } else if(i == 1){
+            report_progress("ELEC", "D31_CHECK", 50);
+        }
         int32_t tick = drive_tick[i];
 
         drive_to(tick, user_rpm);
@@ -52,23 +65,43 @@ void endless_elec_deg_movement(){
         }
 
         int32_t rel_tick = tick - endless_start_tick;
-        if(rel_tick == d31_tick + offset_von_soll){
-            if(smaller_steps){
-                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 1, 1, true) - tick_to_deg(endless_start_tick) - real_mid_deg;
-            } else{
-                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 1, 1) - tick_to_deg(endless_start_tick) - real_mid_deg;
+        if(relay_switch){
+            if(rel_tick == d31_tick + offset_von_soll){
+                if(smaller_steps){
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 1, 1, true) - tick_to_deg(endless_start_tick) - real_mid_deg;
+                } else{
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 1, 1) - tick_to_deg(endless_start_tick) - real_mid_deg;
+                }
+                cw_rechts = print_elec_deg[i];
+            } else if(rel_tick == d12_tick + offset_von_soll){
+                if(smaller_steps){
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 0, 0, true) - tick_to_deg(endless_start_tick) - real_mid_deg;
+                } else{
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 0, 0) - tick_to_deg(endless_start_tick) - real_mid_deg;
+                }
+                ccw_links = print_elec_deg[i];
             }
-            cw_rechts = print_elec_deg[i];
-        } else if(rel_tick == d12_tick + offset_von_soll){
-            if(smaller_steps){
-                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 0, 0, true) - tick_to_deg(endless_start_tick) - real_mid_deg;
-            } else{
-                print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 0, 0) - tick_to_deg(endless_start_tick) - real_mid_deg;
+        } else{
+            if(rel_tick == d31_tick + offset_von_soll){
+                if(smaller_steps){
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1, true) - tick_to_deg(endless_start_tick) - real_mid_deg;
+                } else{
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_start_volt, 1, 1) - tick_to_deg(endless_start_tick) - real_mid_deg;
+                }
+                cw_rechts = print_elec_deg[i];
+            } else if(rel_tick == d12_tick + offset_von_soll){
+                if(smaller_steps){
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0, true) - tick_to_deg(endless_start_tick) - real_mid_deg;
+                } else{
+                    print_elec_deg[i] = correction_movement(print_elec_volt[i], ist_end_volt, 0, 0) - tick_to_deg(endless_start_tick) - real_mid_deg;
+                }
+                ccw_links = print_elec_deg[i];
             }
-            ccw_links = print_elec_deg[i];
         }
+        
 
     }
+    report_progress("ELEC", "TOTAL_ELEC", 90);
     total_elec_deg = print_elec_deg[0]-print_elec_deg[1];
     Serial.print("TOTAL_ELEC");
     Serial.println(total_elec_deg);

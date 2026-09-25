@@ -43,7 +43,7 @@ float tar_volt;
 void calibrate_init(){
 dxl.torqueOff(DID);
 dxl.torqueOn(DID);
-beginning_tick = 2050;
+beginning_tick = get_tick_position();
 start_tick = 0;
 end_tick = 0;
 real_mid_tick = 0;
@@ -441,7 +441,14 @@ void check_ends(){
   drive_to(check_end_end, SLOW_RPM);
   reached_goal(check_end_end, 0);
   end_tick = stopped_tick;
-  ist_start_volt = corr_measure();
+  
+  if(relay_switch){
+    ist_start_volt = corr_measure();
+  }
+  else{
+    ist_end_volt = corr_measure();
+  }
+
   if(measure_start_resistance){
     ist_start_resistance = corr_measure_res(1);
   }
@@ -465,7 +472,12 @@ void check_ends(){
   drive_to(check_end_start, SLOW_RPM);
   if(reached_goal(check_end_start, 0, 0, 30000) == false){
     start_tick = stopped_tick;
-    ist_end_volt = corr_measure();
+    if(relay_switch){
+      ist_end_volt = corr_measure();
+    }
+    else{
+      ist_start_volt = corr_measure();
+    }
     
     if(measure_end_resistance){
       ist_end_resistance = corr_measure_res(2);

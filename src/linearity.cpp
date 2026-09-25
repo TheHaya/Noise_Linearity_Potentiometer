@@ -27,6 +27,8 @@ int32_t d11_tick, d12_tick, d21_tick, d22_tick, d31_tick, d32_tick;
 float ccw_links, ccw_rechts, cw_links, cw_rechts, aktiv_ccw, aktiv_cw, ges_aktiv;
 float real_mid_deg;
 float lin_min, lin_max;
+int32_t real_mid, mid_steps;
+float mid_degs;
 
 
 void lin_init(){
@@ -47,6 +49,9 @@ void lin_init(){
   aktiv_cw = 0;
   ges_aktiv = 0;
   real_mid_deg = 0;
+  real_mid = 0;
+  mid_degs = 0;
+  mid_steps = 0;
 
   lin_min = 100;
   lin_max = -100;
@@ -97,16 +102,39 @@ float dead_soll_volt_deg(float deg, float tar_volt_real,
 void linearity_movement2(){
   // 1° = 11.375 ticks
   // 1 Tick = 0.08791208791 °
+  d11_tick = deg_to_tick(d11_deg);
+  d12_tick = deg_to_tick(d12_deg);
+  d21_tick = deg_to_tick(d21_deg);
+  d22_tick = deg_to_tick(d22_deg);
+  d31_tick = deg_to_tick(d31_deg);
+  d32_tick = deg_to_tick(d32_deg);
+
   real_tick_total = end_tick - start_tick;
   soll_tick_total = deg_to_tick(target_deg_total); // ca. 330°
   float real_deg_total = tick_to_deg(real_tick_total);
 
-  float mid_degs = 25;
+  
   real_mid_deg = real_deg_total/2;
   float soll_mid_deg = target_deg_total/2;
-  int32_t mid_steps = deg_to_tick(25); // ca. 284 Ticks
   int32_t real_mid = real_tick_total/2;
   int32_t offset_von_soll = (real_tick_total-soll_tick_total) / 2;
+
+  if(d21_tick != 0){
+    mid_degs = (d21_deg - d12_deg) / 4;
+  } else{
+    mid_degs = (real_mid_deg - d12_deg) / 4;
+  }
+
+  if(d21_tick != 0){
+    mid_steps = (d21_tick - d12_tick) / 4;
+  } else{
+    mid_steps = (real_mid - d12_tick) / 4;
+  }
+
+  if(mid_steps == 0){
+    mid_steps = real_mid / 5;
+    mid_degs = real_mid_deg / 5;
+  }
   
   for(int i = 0; i < 5; i++){ // UNBEDINGT FIXEN (maybe)
     dxl.ledOff(1);
@@ -114,13 +142,19 @@ void linearity_movement2(){
     dxl.ledOn(1);
     delay(100);
   } 
+  if(d11_deg == 0){d11_deg = tick_to_deg(start_tick);}
+  if(d12_deg == 0){d12_deg = tick_to_deg(start_tick);}
+  if(d21_deg == 0){d21_deg = real_mid_deg;}
+  if(d22_deg == 0){d22_deg = real_mid_deg;}
+  if(d31_deg == 0){d31_deg = tick_to_deg(end_tick);}
+  if(d32_deg == 0){d32_deg = tick_to_deg(end_tick);}
+  if(d11_tick == 0){d11_tick = start_tick;}
+  if(d12_tick == 0){d12_tick = start_tick;}
+  if(d21_tick == 0){d21_tick = real_mid;}
+  if(d22_tick == 0){d22_tick = real_mid;}
+  if(d31_tick == 0){d31_tick = end_tick;}
+  if(d32_tick == 0){d32_tick = end_tick;}
 
-  d11_tick = deg_to_tick(d11_deg);
-  d12_tick = deg_to_tick(d12_deg);
-  d21_tick = deg_to_tick(d21_deg);
-  d22_tick = deg_to_tick(d22_deg);
-  d31_tick = deg_to_tick(d31_deg);
-  d32_tick = deg_to_tick(d32_deg);
 
   float soll_Deg[] = {real_mid_deg,
      d22_deg, d22_deg+mid_degs, d22_deg+2*mid_degs, d22_deg+3*mid_degs, d31_deg, real_deg_total,
@@ -190,7 +224,12 @@ void linearity_movement2(){
     }
 
     // SOLL-SPANNUNG
-    print_soll_volt[i] = dead_soll_volt_deg(soll_Deg[i], ist_end_volt, d12_deg, d21_deg, d22_deg, d31_deg);
+    if(relay_switch){
+      print_soll_volt[i] = dead_soll_volt_deg(soll_Deg[i], ist_end_volt, d12_deg, d21_deg, d22_deg, d31_deg);
+    }else{
+      print_soll_volt[i] = dead_soll_volt_deg(soll_Deg[i], ist_start_volt, d12_deg, d21_deg, d22_deg, d31_deg);
+    }
+    
 
     // IST-SPANNUNG
     if(rel_tick == mercy_end){
@@ -212,7 +251,13 @@ void linearity_movement2(){
     } else if(rel_tick == mercy_start){
       print_ist_deg[i] = -real_mid_deg;
     } else if(rel_tick == d12_tick + offset_von_soll){
-      float print_deg_ccw_l = correction_movement(print_ist_volt[i], ist_end_volt, 0, 0);
+      float print_deg_ccw_l;
+      if(relay_switch){
+        print_deg_ccw_l = correction_movement(print_ist_volt[i], ist_end_volt, 0, 0);
+      } else{
+        print_deg_ccw_l = correction_movement(print_ist_volt[i], ist_start_volt, 0, 0);
+      }
+      
       if(isnan(print_deg_ccw_l)){
         print_ist_deg[i] = NAN;
       } else{
@@ -245,7 +290,13 @@ void linearity_movement2(){
       Serial.print("DEAD_CW1");
       Serial.println(cw_links);
     } else if(rel_tick == d31_tick + offset_von_soll){
-      float print_deg_cw_r = correction_movement(print_ist_volt[i], ist_start_volt, 1, 1);
+      float print_deg_cw_r;
+      if(relay_switch){
+        print_deg_cw_r = correction_movement(print_ist_volt[i], ist_start_volt, 1, 1);
+      }else{
+        print_deg_cw_r = correction_movement(print_ist_volt[i], ist_end_volt, 1, 1);
+      }
+      
       if(isnan(print_deg_cw_r)){
         print_ist_deg[i] = NAN;
       } else{

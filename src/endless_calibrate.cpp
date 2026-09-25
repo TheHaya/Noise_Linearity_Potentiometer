@@ -8,12 +8,11 @@
 // --------------- CONSTANTS
 const int32_t ENDLESS_MERCY_TOLERANCE_TICK = 2;
 
-
 // --------------- VARIABLES
 float endless_start_volt, endless_end_volt;
 int32_t endless_start_tick, endless_end_tick;
 int32_t endless_sim_start, endless_sim_end;
-extern float endless_start_volt, endless_end_volt, endless_start_deg, endless_end_deg;
+
 
 // --------------- FUNCTIONS
 
@@ -108,21 +107,75 @@ float correction_movement_endless_starts(float &current_volt, float goal_volt, i
 void find_endless_starting_point(){
   float cur_volt;
   report_progress("MECH", "ENDLESS_START_TICK", 70);
+  // Absicherung wegen Ring Ende
   endless_start_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 1);
-  ist_start_volt = corr_measure(1);
+  drive_to(endless_start_tick + ENDLESS_MERCY_TOLERANCE_TICK, user_rpm); 
+  reached_goal(endless_start_tick + ENDLESS_MERCY_TOLERANCE_TICK, 2);
+  if(relay_switch){
+    ist_start_volt = corr_measure(1);
+    Serial.print("IST_S_VOLT:");
+    Serial.println(ist_start_volt, 8);
+    if(measure_start_resistance){
+    ist_start_resistance = corr_measure_res(1);
+    }
+    if(measure_total_resistance){
+      ist_total_resistance = corr_measure_res(3);
+    }
+
+  } else{
+    ist_end_volt = corr_measure(2);
+    Serial.print("IST_E_VOLT:");
+    Serial.println(ist_end_volt, 8);
+    if(measure_end_resistance){
+      ist_end_resistance = corr_measure_res(2);
+    }
+  }
+  
+  
   drive_to(endless_start_tick + 3750, user_rpm); // ~330°
   reached_goal(endless_start_tick + 3750, 2);
-  apply_relay_mode(POL_INIT_RELAY_MODE);
+  if(relay_switch){
+    apply_relay_mode(INIT_RELAY_MODE);
+  } else{
+    apply_relay_mode(POL_INIT_RELAY_MODE);
+  }
   delay(200);
 
   report_progress("MECH", "ENDLESS_END_TICK", 80);
+  // Absicherung wegen Ring Ende
   endless_end_tick = correction_movement_endless_starts(cur_volt, endless_start_volt, 0);
-  apply_relay_mode(INIT_RELAY_MODE);
+  if(relay_switch){
+    apply_relay_mode(POL_INIT_RELAY_MODE);
+  } else{
+    apply_relay_mode(INIT_RELAY_MODE);
+  }
   delay(200);
-  ist_end_volt = corr_measure(2);
+  drive_to(endless_end_tick - ENDLESS_MERCY_TOLERANCE_TICK, user_rpm);
+  reached_goal(endless_end_tick - ENDLESS_MERCY_TOLERANCE_TICK, 2);
+  if(relay_switch){
+    ist_end_volt = corr_measure(2);
+    Serial.print("IST_E_VOLT:");
+    Serial.println(ist_end_volt, 8);
+    if(measure_end_resistance){
+      ist_end_resistance = corr_measure_res(2);
+    }
+  } else{
+    ist_start_volt = corr_measure(1);
+    Serial.print("IST_S_VOLT:");
+    Serial.println(ist_start_volt, 8);
+    if(measure_start_resistance){
+    ist_start_resistance = corr_measure_res(1);
+    }
+    if(measure_total_resistance){
+      ist_total_resistance = corr_measure_res(3);
+    }
+  }
 
   endless_sim_start = endless_start_tick + ENDLESS_MERCY_TOLERANCE_TICK;
   endless_sim_end = endless_end_tick - ENDLESS_MERCY_TOLERANCE_TICK;
+  sim_mercy_start = endless_sim_start;
+  sim_mercy_end = endless_sim_end;
+
   uint32_t total_distance = abs(endless_end_tick - endless_start_tick); // 4096 ticks -> 360°
   real_mid_tick = endless_start_tick + total_distance / 2;
   // uint32_t sim_distance = abs(sim_mercy_end - sim_mercy_start);

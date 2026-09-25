@@ -17,10 +17,7 @@ def calc_duration(ges_spd, ges_deg):
     circle_tick = 4096
     for i in range(1, 4, 1):
         div_spd = user_rpm/2
-        if ges_deg == 0:
-            duration += 2 * (60/(div_spd*i))
-        else:
-            duration += 2 * (60/(div_spd*i)) * (mech.total_ticks/circle_tick)
+        duration += 2 * (60/(div_spd*i)) * (mech.total_ticks/circle_tick)
        
     duration = (duration + total_delay) * 2  # wegen servo delay für jeden antrieb // *2 wegen 2 rounds pro geschwindigkeit
     return duration
@@ -32,10 +29,7 @@ def calc_individual_turns(ges_spd, turn_number, ges_deg):
     circle_tick = 4096
     for i in range(1, 4, 1):
         div_spd = user_rpm/2
-        if ges_deg == 0:
-            turn_duration += 2 * (60/(div_spd*i))
-        else:
-            turn_duration += 2 * (60/(div_spd*i)) * (mech.total_ticks/circle_tick)
+        turn_duration += 2 * (60/(div_spd*i)) * (mech.total_ticks/circle_tick)
         total_duration += 4 * turn_duration
         match i:
             case 1:
@@ -153,7 +147,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None
             if line == 'NOISE_READY':
                 print("Empfangen: NOISE_READY")
                 print("Config Pico")
-                if ges_w == 0:
+                if ges_w == 360:
                     pico_runner.config_pico(
                     txt_s=lambda: txt_speed.get(),
                     calc_d=lambda speed: calc_duration(speed, ges_w),
@@ -173,7 +167,7 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None
                 # total_duration = finish_time - pico_runner.start_time
                 # print(f"Empfangen: NOISE_MOVE_FINISH, total Dauer: {total_duration}")
                 calc_rel_angle(pico_time, pico_turn, pico_angle, ges_w)
-                if ges_w == 0:
+                if ges_w == 360:
                     mark_ends(4096)
                 else:
                     mark_ends(mech.total_ticks)

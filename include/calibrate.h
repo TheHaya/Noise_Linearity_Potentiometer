@@ -28,6 +28,7 @@ extern float theo_time1, theo_time2, theo_time3;
 extern float target_deg_total;
 extern float delay1, delay2, delay3;
 extern bool measure_start_resistance, measure_end_resistance, measure_total_resistance;
+extern float ist_start_resistance, ist_end_resistance, ist_total_resistance;
 extern float ist_start_volt, ist_end_volt, ist_mid_volt;
 extern float safety_pos_volt;
 extern float tar_volt;

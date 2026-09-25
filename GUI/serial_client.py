@@ -1,5 +1,6 @@
 import serial, time, sys, re
 import serial.tools.list_ports
+import json, os
 # --------------- SERIAL VARIABLES
 ser_Arduino = None
 # ------ PRÜFVORRICHTUNG FIRMA
@@ -7,22 +8,41 @@ ser_Arduino = None
 # MULTI_PORT = "COM4"
 # PSU_PORT = "COM5"
 
-# ------ TEMPORÄR HARM
-# ARDUINO_PORT = "COM7"
-# MULTI_PORT = "COM4"
-# PSU_PORT = "COM5"
-
-# ------ ALWIN FIRMA
-# ARDUINO_PORT = "COM20"
-# MULTI_PORT = "COM17"
-# PSU_PORT = "COM15"
-
 # ------ ALWIN LAPTOP
 # ARDUINO_PORT = "COM18"
 # MULTI_PORT = "COM6"
 # PSU_PORT = "COM7"
-# MULTI_PORT = "COM9"
 
+# --------------- COM PORTS MIT JSON
+def resource_path(rel_path):
+    base = getattr(
+        sys,
+        "_MEIPASS",
+        os.path.dirname(os.path.abspath(__file__))
+    )
+    return os.path.join(base, rel_path)
+
+
+def load_com_ports():
+    path = resource_path("COM_PORTS.json")
+
+    with open(path, "r", encoding="utf-8") as file:
+        config = json.load(file)
+
+    required = ("arduino", "multimeter", "psu")
+
+    for name in required:
+        if not config.get(name):
+            raise ValueError(f"COM-Port für {name} fehlt.")
+
+    ports = [config[name] for name in required]
+
+    if len(ports) != len(set(ports)):
+        raise ValueError("Ein COM-Port wurde mehrfach zugewiesen.")
+
+    return config
+
+COM_PORTS = load_com_ports()
 
 # --------------- SERIAL MIT SERVO
 def connect_ard(port, baud=115200, timeout=0.1):

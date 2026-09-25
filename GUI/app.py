@@ -45,24 +45,6 @@ def play_sound(file):
     except RuntimeError as e:
         print(f"Sound konnte nicht abgespielt werden: {e}")
 
-def load_com_ports():
-    path = resource_path("COM_PORTS.json")
-
-    with open(path, "r", encoding="utf-8") as file:
-        config = json.load(file)
-
-    required = ("arduino", "multimeter", "psu")
-
-    for name in required:
-        if not config.get(name):
-            raise ValueError(f"COM-Port für {name} fehlt.")
-
-    ports = [config[name] for name in required]
-
-    if len(ports) != len(set(ports)):
-        raise ValueError("Ein COM-Port wurde mehrfach zugewiesen.")
-
-    return config
 
 # --------------- APP VARIABLES 
 pico_plot_time = []
@@ -578,7 +560,7 @@ def start_measurements(modes, meas_volt, meas_angle, meas_speed, retry_used=Fals
                 return report
 
             if not ser_ard:
-                ser_ard = sc.connect_ard()
+                ser_ard = sc.connect_ard(port=com_ports["arduino"])
 
             ser_multi = sc.connect_multi(port=com_ports["multimeter"])
             ser_psu = sc.connect_psu(port=com_ports["psu"])
@@ -1412,7 +1394,7 @@ but_tester.grid(row=6, column=3, padx=(10,0))
 root.bind("<Escape>", lambda event: on_root_close())
 root.protocol("WM_DELETE_WINDOW", on_root_close)
 # --------------- MAIN
-com_ports = load_com_ports()
+com_ports = sc.COM_PORTS
 ser_ard = sc.connect_ard(port=com_ports["arduino"])
 rework_chk()
 ring.build_ring(ring_area)

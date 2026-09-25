@@ -9,7 +9,6 @@ extern const int32_t ENDLESS_MERCY_TOLERANCE_TICK;
 extern float endless_start_volt, endless_end_volt;
 extern int32_t endless_start_tick, endless_end_tick;
 extern int32_t endless_sim_start, endless_sim_end;
-extern float endless_start_volt, endless_end_volt, endless_start_deg, endless_end_deg;
 
 // --------------- FUNCTIONS
 void endless_init();

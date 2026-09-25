@@ -73,6 +73,14 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw=None, hohlwelle=None,
                 print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
                 print("_____")
                 continue
+            elif line. startswith('IST_S_VOLT:'):
+                start_volt = float(line[11::])
+                print("Start Volt: ")
+                print(start_volt)
+            elif line. startswith('IST_E_VOLT:'):
+                end_volt = float(line[11::])
+                print("End Volt: ")
+                print(end_volt)
             elif line.startswith('RESR_INIT'):
                 global res_init_val
                 res_init_val = sc.get_multi_resistance(ser_arduino, ser_Multi, 1)
