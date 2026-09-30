@@ -242,15 +242,15 @@ void endless_linearity_movement(){
   // --------------- ÜBERGABE AN PYTHON
   for (size_t i = 0; i<PRINT_ARRAY_SIZE; i++) {
     Serial.print("Soll-Winkel:");
-    Serial.print(print_soll_deg[i],1);
+    Serial.print(print_soll_deg[i],2);
     Serial.print(";Soll-Spannung:");
-    Serial.print(print_soll_volt[i],2);
+    Serial.print(print_soll_volt[i],3);
     Serial.print(";Ist-Spannung:");
     Serial.print(print_ist_volt[i],3);
     Serial.print(";Ist-Winkel:");
-    Serial.print(print_ist_deg[i],1);
+    Serial.print(print_ist_deg[i],2);
     Serial.print(";DiffMid-Winkel:");
-    Serial.println(print_real_diff_mid[i],1);
+    Serial.println(print_real_diff_mid[i],2);
   }
   all_relays_off();
 }

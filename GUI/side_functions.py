@@ -28,12 +28,15 @@ def go_zero(ser_arduino, ges_s=None, serial_lock=None, stop_event=None, on_finis
                     time.sleep(0.2)
                     break
                 line = ser_arduino.readline().decode('utf-8').strip()
+                if sc.handle_cancel(line, "LINEAR", stop_event):
+                    ser_arduino.reset_input_buffer()
+                    break
                 if line == 'ZERO_READY':
                     print("ZERO_READY empfangen.")
                     break
-                if line == 'CANCEL':
-                    print("CANCEL empfangen.")
-                    break
+                # if line == 'CANCEL':
+                #     print("CANCEL empfangen.")
+                #     break
     except Exception as e:
         print("Fehler bei Serial (GO ZERO): ", e) #debug
 

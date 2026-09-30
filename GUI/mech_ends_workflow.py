@@ -55,6 +55,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw=None, hohlwelle=None,
 
             if sc.handle_progress(line, "MECH", on_progress):
                 continue
+            if sc.handle_cancel(line, "MECH", stop_event):
+                ser_arduino.reset_input_buffer()
+                break
             if line.startswith('VOLTR_START'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 debug_pos = float(line[11::])
@@ -67,6 +70,12 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw=None, hohlwelle=None,
                 print(f"Ist_End Position: {debug_pos} // {debug_pos*0.087890625}")
                 print("_____")
                 continue
+            elif line.startswith('MOVE_REJECTED:CURRENT='):
+                print("Empfange: Falsches Ziel: ")
+                print(int(line[22::]))
+            elif line.startswith('TARGET='):
+                print("Empfange: Echtes Ziel: ")
+                print(int(line[7::]))
             elif line.startswith('VOLTR'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 debug_pos = float(line[5::])
@@ -175,12 +184,12 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw=None, hohlwelle=None,
             elif line == 'INIT_CHECK_FAILED':
                 print("INIT Check fehlgeschlagen.")
 
-            elif line == 'CANCEL':
-                print("Empfangen: CANCEL")
-                if stop_event is not None:
-                    stop_event.set()
-                ser_arduino.reset_input_buffer()
-                break
+            # elif line == 'CANCEL':
+            #     print("Empfangen: CANCEL")
+            #     if stop_event is not None:
+            #         stop_event.set()
+            #     ser_arduino.reset_input_buffer()
+            #     break
 
         ser_PSU.write(b"OUTP OFF\n")
 

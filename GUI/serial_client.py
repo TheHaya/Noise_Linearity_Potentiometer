@@ -321,7 +321,7 @@ def get_multi_resistance(ser_arduino, ser_Multi, variation):
     ser_Multi.reset_input_buffer()
     ser_Multi.reset_output_buffer()
 
-    ser_Multi.write(b':MEAS:RES?\n')
+    ser_Multi.write(b":MEAS:RES?\r")
     # ser_Multi.write(b"*IDN?\n")
     # ser_Multi.write(b':READ?\n')
     #print("geschrieben")
@@ -374,3 +374,46 @@ def serial_ports():
         except (OSError, serial.SerialException):
             pass
     return result
+
+CANCEL_REASONS = {
+    "USER_STOP": "Abbruch durch Benutzer oder GUI",
+    "POSITION_READ_FAILED": "Servoposition konnte nicht gelesen werden",
+    "MOVE_DISTANCE_EXCEEDED": "Zielposition liegt außerhalb des sicheren Fahrbereichs",
+    "CURRENT_LIMIT_RPM1": "Stromgrenze bei Geschwindigkeitsstufe 1 überschritten",
+    "CURRENT_LIMIT_RPM2": "Stromgrenze bei Geschwindigkeitsstufe 2 überschritten",
+    "CURRENT_LIMIT_RPM3": "Stromgrenze bei Geschwindigkeitsstufe 3 überschritten",
+    "CALIBRATION_CURRENT_LIMIT": "Maximalstrom während Stromkalibrierung überschritten",
+    "CURRENT_CALIBRATION_FAILED": "Stromkalibrierung fehlgeschlagen",
+    "TARGET_NOT_REACHED_LINEARITY": "Zielposition bei Linearitätsmessung nicht erreicht",
+    "TARGET_NOT_REACHED_ENDLESS_LINEARITY": "Zielposition bei Endlos-Linearität nicht erreicht",
+    "TARGET_NOT_REACHED_ELEC_DEG": "Zielposition beim elektrischen Winkel nicht erreicht",
+    "TARGET_NOT_REACHED_ENDLESS_ELEC_DEG": "Zielposition beim Endlos-Winkel nicht erreicht",
+    "INIT_STATE_INVALID": "Initialzustand der Messvariablen ist ungültig",
+    "POSITION_NOT_NORMALIZED": "Startposition liegt nicht zwischen 0 und 4095 Ticks",
+    "SAFETY_START_EXCEEDED": "Linke Sicherheitsgrenze wurde überschritten",
+    "SAFETY_END_EXCEEDED": "Rechte Sicherheitsgrenze wurde überschritten",
+}
+
+
+def handle_cancel(line, workflow, stop_event=None):
+    if line == "CANCEL":
+        code = "UNKNOWN_LEGACY"
+        details = ""
+        reason = "Firmware hat keinen Abbruchgrund übermittelt"
+    elif line.startswith("CANCEL:"):
+        payload = line[len("CANCEL:"):]
+        code, separator, details = payload.partition(";")
+        reason = CANCEL_REASONS.get(code, "Unbekannter Abbruchgrund")
+    else:
+        return False
+
+    message = f"[ABBRUCH][{workflow}] {reason} | Code: {code}"
+    if details:
+        message += f" | {details}"
+
+    print(message)
+
+    if stop_event is not None:
+        stop_event.set()
+
+    return True

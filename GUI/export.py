@@ -206,13 +206,13 @@ def save_to_excel2(title_txt, daten, linear_sollV, linear_lin, summary_vals, lin
 
 
         # TEMPORÄR
-        sheet['B:B'].number_format = '0,000°'
-        sheet['C:C'].number_format = '0,00000000'
-        sheet['D:D'].number_format = '0,00000000'
-        sheet['E:E'].number_format = '0,000°'
-        sheet['F:F'].number_format = '0,000°'
-        sheet['G:G'].number_format = '0,00000000'
-        sheet['H1:H17'].number_format = '0,0000000%'
+        sheet['B:B'].number_format = '0,00°'
+        sheet['C:C'].number_format = '0,000'
+        sheet['D:D'].number_format = '0,000'
+        sheet['E:E'].number_format = '0,00°'
+        sheet['F:F'].number_format = '0,00°'
+        sheet['G:G'].number_format = '0,000'
+        sheet['H1:H17'].number_format = '0,0000%'
         
         sheet['A16'].value = "Totzone"
         sheet['B16'].value = totzone

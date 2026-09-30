@@ -57,6 +57,9 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
             #print("Empfangen:", line) #debug
             if sc.handle_progress(line, "ELEC", on_progress):
                 continue
+            if sc.handle_cancel(line, "ELEC", stop_event):
+                ser_arduino.reset_input_buffer()
+                break
             if line.startswith('VOLTR'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 debug_pos = float(line[5::])
@@ -67,6 +70,12 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
                 print("Empfangen: ELEC_DEG READY")
                 ser_arduino.write(b"ELEC_DEG_START\n")
                 print("Sende: ELEC_DEG START")
+            elif line.startswith('MOVE_REJECTED:CURRENT='):
+                print("Empfange: Falsches Ziel: ")
+                print(int(line[22::]))
+            elif line.startswith('TARGET='):
+                print("Empfange: Echtes Ziel: ")
+                print(int(line[7::]))
             elif line.startswith('TOTAL_ELEC'):
                 print("Empfangen: TOTAL_ELEC")
                 global total_elec
@@ -76,12 +85,12 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
             elif line == 'ELEC_DEG_FINISH':
                 print("Empfangen: ELEC_DEG_FINISH")
                 break
-            elif line == 'CANCEL':
-                print("Empfangen: CANCEL")
-                if stop_event is not None:
-                    stop_event.set()
-                ser_arduino.reset_input_buffer()
-                break
+            # elif line == 'CANCEL':
+            #     print("Empfangen: CANCEL")
+            #     if stop_event is not None:
+            #         stop_event.set()
+            #     ser_arduino.reset_input_buffer()
+            #     break
             
         ser_PSU.write(b"OUTP OFF\n")
                         

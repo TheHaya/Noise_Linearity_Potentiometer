@@ -23,7 +23,8 @@ extern const int POLL_TIMER;
 extern const float START_CURRENT;
 extern const float CUR_TOLERANCE;
 extern const float SLOW_RPM;
-
+extern const int32_t MAX_SAFE_MOVE_TICKS;
+extern const int32_t MAX_POSITION_JUMP_TICKS;
 // --------------- SERVO VARIABLES
 extern int32_t stopped_tick;
 extern float cal_cur0, cal_cur1, cal_cur2, cal_cur3;
@@ -43,7 +44,8 @@ uint32_t rpm_to_time(int32_t goal_tick, float rpm);
 
 void dxl_init();
 void stop_motion(uint8_t DYN_ID = 1);
-
+bool read_tick_position_checked(int32_t &position);
+void cancel_with_reason(const char* reason);
 
 // --------------- DRIVE FUNCTIONS
 void drive_to(int32_t tick, float rpm, uint8_t DYN_ID = 1);

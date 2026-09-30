@@ -102,6 +102,12 @@ float dead_soll_volt_deg(float deg, float tar_volt_real,
 void linearity_movement2(){
   // 1° = 11.375 ticks
   // 1 Tick = 0.08791208791 °
+  const bool no_deadzones =
+    d12_deg == 0.0f &&
+    d21_deg == 0.0f &&
+    d22_deg == 0.0f &&
+    d31_deg == 0.0f;
+
   d11_tick = deg_to_tick(d11_deg);
   d12_tick = deg_to_tick(d12_deg);
   d21_tick = deg_to_tick(d21_deg);
@@ -142,28 +148,36 @@ void linearity_movement2(){
     dxl.ledOn(1);
     delay(100);
   } 
-  if(d11_deg == 0){d11_deg = tick_to_deg(start_tick);}
-  if(d12_deg == 0){d12_deg = tick_to_deg(start_tick);}
-  if(d21_deg == 0){d21_deg = real_mid_deg;}
-  if(d22_deg == 0){d22_deg = real_mid_deg;}
-  if(d31_deg == 0){d31_deg = tick_to_deg(end_tick);}
-  if(d32_deg == 0){d32_deg = tick_to_deg(end_tick);}
-  if(d11_tick == 0){d11_tick = start_tick;}
-  if(d12_tick == 0){d12_tick = start_tick;}
+
+  int32_t mercy_tick = 15; // 100 Ticks vor jeweiligem Ende
+  int32_t mercy_start = mercy_tick;
+  int32_t mercy_end = real_tick_total - mercy_tick;
+
+  if (d11_deg == 0.0f) d11_deg = 0.0f;
+  if (d12_deg == 0.0f) d12_deg = 0.0f;
+  if (d21_deg == 0.0f) d21_deg = real_mid_deg;
+  if (d22_deg == 0.0f) d22_deg = real_mid_deg;
+  if (d31_deg == 0.0f) d31_deg = real_deg_total;
+  if (d32_deg == 0.0f) d32_deg = real_deg_total;
+  if(d11_tick == 0){d11_tick = mercy_start;}
+  if(d12_tick == 0){d12_tick = mercy_start;}
   if(d21_tick == 0){d21_tick = real_mid;}
   if(d22_tick == 0){d22_tick = real_mid;}
-  if(d31_tick == 0){d31_tick = end_tick;}
-  if(d32_tick == 0){d32_tick = end_tick;}
+  if(d31_tick == 0){d31_tick = mercy_end;}
+  if(d32_tick == 0){d32_tick = mercy_end;}
 
+  if (no_deadzones) {
+    ccw_links = -real_mid_deg;
+    ccw_rechts = 0.0f;
+    cw_links = 0.0f;
+    cw_rechts = real_mid_deg;
+  }
 
   float soll_Deg[] = {real_mid_deg,
      d22_deg, d22_deg+mid_degs, d22_deg+2*mid_degs, d22_deg+3*mid_degs, d31_deg, real_deg_total,
       d21_deg, d21_deg-mid_degs, d21_deg-2*mid_degs, d21_deg-3*mid_degs, d12_deg, 0};
   
-  int32_t mercy_tick = 100; // 100 Ticks vor jeweiligem Ende
-  int32_t mercy_start = mercy_tick;
-  int32_t mercy_end = real_tick_total - mercy_tick;
-
+  
   int32_t sim_tick [] = {real_mid, d21_tick, d21_tick-mid_steps, d21_tick-2*mid_steps, d21_tick-3*mid_steps, d12_tick, mercy_start,
      d22_tick, d22_tick+mid_steps, d22_tick+2*mid_steps, d22_tick+3*mid_steps, d31_tick, mercy_end
       };
@@ -215,27 +229,65 @@ void linearity_movement2(){
        }
 
     // SOLL-WINKEL
-    if(rel_tick == real_mid){
-      print_soll_deg[i] = soll_Deg[i]-real_mid_deg;
-    } else if(rel_tick == mercy_end || rel_tick == mercy_start){
-       print_soll_deg[i] = soll_Deg[i]-real_mid_deg;
-    } else{
-       print_soll_deg[i] = soll_Deg[i]-soll_mid_deg;
+    if(rel_tick == mercy_start){
+      print_soll_deg[i] = real_mid_deg;
+    }
+    else if(rel_tick == mercy_end){
+      print_soll_deg[i] = -real_mid_deg;
+    }
+    else{
+      print_soll_deg[i] = -tick_to_deg(rel_tick - real_mid);
     }
 
     // SOLL-SPANNUNG
-    if(relay_switch){
-      print_soll_volt[i] = dead_soll_volt_deg(soll_Deg[i], ist_end_volt, d12_deg, d21_deg, d22_deg, d31_deg);
-    }else{
-      print_soll_volt[i] = dead_soll_volt_deg(soll_Deg[i], ist_start_volt, d12_deg, d21_deg, d22_deg, d31_deg);
+    // if(relay_switch){
+    //   print_soll_volt[i] = dead_soll_volt_deg(soll_Deg[i], ist_end_volt, d12_deg, d21_deg, d22_deg, d31_deg);
+    // } else{
+    //   print_soll_volt[i] = dead_soll_volt_deg(soll_Deg[i], ist_start_volt, d12_deg, d21_deg, d22_deg, d31_deg);
+    // }
+    const float full_scale_volt =
+      fmaxf(ist_start_volt, ist_end_volt);
+
+    const float base_soll_volt = dead_soll_volt_deg(
+        soll_Deg[i],
+        full_scale_volt,
+        d12_deg,
+        d21_deg,
+        d22_deg,
+        d31_deg
+    );
+
+
+    if (relay_switch && !hohlwelle) {
+      print_soll_volt[i] = full_scale_volt - base_soll_volt; // Quick fix für Spezialfall DP37
+    } else {
+      print_soll_volt[i] = base_soll_volt;
     }
-    
 
     // IST-SPANNUNG
+    // if(rel_tick == mercy_end){
+    //   print_ist_volt[i] = ist_start_volt;
+    // } else if(rel_tick == mercy_start) {
+    //   print_ist_volt[i] = ist_end_volt;
+    // } else {
+    //   print_ist_volt[i] = corr_measure();
+    //   if(rel_tick == real_mid){
+    //     ist_mid_volt = print_ist_volt[i];
+    //   }
+    // }
     if(rel_tick == mercy_end){
-      print_ist_volt[i] = ist_start_volt;
+      if(relay_switch) {
+        print_ist_volt[i] = ist_end_volt;
+      } else{
+        print_ist_volt[i] = ist_start_volt;
+      }
+      
     } else if(rel_tick == mercy_start) {
-      print_ist_volt[i] = ist_end_volt;
+      if(relay_switch) {
+        print_ist_volt[i] = ist_start_volt;
+      } else{
+        print_ist_volt[i] = ist_end_volt;
+      }
     } else {
       print_ist_volt[i] = corr_measure();
       if(rel_tick == real_mid){
@@ -253,9 +305,9 @@ void linearity_movement2(){
     } else if(rel_tick == d12_tick + offset_von_soll){
       float print_deg_ccw_l;
       if(relay_switch){
-        print_deg_ccw_l = correction_movement(print_ist_volt[i], ist_end_volt, 0, 0);
-      } else{
         print_deg_ccw_l = correction_movement(print_ist_volt[i], ist_start_volt, 0, 0);
+      } else{
+        print_deg_ccw_l = correction_movement(print_ist_volt[i], ist_end_volt, 0, 0);
       }
       
       if(isnan(print_deg_ccw_l)){
@@ -292,9 +344,9 @@ void linearity_movement2(){
     } else if(rel_tick == d31_tick + offset_von_soll){
       float print_deg_cw_r;
       if(relay_switch){
-        print_deg_cw_r = correction_movement(print_ist_volt[i], ist_start_volt, 1, 1);
-      }else{
         print_deg_cw_r = correction_movement(print_ist_volt[i], ist_end_volt, 1, 1);
+      }else{
+        print_deg_cw_r = correction_movement(print_ist_volt[i], ist_start_volt, 1, 1);
       }
       
       if(isnan(print_deg_cw_r)){
@@ -332,23 +384,40 @@ void linearity_movement2(){
   // --------------- ÜBERGABE AN PYTHON
   for (size_t i = 0; i<PRINT_ARRAY_SIZE; i++) {
     Serial.print("Soll-Winkel:");
-    Serial.print(print_soll_deg[i],1);
+    Serial.print(print_soll_deg[i],2);
     Serial.print(";Soll-Spannung:");
-    Serial.print(print_soll_volt[i],2);
+    Serial.print(print_soll_volt[i],3);
     Serial.print(";Ist-Spannung:");
     Serial.print(print_ist_volt[i],3);
     Serial.print(";Ist-Winkel:");
-    Serial.print(print_ist_deg[i],1);
+    Serial.print(print_ist_deg[i],2);
     Serial.print(";DiffMid-Winkel:");
-    Serial.println(print_real_diff_mid[i],1);
+    Serial.println(print_real_diff_mid[i],2);
   }
   all_relays_off();
 }
 
 void calc_linearity2(){
-  const float REAL_VOLT_PER_DEG = ist_end_volt/ges_aktiv;
-  const float MID_SOLL_VOLT_REAL = aktiv_ccw*REAL_VOLT_PER_DEG;
+  // float REAL_VOLT_PER_DEG;
+  // if(relay_switch){
+  //   REAL_VOLT_PER_DEG = ist_end_volt/ges_aktiv;
+  // }else{
+  //   REAL_VOLT_PER_DEG = ist_start_volt/ges_aktiv;
+  // }
 
+  // const float MID_SOLL_VOLT_REAL = aktiv_ccw*REAL_VOLT_PER_DEG;
+  const float low_voltage =
+    fminf(ist_start_volt, ist_end_volt);
+
+  const float high_voltage =
+    fmaxf(ist_start_volt, ist_end_volt);
+
+  const float voltage_span =
+    high_voltage - low_voltage;
+
+  const float REAL_VOLT_PER_DEG =
+    voltage_span / ges_aktiv;
+  
   for(size_t i = 0; i<PRINT_ARRAY_SIZE ; i++){
     // LEERE ZELLEN ÜBERSPRINGEN
     if (empty_cells[i] == true) {
@@ -358,10 +427,28 @@ void calc_linearity2(){
     }
 
     // SOLLSPANNUNG REAL
-    print_soll_volt_real[i] = print_real_diff_mid[i] * REAL_VOLT_PER_DEG + MID_SOLL_VOLT_REAL;
+    // print_soll_volt_real[i] = print_real_diff_mid[i] * REAL_VOLT_PER_DEG + MID_SOLL_VOLT_REAL;
     
+    const float active_position =
+    aktiv_ccw + print_real_diff_mid[i];
+
+    if (relay_switch && !hohlwelle) { // Spezialfall DP37
+      print_soll_volt_real[i] =
+          high_voltage -
+          active_position * REAL_VOLT_PER_DEG;
+    } else {
+      print_soll_volt_real[i] =
+          low_voltage +
+          active_position * REAL_VOLT_PER_DEG;
+    }
+
     // LINEARITÄT
-    print_linear_real[i] = (print_ist_volt[i] - print_soll_volt_real[i])/ist_end_volt;
+    // print_linear_real[i] = (print_ist_volt[i] - print_soll_volt_real[i])/ist_end_volt;
+
+    print_linear_real[i] =
+    (print_ist_volt[i] - print_soll_volt_real[i]) /
+    voltage_span;
+
     if(fabsf(print_linear_real[i]) > 0.005) {
       error_lin = true;
       error_lin_index[i] = true;

@@ -144,6 +144,9 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None
 
             if sc.handle_progress(line, "NOISE", on_progress):
                 continue
+            if sc.handle_cancel(line, "NOISE", stop_event):
+                ser_arduino.reset_input_buffer()
+                break
             if line == 'NOISE_READY':
                 print("Empfangen: NOISE_READY")
                 print("Config Pico")
@@ -176,13 +179,18 @@ def measurement(ges_v = None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None
             elif line == 'NOISE_FINISH':
                 print("Empfangen: NOISE_FINISH")
                 break
-
-            elif line == 'CANCEL':
-                print("Empfangen: CANCEL")
-                if stop_event is not None:
-                    stop_event.set()
-                ser_arduino.reset_input_buffer()
-                break
+            elif line.startswith('MOVE_REJECTED:CURRENT='):
+                print("Empfange: Falsches Ziel: ")
+                print(int(line[22::]))
+            elif line.startswith('TARGET='):
+                print("Empfange: Echtes Ziel: ")
+                print(int(line[7::]))
+            # elif line == 'CANCEL':
+            #     print("Empfangen: CANCEL")
+            #     if stop_event is not None:
+            #         stop_event.set()
+            #     ser_arduino.reset_input_buffer()
+            #     break
         
         time.sleep(1)
         ser_PSU.write(b"OUTP OFF\n")

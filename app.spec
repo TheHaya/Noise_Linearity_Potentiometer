@@ -1,21 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_all
-
-datas = [('GUI\\AMLogo.jpg', '.'), ('GUI\\preset_Teile.json', '.'), ('GUI\\sounds', 'sounds')]
-binaries = [('GUI\\ps2000a.dll', '.'), ('GUI\\picoipp.dll', '.'), ('GUI\\pico_demo.exe', '.')]
-hiddenimports = ['matplotlib.backends.backend_pdf']
-tmp_ret = collect_all('matplotlib')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-tmp_ret = collect_all('sv_ttk')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
     ['GUI\\app.py'],
     pathex=[],
-    binaries=binaries,
-    datas=datas,
-    hiddenimports=hiddenimports,
+    binaries=[('GUI\\ps2000a.dll', '.'), ('GUI\\picoipp.dll', '.')],
+    datas=[('GUI\\AMLogo.jpg', '.'), ('GUI\\preset_Teile.json', '.'), ('GUI\\COM_PORTS.json', '.'), ('GUI\\pico_demo.exe', '.'), ('GUI\\sounds', 'sounds')],
+    hiddenimports=['matplotlib.backends.backend_pdf'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -34,7 +25,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,
+    upx=True,
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -47,7 +38,7 @@ coll = COLLECT(
     a.binaries,
     a.datas,
     strip=False,
-    upx=False,
+    upx=True,
     upx_exclude=[],
     name='app',
 )

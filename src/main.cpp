@@ -402,6 +402,15 @@ void loop(){
         // calib_finished = true;
       }
       else{
+        int32_t raw_pos = get_tick_position();
+        if(!endless_poti && (raw_pos < 0 || raw_pos >= 4096)){
+            stop_motion();
+            cancelled = true;
+
+            Serial.print("POSITION_NOT_NORMALIZED:");
+            Serial.println(raw_pos);
+            return;
+        }
         if(relay_switch == 0){
           apply_relay_mode(INIT_RELAY_MODE);
         } else {
@@ -616,19 +625,22 @@ void loop(){
     }
 
     if(command == "ZERO"){
-      measurements_init();
+      cancelled = false;
       go_zero();
-      setLEDS(3);
-    } 
+
+      if(!cancelled){
+        setLEDS(3);
+      }
+    }
 
     if(command == "GOTO"){
-      measurements_init();
+      //measurements_init();
       go_to();
       setLEDS(3);
     } 
 
     if(command == "WHERE"){
-      measurements_init();
+      //measurements_init();
       show_cur_pos();
       setLEDS(3);
     }

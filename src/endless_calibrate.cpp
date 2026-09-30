@@ -115,6 +115,7 @@ void find_endless_starting_point(){
     ist_start_volt = corr_measure(1);
     Serial.print("IST_S_VOLT:");
     Serial.println(ist_start_volt, 8);
+    
     if(measure_start_resistance){
     ist_start_resistance = corr_measure_res(1);
     }

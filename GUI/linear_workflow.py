@@ -87,12 +87,21 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
             line = ser_arduino.readline().decode('utf-8').strip()
             if sc.handle_progress(line, "LINEAR", on_progress):
                 continue
+            if sc.handle_cancel(line, "LINEAR", stop_event):
+                ser_arduino.reset_input_buffer()
+                break
             if line.startswith('VOLTR'):
                 sc.get_multi_voltage(ser_arduino, ser_Multi)
                 debug_pos = float(line[5::])
                 print(f"Position für Debug: {debug_pos} // {debug_pos*0.087890625}")
                 print("_____")
                 continue
+            elif line.startswith('MOVE_REJECTED:CURRENT='):
+                print("Empfange: Falsches Ziel: ")
+                print(int(line[22::]))
+            elif line.startswith('TARGET='):
+                print("Empfange: Echtes Ziel: ")
+                print(int(line[7::]))
             elif line.startswith('DEAD_CCW1'):
                 dead_ccw1 = float(line[9::])
                 print(f"--Deadzone CCW links: {dead_ccw1}")
@@ -170,12 +179,12 @@ def measurement(ges_v=None, ges_w=None, ges_s=None, rel_sw = None, soll_v=None, 
             elif line == 'LINEAR_FINISH':
                 print("Empfangen: LINEAR_FINISH")
                 break
-            elif line == 'CANCEL':
-                print("Empfangen: CANCEL")
-                if stop_event is not None:
-                    stop_event.set()
-                ser_arduino.reset_input_buffer()
-                break
+            # elif line == 'CANCEL':
+            #     print("Empfangen: CANCEL")
+            #     if stop_event is not None:
+            #         stop_event.set()
+            #     ser_arduino.reset_input_buffer()
+            #     break
             
         ser_PSU.write(b"OUTP OFF\n")
                         

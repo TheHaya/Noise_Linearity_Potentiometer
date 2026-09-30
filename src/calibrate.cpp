@@ -21,8 +21,8 @@ int32_t sim_mercy_start, sim_mercy_end;
 int32_t safety_start, safety_end;
 int32_t calibrate_current_ccw = 1750;
 int32_t calibrate_current_cw = 2350;
-int32_t check_end_start = -120000;
-int32_t check_end_end = 120000;
+int32_t check_end_start = -15000;
+int32_t check_end_end = 15000;
 int32_t beginning_tick;
 
 float ist_start_volt, ist_end_volt, ist_mid_volt;
@@ -41,8 +41,8 @@ float tar_volt;
 
 // --------------- CALIBRATIONS
 void calibrate_init(){
-dxl.torqueOff(DID);
-dxl.torqueOn(DID);
+dxl.torqueOff(1);
+dxl.torqueOn(1);
 beginning_tick = get_tick_position();
 start_tick = 0;
 end_tick = 0;
@@ -443,10 +443,10 @@ void check_ends(){
   end_tick = stopped_tick;
   
   if(relay_switch){
-    ist_start_volt = corr_measure();
+    ist_end_volt = corr_measure();
   }
   else{
-    ist_end_volt = corr_measure();
+    ist_start_volt = corr_measure();
   }
 
   if(measure_start_resistance){
@@ -473,10 +473,10 @@ void check_ends(){
   if(reached_goal(check_end_start, 0, 0, 30000) == false){
     start_tick = stopped_tick;
     if(relay_switch){
-      ist_end_volt = corr_measure();
+      ist_start_volt = corr_measure();
     }
     else{
-      ist_start_volt = corr_measure();
+      ist_end_volt = corr_measure();
     }
     
     if(measure_end_resistance){
